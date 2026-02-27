@@ -1,0 +1,51 @@
+:root { --bg: #f0f2f5; --text: #1a1a1a; --side: #263238; --note-bg: #ffffff; --page-bg: #ffffff; --pin-item: #f9f9f9; }
+.dark { --bg: #0b0b0b; --text: #eeeeee; --side: #000000; --note-bg: #1e1e1e; --page-bg: #121212; --pin-item: #2c2c2c; }
+
+body { font-family: 'Segoe UI', sans-serif; display: flex; margin: 0; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
+#nav { width: 160px; background: var(--side); color: white; padding: 15px; overflow-y: auto; flex-shrink: 0; }
+.nav-link { padding: 8px; cursor: pointer; border-bottom: 1px solid #455a64; font-size: 12px; }
+.nav-link.active-nav { background: #4285f4; font-weight: bold; }
+.nav-title { outline: none; display: block; width: 100%; }
+
+#main-stage { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; }
+#toolbar { background: #f8f9fa; padding: 6px 12px; border-bottom: 1px solid #ddd; display: flex; gap: 8px; align-items: center; color: black; z-index: 1000; }
+
+#workspace { display: flex; flex-grow: 1; overflow: hidden; }
+#canvas-viewport { flex-grow: 2; overflow: auto; background: var(--page-bg); position: relative; }
+#canvas { padding: 50px; position: relative; min-height: 1200px; transform-origin: top left; transition: transform 0.1s; }
+
+.page { display: none; width: 100%; height: 100%; }
+.active { display: block; }
+
+#workbench { width: 340px; background: var(--note-bg); border-left: 1px solid #ccc; display: flex; flex-direction: column; }
+.notes-hidden #workbench { display: none; }
+.tab-headers { display: flex; background: #eee; }
+.tab-btn { flex: 1; padding: 10px; border: none; cursor: pointer; font-size: 12px; font-weight: bold; }
+.tab-btn.active-tab { background: var(--note-bg); color: #4285f4; border-bottom: 2px solid #4285f4; }
+.tab-content { display: none; padding: 15px; flex-grow: 1; overflow-y: auto; }
+.tab-content.active-tab { display: flex; flex-direction: column; }
+
+/* RICH TEXT SUPPORT */
+.content-area ul, #note-main ul { list-style-type: disc; padding-left: 20px; margin: 5px 0; }
+.content-area ol, #note-main ol { list-style-type: decimal; padding-left: 20px; margin: 5px 0; }
+
+.canvas-box { position: absolute; min-width: 50px; padding: 5px; touch-action: none; box-sizing: border-box; }
+.edit-active .canvas-box { border: 1px dashed #4285f4; cursor: move; }
+.canvas-box img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+
+.del-btn { position: absolute; top: -10px; right: -10px; background: #ff4b4b; color: white; border-radius: 50%; width: 20px; height: 20px; display: none; justify-content: center; align-items: center; z-index: 100; cursor: pointer; }
+.edit-active .del-btn { display: flex; }
+
+.pin { width: 20px; height: 20px; background: #ea4335; border-radius: 50%; position: absolute; border: 2px solid white; cursor: move; z-index: 99; }
+.pin:hover::after { content: attr(data-note); position: absolute; left: 25px; top: -5px; background: #333; color: #fff; padding: 12px; border-radius: 6px; font-size: 13px; width: 240px; white-space: normal; line-height: 1.5; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+
+.pin-item { padding: 10px; margin-bottom: 10px; background: var(--pin-item); border-left: 4px solid #ea4335; border-radius: 4px; font-size: 12px; color: var(--text); }
+.pin-controls { display: flex; gap: 10px; margin-top: 8px; align-items: center; }
+.pin-control-label { font-size: 10px; font-weight: bold; opacity: 0.7; }
+.pin-note-edit { width: 100%; background: transparent; border: 1px solid #ddd; color: inherit; padding: 5px; margin-top: 5px; font-size: 11px; outline: none; border-radius: 3px; }
+.pin-highlight { background: #4285f4 !important; color: white !important; }
+
+#note-main { flex-grow: 1; background: transparent; border: 1px solid #ddd; outline: none; padding: 10px; font-size: 14px; color: var(--text); overflow-y: auto; }
+button, select { cursor: pointer; padding: 4px 8px; border-radius: 3px; border: 1px solid #ccc; background: white; font-size: 12px; display: flex; align-items: center; gap: 4px; }
+.edit-tools { display: none; border-left: 1px solid #ddd; padding-left: 8px; gap: 4px; align-items: center; }
+.btn-active { background: #4285f4 !important; color: white !important; }
