@@ -7,7 +7,6 @@ from template import get_template
 
 st.set_page_config(page_title="NoteDump", layout="centered", initial_sidebar_state="collapsed")
 
-# FIX: Removed all indentation from the HTML so Streamlit does not treat it as a code block!
 st.markdown("""
 <style>
 .stApp { background-color: #000000; }
