@@ -1,207 +1,420 @@
-import streamlit as st
-from pptx import Presentation
-import html 
-import base64
-from io import BytesIO
-from template import get_template
+let current = "0"; 
+let isEditing = false; 
+let noteHistory = []; // FIX: Renamed from 'history' to prevent browser crash!
+let customClipboard = []; 
+let cropperInstance = null; 
+let currentZoom = 1; 
 
-st.set_page_config(page_title="NoteDump", layout="centered", initial_sidebar_state="collapsed")
+let chaptersData = [];
+let allPagesMap = {};
+let searchResults = [];
+let currentSearchIndex = -1;
 
-# FIX: Removed all indentation from the HTML so Streamlit does not treat it as a code block!
-st.markdown("""
-<style>
-.stApp { background-color: #000000; }
-.top-nav { display: flex; justify-content: flex-end; align-items: center; padding: 10px 20px; }
+const COLORS = ['#FF5252', '#FF9800', '#FFEB3B', '#4CAF50', '#2196F3', '#9C27B0', '#795548', '#BCAAA4', '#9E9E9E', '#E0E0E0', '#FFFFFF', '#000000'];
 
-.guide-btn {
-    color: #ccc; text-decoration: none; font-size: 18px; font-weight: bold; font-family: sans-serif;
-    border: 2px solid #555; border-radius: 50%; width: 32px; height: 32px; 
-    display: flex; align-items: center; justify-content: center; 
-    background: #222; margin-right: 15px; transition: 0.2s;
+function cleanCanvasForSave() {
+    let $c = $('#canvas').clone();
+    $c.find('mark.search-hi').each(function() { $(this).replaceWith($(this).text()); });
+    $c.find('.pin').removeClass('pin-search-match pin-active-focus active-pin-match');
+    return $c.html();
 }
-.guide-btn:hover { color: white; border-color: #4285f4; background: #1a1a1a; transform: scale(1.1); }
 
-.coffee-btn {
-    color: #FFDD00; text-decoration: none; font-weight: bold; 
-    border: 1px solid #FFDD00; padding: 5px 12px; border-radius: 20px; 
-    transition: 0.2s;
+function autoSaveToBrowser() {
+    if ($('#canvas').html().length > 100) {
+        localStorage.setItem(`nd_${LECTURE_ID}_canvas`, cleanCanvasForSave());
+        localStorage.setItem(`nd_${LECTURE_ID}_nav`, $('#nav-list-container').html());
+        localStorage.setItem(`nd_${LECTURE_ID}_pages`, totalPages);
+        localStorage.setItem(`nd_${LECTURE_ID}_title`, $('#lecture-title').text());
+        localStorage.setItem(`nd_${LECTURE_ID}_height`, $('#canvas').height()); 
+    }
 }
-.coffee-btn:hover { background: rgba(255, 221, 0, 0.1); color: #fff; }
 
-.modal-window {
-    position: fixed; background-color: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px);
-    top: 0; right: 0; bottom: 0; left: 0; z-index: 99999;
-    visibility: hidden; opacity: 0; transition: all 0.3s;
-    display: flex; justify-content: center; align-items: center;
+function restoreFromBrowser() {
+    let savedCanvas = localStorage.getItem(`nd_${LECTURE_ID}_canvas`);
+    let savedNav = localStorage.getItem(`nd_${LECTURE_ID}_nav`);
+    let savedTitle = localStorage.getItem(`nd_${LECTURE_ID}_title`);
+    let savedHeight = localStorage.getItem(`nd_${LECTURE_ID}_height`);
+
+    if (savedCanvas && savedNav) {
+        $('#canvas').html(savedCanvas);
+        $('#nav-list-container').html(savedNav);
+        if (savedTitle) $('#lecture-title').text(savedTitle);
+        if (savedHeight) $('#canvas').css('height', savedHeight + 'px');
+        totalPages = parseInt(localStorage.getItem(`nd_${LECTURE_ID}_pages`)) || totalPages;
+        showToast("🔄 Previous session restored.");
+    }
 }
-.modal-window:target { visibility: visible; opacity: 1; }
-.modal-content {
-    background: #121212; width: 90%; max-width: 650px; padding: 30px;
-    border-radius: 16px; border: 1px solid #444; color: #eee;
-    position: relative; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+
+function changeCanvasHeight(delta) {
+    saveHistory();
+    let currentH = $('#canvas').height() || 1000;
+    let newH = currentH + delta;
+    if (newH < 500) newH = 500; 
+    $('#canvas').css('height', newH + 'px');
+    autoSaveToBrowser();
+    updateContextMenu();
 }
-.modal-close {
-    position: absolute; top: 20px; right: 25px; color: #888;
-    text-decoration: none; font-size: 28px; font-weight: bold; transition: 0.2s;
+
+function initNotebookSidebar() {
+    chaptersData = [];
+    allPagesMap = {};
+    let currentChapter = { id: 'default', title: 'Uncategorized', pages: [] };
+    let pageIndex = 1;
+
+    $('#nav-list-container > div').each(function() {
+        if ($(this).hasClass('nav-chapter')) {
+            if (currentChapter.id === 'default' && currentChapter.pages.length > 0) {
+                chaptersData.push(currentChapter);
+            } else if (currentChapter.id !== 'default') {
+                chaptersData.push(currentChapter);
+            }
+            let chapTitle = $(this).find('.nav-text').text();
+            let chapId = $(this).attr('id').replace('link-', '');
+            currentChapter = { id: chapId, title: chapTitle, pages: [] };
+        } else if ($(this).hasClass('nav-link')) {
+            let pageId = $(this).attr('id').replace('link-', '');
+            currentChapter.pages.push({ id: pageId, index: pageIndex });
+            allPagesMap[pageId] = currentChapter.id;
+            pageIndex++;
+        }
+    });
+
+    if (currentChapter.pages.length > 0 || currentChapter.id !== 'default') {
+        chaptersData.push(currentChapter);
+    }
+
+    $('#ns-title').text($('#lecture-title').text());
+
+    if (chaptersData.length <= 1 && chaptersData[0].id === 'default') {
+        $('#ns-chapter-select').hide();
+    } else {
+        let opts = "";
+        chaptersData.forEach(c => {
+            opts += `<option value="${c.id}">Chapter: ${c.title}</option>`;
+        });
+        $('#ns-chapter-select').html(opts).show();
+    }
+
+    let activeChap = allPagesMap[current] || chaptersData[0].id;
+    $('#ns-chapter-select').val(activeChap);
+    renderNotebookStack(activeChap);
 }
-.modal-close:hover { color: #ff4b4b; }
 
-.modal-content h2 { margin-top: 0; color: #4285f4; font-size: 24px; border-bottom: 1px solid #333; padding-bottom: 10px;}
-.modal-content h4 { color: #FFDD00; margin-top: 20px; margin-bottom: 10px; font-size: 18px;}
-.modal-content li { margin-bottom: 10px; line-height: 1.5; font-size: 15px; color: #ccc;}
-.modal-content strong { color: white; }
+function renderNotebookStack(chapId) {
+    let chap = chaptersData.find(c => c.id === chapId);
+    if (!chap) return;
 
-.hero { text-align: center; color: white; padding: 20px 0; }
-.logo-container { display: flex; align-items: center; justify-content: center; gap: 15px; }
-.logo-text { font-size: 75px; font-weight: 800; }
-.logo-icon { font-size: 65px; }
-.support-text { font-size: 14px; color: #666; margin-top: 10px; }
+    let html = "";
+    chap.pages.forEach((p, i) => {
+        let zIndex = chap.pages.length - i;
+        let activeClass = (p.id === current) ? "active-ns-card" : "";
+        html += `<div class="ns-page-card ${activeClass}" style="z-index:${zIndex};" onclick="goTo('${p.id}')">
+                    Page ${p.index}
+                 </div>`;
+    });
+    $('#ns-page-stack').html(html);
 
-[data-testid="stFileUploader"] { display: flex; justify-content: center; }
-[data-testid="stFileUploader"] section { 
-    width: 500px !important; 
-    text-align: center !important; 
-    background-color: #161616 !important; 
-    border: 1px dashed #333 !important;
+    if (searchResults && searchResults.length > 0) {
+        searchResults.forEach(match => {
+            $(`.ns-page-card[onclick="goTo('${match.pageId}')"]`).addClass('search-match-nav');
+        });
+    }
 }
-.or-divider { text-align: center; color: #555; margin: 30px 0; font-size: 14px; font-weight: bold; letter-spacing: 1px; }
-</style>
 
-<div class="top-nav">
-<a href="#guide-modal" class="guide-btn" title="App Guide & Features">?</a>
-<a href="https://buymeacoffee.com/jpramirez" target="_blank" class="coffee-btn">☕ Buy me a coffee</a>
-</div>
+function toggleLeftPanel() {
+    let $sb = $('#notebook-sidebar');
+    let $icon = $('#left-toggle i');
+    if (window.innerWidth <= 768) {
+        $sb.toggleClass('mobile-open');
+        $icon.attr('class', $sb.hasClass('mobile-open') ? 'fas fa-chevron-left' : 'fas fa-chevron-right');
+    } else {
+        $sb.toggleClass('closed');
+        $icon.attr('class', $sb.hasClass('closed') ? 'fas fa-chevron-right' : 'fas fa-chevron-left');
+    }
+}
 
-<div id="guide-modal" class="modal-window">
-<div class="modal-content">
-<a href="#" class="modal-close" title="Close">&times;</a>
-<h2>📝 Welcome to NoteDump</h2>
-<p style="font-size: 16px; line-height: 1.5; color: #bbb;"><strong>Our Goal:</strong> NoteDump transforms static lecture slides into a fast, interactive, and offline-first digital notebook. Built for students and teachers who need to annotate, organize, and study without relying on cloud subscriptions.</p>
-<h4>✨ Core Features & Interface Guide</h4>
-<ul>
-<li><strong>100% Offline & Private:</strong> NoteDump runs entirely inside your browser. Your notes auto-save to your local device. Click <em>Export Notebook</em> to save your work as a standalone HTML file to share or back up.</li>
-<li><strong>Interactive Teardrop Pins:</strong> Drop map-style pins anywhere on a slide. You can rotate them to point at specific diagrams, link them securely to images so they move together, and write detailed notes for each pin.</li>
-<li><strong>Notebook View:</strong> Activate the distraction-free reading mode. It features a sleek, semi-transparent overlapping page stack on the left, and a dedicated control panel on the right.</li>
-<li><strong>Smart Search Navigation:</strong> Type a keyword in the search bar and press <strong>Enter</strong> to instantly jump to the next matching word or pin. The app automatically flips pages and highlights the active match in bright orange.</li>
-<li><strong>Full Editing Suite:</strong> Add custom text boxes, crop and resize images, change layer ordering (send to front/back), adjust text background transparency, and format text freely.</li>
-<li><strong>Chapter Organization:</strong> Insert Chapter Dividers to automatically group your slides. The side panel lets you easily filter your page stack by chapter.</li>
-<li><strong>True Dark Mode:</strong> Seamlessly toggle the entire canvas and interface into a deep charcoal theme to prevent eye strain during late-night study sessions.</li>
-<li><strong>Trackpad Zoom:</strong> Hold <em>Ctrl</em> (or <em>Cmd</em>) and scroll/pinch on your trackpad to smoothly zoom in and out of the canvas without zooming the entire browser window.</li>
-</ul>
-</div>
-</div>
+function toggleRightPanel() {
+    let $rp = $('#notebook-right-panel');
+    let $icon = $('#right-toggle i');
+    if (window.innerWidth <= 768) {
+        $rp.toggleClass('mobile-open');
+        $icon.attr('class', $rp.hasClass('mobile-open') ? 'fas fa-chevron-right' : 'fas fa-chevron-left');
+    } else {
+        $rp.toggleClass('closed');
+        $icon.attr('class', $rp.hasClass('closed') ? 'fas fa-chevron-left' : 'fas fa-chevron-right');
+    }
+}
 
-<div class="hero">
-<div class="logo-container">
-<span class="logo-icon">📝</span>
-<span class="logo-text">NoteDump</span>
-</div>
-<p style="font-size: 22px; color: #999; margin-top: -5px;">Transforming your lectures into a notebook</p>
-<p class="support-text">Supports: PowerPoint • Google Slides • Canva (Export as PPTX)</p>
-</div>
-""", unsafe_allow_html=True)
+function prevPage() { 
+    let prevId = $(`#link-${current}`).prevAll('.nav-link').not('.nav-chapter').first().attr('id'); 
+    if (prevId) goTo(prevId.replace('link-', '')); 
+}
 
-up = st.file_uploader("", type=["pptx", "ppt"])
+function nextPage() { 
+    let nextId = $(`#link-${current}`).nextAll('.nav-link').not('.nav-chapter').first().attr('id'); 
+    if (nextId) goTo(nextId.replace('link-', '')); 
+}
 
-if up:
-    try:
-        ppt = Presentation(up)
-        nav, slides = "", ""
+function goTo(id) {
+    if (isEditing && id === current) return; 
 
-        def parse_shapes(shapes, slide_height, slide_width):
-            html_content = ""
-            for shape in shapes:
-                try:
-                    if shape.shape_type == 6: 
-                        html_content += parse_shapes(shape.shapes, slide_height, slide_width)
-                        continue
+    saveNote(current); 
+    $('.page').removeClass('active');
+    $('#p-' + id).addClass('active');
 
-                    top = (shape.top / slide_height) * 1000 if shape.top else 0
-                    left = (shape.left / slide_width) * 800 if shape.left else 0
-                    width = (shape.width / slide_width) * 800 if shape.width else 200
+    $('.nav-link').removeClass('active-nav');
+    $('#link-' + id).addClass('active-nav');
 
-                    if shape.shape_type == 13: 
-                        img_stream = BytesIO(shape.image.blob)
-                        base64_img = base64.b64encode(img_stream.getvalue()).decode()
-                        html_content += f'''
-                        <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; max-width: calc(800px - {left}px); transform: translate(0px, 0px);">
-                            <img src="data:image/png;base64,{base64_img}" style="width:100%;">
-                        </div>'''
+    current = id.toString();
+    $('#note-main').html(localStorage.getItem(`nd_${LECTURE_ID}_note_` + current) || "");
 
-                    elif shape.has_table:
-                        table_html = "<table style='width:100%; border-collapse: collapse; font-size:12px;' border='1'>"
-                        for row in shape.table.rows:
-                            table_html += "<tr>"
-                            for cell in row.cells:
-                                table_html += f"<td style='padding:5px;'>{html.escape(cell.text)}</td>"
-                            table_html += "</tr>"
-                        table_html += "</table>"
-                        html_content += f'''
-                        <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; max-width: calc(800px - {left}px); background:rgba(255,255,255,0.9); transform: translate(0px, 0px);">
-                            <div class="content-area">{table_html}</div>
-                        </div>'''
+    updateContextMenu();
+    refreshPinList();
+    $('#nav').removeClass('mobile-open'); 
 
-                    elif shape.has_text_frame and shape.text.strip():
-                        html_text = ""
-                        for paragraph in shape.text_frame.paragraphs:
-                            p_text = ""
-                            for run in paragraph.runs:
-                                r_txt = html.escape(run.text)
-                                if getattr(run.font, 'bold', False) == True:
-                                    r_txt = f"<strong>{r_txt}</strong>"
-                                if getattr(run.font, 'italic', False) == True:
-                                    r_txt = f"<em>{r_txt}</em>"
-                                if getattr(run.font, 'underline', False) == True:
-                                    r_txt = f"<u>{r_txt}</u>"
-                                p_text += r_txt
+    let newChap = allPagesMap[current];
+    if (newChap && $('#ns-chapter-select').val() !== newChap) {
+        $('#ns-chapter-select').val(newChap);
+        renderNotebookStack(newChap);
+    } else {
+        $('.ns-page-card').removeClass('active-ns-card');
+        $(`.ns-page-card[onclick="goTo('${current}')"]`).addClass('active-ns-card');
+    }
 
-                            if not p_text.strip():
-                                html_text += "<br>"
-                            else:
-                                html_text += f"<div>{p_text}</div>"
+    if (window.innerWidth <= 768 && $('#notebook-sidebar').hasClass('mobile-open')) {
+        toggleLeftPanel();
+    }
 
-                        html_content += f'''
-                        <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; max-width: calc(800px - {left}px); transform: translate(0px, 0px);">
-                            <div class="content-area" style="word-wrap: break-word; white-space: pre-wrap; overflow-wrap: break-word;">{html_text}</div>
-                        </div>'''
-                except Exception as e:
-                    continue 
+    if(isEditing) { toggleEdit(); toggleEdit(); }
+}
 
-            return html_content
+function toggleNotebookView() {
+    $('body').toggleClass('notebook-mode');
+    let isNotebook = $('body').hasClass('notebook-mode');
 
-        for i, slide in enumerate(ppt.slides):
-            title_text = slide.shapes.title.text if slide.shapes.title else f"Slide {i+1}"
-            nav += f'<div class="nav-link" id="link-{i}" onclick="goTo(\'{i}\')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text">{html.escape(title_text)}</span></div>'
+    if (isNotebook) {
+        if (isEditing) toggleEdit(); 
+        initNotebookSidebar(); 
+        showToast("📖 Notebook View Activated");
+    }
+}
 
-            slides += f'<div id="p-{i}" class="page {"active" if i==0 else ""}"> '
-            slides += parse_shapes(slide.shapes, ppt.slide_height, ppt.slide_width)
-            slides += '</div>'
+function removeHighlights() {
+    $('mark.search-hi').each(function() { $(this).replaceWith($(this).text()); });
+    let canvas = document.getElementById('canvas');
+    if(canvas) canvas.normalize();
+    $('.pin').removeClass('pin-search-match active-pin-match');
+    $('.nav-link, .ns-page-card').removeClass('search-match-nav');
 
-        final_html = get_template(len(ppt.slides)).replace("{{NAV_LINKS}}", nav).replace("{{SLIDE_CONTENT}}", slides).replace("{{LECTURE_ID}}", html.escape(up.name))
+    searchResults = [];
+    currentSearchIndex = -1;
+    $('#search-counter, #ns-search-counter').text('0/0');
+}
 
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.download_button(
-            label="📥 Download My Notebook", 
-            data=final_html, 
-            file_name=f"NoteDump_{up.name}.html", 
-            mime="text/html",
-            use_container_width=True
-        )
-    except Exception as e:
-        st.error(f"Error Processing File: {e}")
+function highlightNode(node, regex) {
+    let hasMatch = false;
+    if (node.nodeType === 3) {
+        let match; regex.lastIndex = 0;
+        if ((match = regex.exec(node.data)) !== null) {
+            let highlight = document.createElement('mark'); highlight.className = 'search-hi';
+            let wordNode = node.splitText(match.index); wordNode.splitText(match[0].length);
+            let wordClone = wordNode.cloneNode(true); highlight.appendChild(wordClone);
+            wordNode.parentNode.replaceChild(highlight, wordNode); hasMatch = true;
+        }
+    } else if (node.nodeType === 1 && node.childNodes && !/(script|style|mark)/i.test(node.tagName)) {
+        for (let i = node.childNodes.length - 1; i >= 0; i--) { 
+            if(highlightNode(node.childNodes[i], regex)) { hasMatch = true; }
+        }
+    }
+    return hasMatch;
+}
 
-st.markdown('<div class="or-divider">— OR START FROM SCRATCH —</div>', unsafe_allow_html=True)
+function performSearch(query) {
+    removeHighlights();
+    if (!query || query.trim() === "") return;
 
-blank_nav = '<div class="nav-link active-nav" id="link-0" onclick="goTo(\'0\')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text">Page 1</span></div>'
-blank_slides = '<div id="p-0" class="page active"></div>'
-blank_html = get_template(1).replace("{{NAV_LINKS}}", blank_nav).replace("{{SLIDE_CONTENT}}", blank_slides).replace("{{LECTURE_ID}}", "New_Notebook")
+    let regex = new RegExp("(" + query.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&') + ")", "gi");
 
-col1, col2, col3 = st.columns([1, 2, 1])
-with col2:
-    st.download_button(
-        label="📓 Create Blank Notebook", 
-        data=blank_html, 
-        file_name="NoteDump_Blank.html", 
-        mime="text/html",
-        use_container_width=True
-    )
+    $('.page').each(function() {
+        let pageId = $(this).attr('id').replace('p-', ''); let pageHasMatch = false;
+
+        $(this).find('.content-area').each(function() { 
+            highlightNode(this, regex); 
+        });
+
+        $(this).find('mark.search-hi').each(function() {
+            searchResults.push({ pageId: pageId, el: $(this) });
+            pageHasMatch = true;
+        });
+
+        $(this).find('.pin').each(function() {
+            let note = $(this).attr('data-note') || "";
+            if (note.match(regex)) { 
+                pageHasMatch = true; 
+                $(this).addClass('pin-search-match'); 
+                searchResults.push({ pageId: pageId, el: $(this) });
+            }
+        });
+
+        if (pageHasMatch) { 
+            $(`#link-${pageId}`).addClass('search-match-nav'); 
+            $(`.ns-page-card[onclick="goTo('${pageId}')"]`).addClass('search-match-nav');
+        }
+    });
+
+    if (searchResults.length > 0) {
+        $('#search-counter, #ns-search-counter').text(`0/${searchResults.length}`);
+    }
+}
+
+function focusMatch() {
+    let match = searchResults[currentSearchIndex];
+    $('#search-counter, #ns-search-counter').text(`${currentSearchIndex + 1}/${searchResults.length}`);
+
+    if (current !== match.pageId) { goTo(match.pageId); }
+
+    $('.search-hi').removeClass('active-match');
+    $('.pin-search-match').removeClass('active-pin-match');
+
+    if (match.el.hasClass('search-hi')) match.el.addClass('active-match');
+    else match.el.addClass('active-pin-match');
+
+    match.el[0].scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' });
+}
+
+function goToNextMatch() {
+    if (searchResults.length === 0) return;
+    currentSearchIndex = (currentSearchIndex + 1) % searchResults.length;
+    focusMatch();
+}
+
+function goToPrevMatch() {
+    if (searchResults.length === 0) return;
+    currentSearchIndex = (currentSearchIndex - 1 + searchResults.length) % searchResults.length;
+    focusMatch();
+}
+
+$(document).ready(function() {
+    restoreFromBrowser(); 
+    setInterval(autoSaveToBrowser, 3000); 
+    initNotebookSidebar();
+
+    if (window.innerWidth <= 768) { 
+        if (window.innerWidth <= 840) setZoom(window.innerWidth / 840);
+        if (!$('body').hasClass('notebook-mode')) toggleNotebookView(); 
+    }
+
+    $(window).on('resize', function() { 
+        if (window.innerWidth <= 840) setZoom(window.innerWidth / 840); 
+    });
+
+    $(window).on('blur', function() { customClipboard = []; });
+
+    $('#search-input, #ns-search-input').on('input', function() { 
+        let val = $(this).val();
+        if(this.id === 'search-input') $('#ns-search-input').val(val);
+        else $('#search-input').val(val);
+        performSearch(val); 
+    });
+
+    $('#search-input, #ns-search-input').on('keydown', function(e) {
+        if (e.key === 'Enter') { e.preventDefault(); goToNextMatch(); }
+    });
+
+    let cvp = document.getElementById('canvas-viewport');
+
+    cvp.addEventListener('wheel', function(e) {
+        if (e.ctrlKey) {
+            e.preventDefault();
+            let zoomDelta = e.deltaY * -0.01;
+            let newZoom = currentZoom * (1 + zoomDelta); 
+            if(newZoom < 0.2) newZoom = 0.2;
+            if(newZoom > 3) newZoom = 3;
+
+            let rect = cvp.getBoundingClientRect();
+            let pointerX = e.clientX - rect.left;
+            let pointerY = e.clientY - rect.top;
+
+            let targetCanvasX = (pointerX + cvp.scrollLeft) / currentZoom;
+            let targetCanvasY = (pointerY + cvp.scrollTop) / currentZoom;
+
+            setZoom(newZoom);
+
+            cvp.scrollLeft = (targetCanvasX * newZoom) - pointerX;
+            cvp.scrollTop = (targetCanvasY * newZoom) - pointerY;
+        }
+    }, { passive: false });
+
+    let isPinching = false; let initialDistance = null; let initialZoom = 1;
+    let pinchScreenX = 0; let pinchScreenY = 0; let targetCanvasX = 0; let targetCanvasY = 0;
+
+    cvp.addEventListener('touchstart', function(e) {
+        if (e.touches.length === 2) {
+            isPinching = true;
+            initialDistance = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+            initialZoom = currentZoom;
+            pinchScreenX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+            pinchScreenY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+            let rect = cvp.getBoundingClientRect();
+            targetCanvasX = (pinchScreenX + cvp.scrollLeft - rect.left) / initialZoom;
+            targetCanvasY = (pinchScreenY + cvp.scrollTop - rect.top) / initialZoom;
+        }
+    }, {passive: false});
+
+    cvp.addEventListener('touchmove', function(e) {
+        if (e.touches.length === 2 && isPinching) {
+            e.preventDefault(); 
+            let currentDistance = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+            let newZoom = initialZoom * (currentDistance / initialDistance);
+            if(newZoom < 0.2) newZoom = 0.2;
+            if(newZoom > 3) newZoom = 3;
+            setZoom(newZoom);
+            let rect = cvp.getBoundingClientRect();
+            cvp.scrollLeft = (targetCanvasX * newZoom) - pinchScreenX + rect.left;
+            cvp.scrollTop = (targetCanvasY * newZoom) - pinchScreenY + rect.top;
+        }
+    }, {passive: false});
+
+    cvp.addEventListener('touchend', function(e) { if (e.touches.length < 2) isPinching = false; });
+
+    let navList = document.getElementById('nav-list-container');
+    if (navList) {
+        new Sortable(navList, {
+            animation: 150, handle: '.drag-handle',
+            onEnd: function (evt) {
+                saveHistory(); 
+                let newOrder = [];
+                $('#nav-list-container .nav-link').each(function() { newOrder.push($(this).attr('id').replace('link-', '')); });
+                newOrder.forEach(id => { $('#canvas').append($(`#p-${id}`)); });
+                initNotebookSidebar(); autoSaveToBrowser(); 
+            }
+        });
+    }
+
+    $(document).on('click', function(e) {
+        if ($('body').hasClass('notebook-mode')) {
+            if ($(e.target).closest('#notebook-sidebar, #notebook-right-panel, .pin, .canvas-box, .panel-toggle').length > 0) return; 
+            let w = window.innerWidth;
+            if (e.clientX < w * 0.25) { prevPage(); } 
+            else if (e.clientX > w * 0.75) { nextPage(); }
+        }
+    });
+
+    goTo("0");
+});
+
+function setZoom(v) { 
+    currentZoom = parseFloat(v);
+    $('#canvas').css('transform', `scale(${currentZoom})`); 
+    $('#zoom-slider, #ns-zoom-slider').val(currentZoom); 
+    $('#zoom-txt, #ns-zoom-txt').text(Math.round(currentZoom*100)+'%'); 
+}
+
+function showToast(message) {
+    let $toast = $('#toast-notification');
+    if($toast.length === 0) {
+        $('body').append('<div id="toast-notification" class="toast" style="position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#333; color:white; padding:10px 20px; border-radius:5px; z-index:10000; display:none;"></div>');
+        $toast = $('#toast-notification');
+    }
+    $toast.text(message).fadeIn(200).delay(2000).fadeOut(200);
+}
