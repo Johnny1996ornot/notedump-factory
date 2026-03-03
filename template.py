@@ -3,8 +3,6 @@ def get_template(total_pages):
         css = f.read()
     with open('engine.js', 'r') as f:
         js_engine = f.read()
-    with open('tools.js', 'r') as f:
-        js_tools = f.read()
 
     return f"""
 <!DOCTYPE html>
@@ -215,7 +213,6 @@ def get_template(total_pages):
         let totalPages = {total_pages};
         const LECTURE_ID = "{{{{LECTURE_ID}}}}";
         {js_engine}
-        {js_tools}
     </script>
 </body>
 </html>
