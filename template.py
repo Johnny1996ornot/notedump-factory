@@ -143,4 +143,77 @@ def get_template(total_pages):
                 <button class="tb-btn text-action" onclick="addText()"><i class="fas fa-font"></i> Text</button>
                 
                 <div class="separator"></div>
-                <button class="tb-btn size-action" onclick="changeCanvasHeight(250)" title="Increase
+                <button class="tb-btn size-action" onclick="changeCanvasHeight(250)" title="Increase Page Height"><i class="fas fa-plus"></i> Height</button>
+                <button class="tb-btn size-action-neg" onclick="changeCanvasHeight(-250)" title="Decrease Page Height"><i class="fas fa-minus"></i> Height</button>
+            </div>
+            
+            <div style="margin-left:auto; display:flex; align-items:center; gap:8px; flex-wrap:nowrap;">
+                <button class="tb-btn notebook-toggle-btn" onclick="toggleNotebookView()"><i class="fas fa-book-open"></i> Notebook View</button>
+                <button class="tb-btn" onclick="$('body').toggleClass('dark')" title="Toggle Night Mode"><i class="fas fa-moon"></i></button>
+                <button class="tb-btn desktop-only" onclick="$('body').toggleClass('notes-hidden')"><i class="fas fa-columns"></i> Sidebar</button>
+                
+                <div style="display:flex; align-items:center; gap:5px; margin-left: 5px;">
+                    <input type="range" id="zoom-slider" min="0.2" max="3" step="0.05" value="1" oninput="setZoom(this.value)">
+                    <span id="zoom-txt" style="font-size:10px; font-weight:bold;">100%</span>
+                </div>
+            </div>
+        </div>
+        
+        <div id="workspace">
+            <div id="canvas-viewport">
+                <div id="canvas-center-wrapper">
+                    <div id="canvas">
+                        {{{{SLIDE_CONTENT}}}}
+                        
+                        <div id="context-menu" style="display:none;">
+                            <div id="menu-drag-handle" title="Drag to move element" style="cursor: move; padding: 0 4px; color: #4285f4; display: flex; align-items: center; font-size: 14px;"><i class="fas fa-arrows-alt"></i></div>
+                            <div class="separator"></div>
+                            <button onclick="changeLayer(1)" title="Bring to Front"><i class="fas fa-angle-double-up"></i></button>
+                            <button onclick="changeLayer(-1)" title="Send to Back"><i class="fas fa-angle-double-down"></i></button>
+                            <div class="separator"></div>
+                            
+                            <div class="menu-text-tools" style="display:flex; align-items:center; gap:6px;">
+                                <div class="color-grid" id="text-color-grid" title="Text Color"></div>
+                                <div class="separator"></div>
+                                <div class="color-grid" id="bg-color-grid" title="Background Color"></div>
+                                <div class="separator"></div>
+                                
+                                <div style="display:flex; flex-direction:column; gap:2px; align-items:center;" title="Background Opacity (Transparency)">
+                                    <span style="font-size:8px; font-weight:bold; color:#666;">BG OPACITY</span>
+                                    <input type="range" min="0" max="1" step="0.1" value="0.8" style="width:40px; height:4px; margin:0; cursor:pointer;" oninput="updateBgOpacity(this.value)">
+                                </div>
+                            </div>
+                            
+                            <div class="menu-img-tools" style="display:none; align-items:center; gap:6px;">
+                                <button onclick="startCrop()" style="background:#ea4335; color:white; font-weight:bold; border:none; padding:4px 8px; border-radius:4px;"><i class="fas fa-crop-alt"></i> Crop Image</button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            <div id="workbench">
+                <button class="mobile-only-btn" style="width:100%; justify-content:center; background:#444; border-radius:0;" onclick="$('#workbench').removeClass('mobile-open')"><i class="fas fa-times"></i> Close Notes</button>
+                <div class="tab-headers">
+                    <button class="tab-btn active-tab" onclick="switchTab('note-tab')">Notes</button>
+                    <button class="tab-btn" onclick="switchTab('pin-list-tab')">Pins</button>
+                </div>
+                <div id="note-tab" class="tab-content active-tab"><div id="note-main" contenteditable="true" oninput="saveNote(current)" placeholder="Start typing notes..."></div></div>
+                <div id="pin-list-tab" class="tab-content">
+                    <div style="display:flex; gap:10px; margin-bottom: 15px;">
+                        <button onclick="dropPin()" style="background:#ea4335; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; flex-grow:1; font-weight:bold;">+ Drop Pin</button>
+                        <button onclick="$('#canvas').toggleClass('hide-pins')" style="background:#555; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer;" title="Hide all pins from the page"><i class="fas fa-eye-slash"></i></button>
+                    </div>
+                    <div id="pin-list-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        let totalPages = {total_pages};
+        const LECTURE_ID = "{{{{LECTURE_ID}}}}";
+        {js_engine}
+    </script>
+</body>
+</html>
+"""
