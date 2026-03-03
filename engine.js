@@ -34,7 +34,7 @@ function restoreFromBrowser() {
     let savedNav = localStorage.getItem(`nd_${LECTURE_ID}_nav`);
     let savedTitle = localStorage.getItem(`nd_${LECTURE_ID}_title`);
     let savedHeight = localStorage.getItem(`nd_${LECTURE_ID}_height`);
-
+    
     if (savedCanvas && savedNav) {
         $('#canvas').html(savedCanvas);
         $('#nav-list-container').html(savedNav);
@@ -78,7 +78,7 @@ function initNotebookSidebar() {
             pageIndex++;
         }
     });
-
+    
     if (currentChapter.pages.length > 0 || currentChapter.id !== 'default') {
         chaptersData.push(currentChapter);
     }
@@ -103,7 +103,7 @@ function initNotebookSidebar() {
 function renderNotebookStack(chapId) {
     let chap = chaptersData.find(c => c.id === chapId);
     if (!chap) return;
-
+    
     let html = "";
     chap.pages.forEach((p, i) => {
         let zIndex = chap.pages.length - i;
@@ -157,21 +157,21 @@ function nextPage() {
 
 function goTo(id) {
     if (isEditing && id === current) return; 
-
+    
     saveNote(current); 
     $('.page').removeClass('active');
     $('#p-' + id).addClass('active');
-
+    
     $('.nav-link').removeClass('active-nav');
     $('#link-' + id).addClass('active-nav');
-
+    
     current = id.toString();
     $('#note-main').html(localStorage.getItem(`nd_${LECTURE_ID}_note_` + current) || "");
-
+    
     updateContextMenu();
     refreshPinList();
     $('#nav').removeClass('mobile-open'); 
-
+    
     let newChap = allPagesMap[current];
     if (newChap && $('#ns-chapter-select').val() !== newChap) {
         $('#ns-chapter-select').val(newChap);
@@ -184,14 +184,14 @@ function goTo(id) {
     if (window.innerWidth <= 768 && $('#notebook-sidebar').hasClass('mobile-open')) {
         toggleLeftPanel();
     }
-
+    
     if(isEditing) { toggleEdit(); toggleEdit(); }
 }
 
 function toggleNotebookView() {
     $('body').toggleClass('notebook-mode');
     let isNotebook = $('body').hasClass('notebook-mode');
-
+    
     if (isNotebook) {
         if (isEditing) toggleEdit(); 
         initNotebookSidebar(); 
@@ -205,7 +205,7 @@ function removeHighlights() {
     if(canvas) canvas.normalize();
     $('.pin').removeClass('pin-search-match active-pin-match');
     $('.nav-link, .ns-page-card').removeClass('search-match-nav');
-
+    
     searchResults = [];
     currentSearchIndex = -1;
     $('#search-counter, #ns-search-counter').text('0/0');
@@ -232,12 +232,12 @@ function highlightNode(node, regex) {
 function performSearch(query) {
     removeHighlights();
     if (!query || query.trim() === "") return;
-
+    
     let regex = new RegExp("(" + query.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&') + ")", "gi");
-
+    
     $('.page').each(function() {
         let pageId = $(this).attr('id').replace('p-', ''); let pageHasMatch = false;
-
+        
         $(this).find('.content-area').each(function() { 
             highlightNode(this, regex); 
         });
@@ -329,7 +329,7 @@ function updateContextMenu() {
     let $sel = $('.selected-box');
     if($sel.length > 0 && isEditing) {
         let hasImage = $sel.find('img').length > 0;
-
+        
         if (hasImage) {
             $('.menu-text-tools').hide(); $('.menu-img-tools').css('display', 'flex');
         } else {
@@ -344,31 +344,39 @@ function updateContextMenu() {
             let tx = parseFloat($(this).attr('data-x')) || 0;
             if((t+ty) < topPos) topPos = t+ty; if((l+tx) < leftPos) leftPos = l+tx;
         });
-
+        
         $('#context-menu').css({top: topPos - 45, left: leftPos, display: 'flex'});
     } else { 
         $('#context-menu').hide(); 
     }
 }
 
+// --- FIX: Added 'isNaN' safety check so the layer math never breaks! ---
 function changeLayer(direction) {
     saveHistory();
     let $siblings = $('.canvas-box').not('.selected-box');
     let targetZ = 10;
-
+    
     if (direction > 0) {
         let maxZ = 10;
-        $siblings.each(function() { maxZ = Math.max(maxZ, parseInt($(this).css('z-index')) || 10); });
+        $siblings.each(function() { 
+            let z = parseInt($(this).css('z-index'));
+            if (!isNaN(z)) { maxZ = Math.max(maxZ, z); }
+        });
         targetZ = maxZ + 1; 
     } else {
         let minZ = 10;
-        $siblings.each(function() { minZ = Math.min(minZ, parseInt($(this).css('z-index')) || 10); });
+        $siblings.each(function() { 
+            let z = parseInt($(this).css('z-index'));
+            if (!isNaN(z)) { minZ = Math.min(minZ, z); }
+        });
         targetZ = minZ - 1; 
         if(targetZ < 1) targetZ = 1; 
     }
-
+    
     $('.selected-box').css('z-index', targetZ);
 }
+// -----------------------------------------------------------------------
 
 function changeBoxStyle(property, value) {
     saveHistory(); $('.selected-box').css(property, value);
@@ -395,7 +403,7 @@ function addPageBelow() {
     let newId = "new_" + Date.now();
     let newNav = `<div class="nav-link" id="link-${newId}" onclick="goTo('${newId}')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text" contenteditable="${isEditing}">New Blank Page</span></div>`;
     let newPage = `<div id="p-${newId}" class="page"></div>`;
-
+    
     $(`#link-${current}`).after(newNav); $(`#p-${current}`).after(newPage); 
     goTo(newId); initNotebookSidebar();
 }
@@ -404,17 +412,17 @@ function addChapterBelow() {
     saveHistory();
     let newId = "chap_" + Date.now();
     let newNav = `<div class="nav-link nav-chapter" id="link-${newId}" onclick="goTo('${newId}')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text" contenteditable="${isEditing}">New Chapter</span></div>`;
-
+    
     let newPage = `<div id="p-${newId}" class="page">
         <div class="canvas-box selected-box" style="top:400px; left:100px; width:600px; max-width:600px; z-index:100; transform: translate(0px, 0px);">
             <div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div>
             <div class="content-area" contenteditable="true" style="font-size: 48px; font-weight: bold; text-align: center; word-wrap: break-word; white-space: pre-wrap; overflow-wrap: break-word;">Chapter Title</div>
         </div>
     </div>`;
-
+    
     $(`#link-${current}`).after(newNav); 
     $(`#p-${current}`).after(newPage); 
-
+    
     goTo(newId); 
     initNotebookSidebar();
     if (!isEditing) { toggleEdit(); }
@@ -425,7 +433,7 @@ function togglePinLink(index) {
     let $pin = $(`#p-${current} .pin`).eq(index);
     let isLinked = $pin.parent().hasClass('canvas-box');
     let pinRect = $pin[0].getBoundingClientRect();
-
+    
     if (isLinked) {
         let $page = $(`#p-${current}`); let pageRect = $page[0].getBoundingClientRect(); $page.append($pin);
         let relTop = (pinRect.top - pageRect.top) / currentZoom; let relLeft = (pinRect.left - pageRect.left) / currentZoom;
@@ -463,10 +471,10 @@ function cyclePinShape(index) {
     let $pin = $(`#p-${current} .pin`).eq(index);
     let states = ['dot', 'up', 'right', 'down', 'left']; 
     let currentState = $pin.attr('data-state') || 'dot';
-
+    
     let nextIndex = (states.indexOf(currentState) + 1) % states.length; 
     let nextState = states[nextIndex];
-
+    
     $pin.attr('data-state', nextState); 
     refreshPinList();
 }
@@ -475,7 +483,7 @@ function updatePinStyle(index, property, value) {
     saveHistory(); 
     let $pin = $(`#p-${current} .pin`).eq(index); 
     let $visual = $pin.find('.pin-visual');
-
+    
     if(property === 'size') { 
         $visual.css({width: value + 'px', height: value + 'px'}); 
         $pin.css({width: value + 'px', height: value + 'px'}); 
@@ -495,33 +503,33 @@ function refreshPinList() {
         let $vis = $(this).find('.pin-visual'); 
         let state = $(this).attr('data-state') || 'dot';
         let isLinked = $(this).parent().hasClass('canvas-box');
-
+        
         pins.push({ 
             y: offset ? offset.top : 0, note: $(this).attr('data-note'), color: $vis.css('background-color'), 
             size: $vis.width(), state: state, isLinked: isLinked 
         }); 
     });
-
+    
     pins.sort((a, b) => a.y - b.y);
     let h = pins.length ? "" : "<p style='text-align:center; font-size:10px; color:#888;'>No pins.</p>";
-
+    
     pins.forEach((p, i) => { 
         let hex = p.color.match(/\d+/g).map(x => parseInt(x).toString(16).padStart(2, '0')).join('');
-
+        
         let iconClass = "fa-caret-up";
         let iconRotation = "0deg";
-
+        
         if(p.state === 'dot') iconClass = "fa-circle";
         if(p.state === 'right') iconRotation = "90deg";
         if(p.state === 'down') iconRotation = "180deg";
         if(p.state === 'left') iconRotation = "270deg";
-
+        
         let iconStyle = (p.state !== 'dot') ? `transform: rotate(${iconRotation}); transition: 0.2s;` : "";
-
+        
         let linkIcon = p.isLinked ? "fa-link" : "fa-unlink"; 
         let linkColor = p.isLinked ? "#4CAF50" : "inherit"; 
         let linkTitle = p.isLinked ? "Unlink from Image" : "Link to Image underneath";
-
+        
         h += `
             <div class="sketch-pin-card" onmouseenter="focusPin(${i})" onmouseleave="unfocusPin(${i})">
                 <div class="pin-card-left">
@@ -549,7 +557,7 @@ function refreshPinList() {
                 </div>
             </div>`; 
     });
-
+    
     $('#pin-list-container').html(h);
 }
 
@@ -565,7 +573,7 @@ function toggleEdit() {
     $('.edit-tools').css('display', isEditing ? 'flex' : 'none');
     $('#canvas').toggleClass('edit-active'); 
     $('body').toggleClass('edit-active', isEditing);
-
+    
     $('.content-area').attr('contenteditable', isEditing); 
     $('.nav-text').attr('contenteditable', isEditing); 
 
@@ -594,7 +602,7 @@ function toggleEdit() {
                 }, end: refreshPinList 
             }
         });
-
+        
         interact('.pin').draggable({ 
             modifiers: [ interact.modifiers.restrictRect({ restriction: '#canvas', endOnly: false }) ],
             listeners: { 
@@ -635,7 +643,7 @@ function addImg() { let i = document.createElement('input'); i.type = 'file'; i.
 function saveNotebookToFile() {
     saveHistory();
     if(isEditing) toggleEdit(); 
-
+    
     $('#context-menu').hide();
     $('.canvas-box').removeClass('selected-box');
     removeHighlights(); 
@@ -644,17 +652,17 @@ function saveNotebookToFile() {
     let blob = new Blob([currentHTML], { type: 'text/html' });
     let url = URL.createObjectURL(blob);
     let a = document.createElement('a');
-
+    
     a.href = url;
     let customName = $('#lecture-title').text().trim().replace(/\.pptx?$/i, '');
     if (!customName) customName = "NoteDump_Lecture";
-
+    
     a.download = customName + ".html";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-
+    
     showToast("💾 Final Notebook Exported!");
 }
 
@@ -670,7 +678,7 @@ $(document).ready(function() {
     $(document).on('mousedown', '#menu-drag-handle', function(e) {
         if(!isEditing) return;
         e.preventDefault(); isMenuDragging = true; menuDragStartX = e.clientX; menuDragStartY = e.clientY;
-
+        
         $('.selected-box').each(function() {
             $(this).data('base-tx', parseFloat($(this).attr('data-x')) || 0);
             $(this).data('base-ty', parseFloat($(this).attr('data-y')) || 0);
@@ -681,7 +689,7 @@ $(document).ready(function() {
 
     $(document).on('mousemove', function(e) {
         if(!isMenuDragging) return;
-
+        
         let dx = (e.clientX - menuDragStartX) / currentZoom;
         let dy = (e.clientY - menuDragStartY) / currentZoom;
         let canvasW = $('#canvas').width();
@@ -712,52 +720,14 @@ $(document).ready(function() {
 
     $(document).on('mouseup', function(e) { if (isMenuDragging) { isMenuDragging = false; saveHistory(); } });
 
-    $(window).on('keydown', function(e) {
-        let isTyping = $(e.target).is('textarea, [contenteditable="true"]:focus, input:focus');
-
-        if (isTyping && e.key === 'Tab') {
-            e.preventDefault();
-            document.execCommand('insertHTML', false, '&emsp;&emsp;');
-            return;
-        }
-
-        if (e.ctrlKey && e.key.toLowerCase() === 's') { e.preventDefault(); saveNotebookToFile(); return; }
-        if (e.ctrlKey && e.key.toLowerCase() === 'f') {
-            e.preventDefault();
-            if (window.innerWidth <= 768) { $('#nav').addClass('mobile-open'); $('#workbench').removeClass('mobile-open'); }
-            $('#search-input').focus(); return;
-        }
-        if (e.ctrlKey && e.key.toLowerCase() === 'z' && !isTyping) { e.preventDefault(); undo(); return; }
-        if (!isTyping && e.which == 37) { prevPage(); e.preventDefault(); }
-        if (!isTyping && e.which == 39) { nextPage(); e.preventDefault(); }
-
-        if (isEditing) {
-            if (e.ctrlKey && e.key.toLowerCase() === 'a' && !isTyping) { e.preventDefault(); $(`#p-${current} .canvas-box`).addClass('selected-box'); updateContextMenu(); }
-            if (e.ctrlKey && e.key.toLowerCase() === 'c' && !isTyping) { customClipboard = []; $('.selected-box').each(function() { customClipboard.push($(this)[0].outerHTML); }); }
-            if (e.ctrlKey && e.key.toLowerCase() === 'v' && !isTyping) {
-                if(customClipboard.length > 0) {
-                    e.preventDefault(); saveHistory(); $('.canvas-box').removeClass('selected-box'); 
-                    customClipboard.forEach(htmlStr => {
-                        let $newBox = $(htmlStr);
-                        let currentTop = parseFloat($newBox.css('top')) || 100;
-                        let currentLeft = parseFloat($newBox.css('left')) || 100;
-                        $newBox.css({ top: (currentTop + 20) + 'px', left: (currentLeft + 20) + 'px' });
-                        $newBox.addClass('selected-box'); $(`#p-${current}`).append($newBox);
-                    });
-                    toggleEdit(); toggleEdit(); updateContextMenu();
-                }
-            }
-        }
-    });
-
     $(document).on('paste', function(e) {
         if (!isEditing) return;
         let isTyping = $(e.target).is('textarea, [contenteditable="true"]:focus, input:focus');
         if (isTyping) return; 
-
+        
         let items = (e.originalEvent || e).clipboardData.items;
         let pastedImage = false;
-
+        
         for (let i = 0; i < items.length; i++) {
             if (items[i].type.indexOf("image") === 0) {
                 e.preventDefault();
@@ -774,7 +744,7 @@ $(document).ready(function() {
                 pastedImage = true; break;
             }
         }
-
+        
         if (!pastedImage) {
             let pastedText = (e.originalEvent || e).clipboardData.getData('text/plain');
             if (pastedText && pastedText.trim() !== "") {
@@ -809,19 +779,3 @@ $(document).ready(function() {
         }
     });
 });
-
-function setZoom(v) { 
-    currentZoom = parseFloat(v);
-    $('#canvas').css('transform', `scale(${currentZoom})`); 
-    $('#zoom-slider, #ns-zoom-slider').val(currentZoom); 
-    $('#zoom-txt, #ns-zoom-txt').text(Math.round(currentZoom*100)+'%'); 
-}
-
-function showToast(message) {
-    let $toast = $('#toast-notification');
-    if($toast.length === 0) {
-        $('body').append('<div id="toast-notification" class="toast" style="position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#333; color:white; padding:10px 20px; border-radius:5px; z-index:10000; display:none;"></div>');
-        $toast = $('#toast-notification');
-    }
-    $toast.text(message).fadeIn(200).delay(2000).fadeOut(200);
-}
