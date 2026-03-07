@@ -650,7 +650,7 @@ function getSortedPins() {
         let $vis = $(this).find('.pin-visual'); 
         let state = $(this).attr('data-state') || 'dot';
         let isLinked = $(this).parent().hasClass('canvas-box');
-
+        
         let op = parseFloat($(this).css('opacity'));
         if (isNaN(op)) op = 1;
 
@@ -779,13 +779,13 @@ function toggleEdit() {
                     // Divide the delta by currentZoom to stop cursor drifting
                     let currentW = parseFloat(target.style.width) || target.offsetWidth;
                     let currentH = parseFloat(target.style.height) || target.offsetHeight;
-
+                    
                     target.style.width = (currentW + (event.deltaRect.width / currentZoom)) + 'px'; 
                     target.style.height = (currentH + (event.deltaRect.height / currentZoom)) + 'px';
-
+                    
                     x += (event.deltaRect.left / currentZoom); 
                     y += (event.deltaRect.top / currentZoom);
-
+                    
                     target.style.transform = `translate(${x}px, ${y}px)`; 
                     target.setAttribute('data-x', x); 
                     target.setAttribute('data-y', y);
@@ -915,7 +915,7 @@ function saveNotebookToFile() {
 
 $(document).ready(function() {
     restoreFromBrowser(); 
-    setInterval(autoSaveToBrowser, 3000); 
+    setInterval(autoSaveToBrowser, 30000); 
     initNotebookSidebar();
 
     if (window.innerWidth <= 768) { 
@@ -967,7 +967,7 @@ $(document).ready(function() {
     let colorHtml = "";
     COLORS.forEach(c => { colorHtml += `<div class="color-swatch" style="background:${c};" data-color="${c}"></div>`; });
     $('#text-color-grid, #bg-color-grid').html(colorHtml);
-
+    
     $('#text-color-grid .color-swatch').click(function() { 
         restoreSelection();
         document.execCommand('foreColor', false, $(this).attr('data-color'));
