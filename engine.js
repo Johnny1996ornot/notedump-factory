@@ -5,34 +5,58 @@ let customClipboard = [];
 let cropperInstance = null; 
 let currentZoom = 1; 
 
-let chaptersData = [];
-let allPagesMap = {};
 let searchResults = [];
 let currentSearchIndex = -1;
 let currentViewMode = 'single';
 
 let savedSelection = null;
+let lastSavedState = "";
 
 const COLORS = ['#FF5252', '#FF9800', '#FFEB3B', '#4CAF50', '#2196F3', '#9C27B0', '#795548', '#BCAAA4', '#9E9E9E', '#E0E0E0', '#FFFFFF', '#000000'];
 
+// CRITICAL FIX: Ensure the yellow box doesn't get saved permanently
 function cleanCanvasForSave() {
     let $c = $('#canvas').clone();
+    $c.find('#context-menu').remove(); 
+    $c.find('.canvas-box').removeClass('selected-box'); 
     $c.find('mark.search-hi').each(function() { $(this).replaceWith($(this).text()); });
     $c.find('.pin').removeClass('pin-search-match pin-active-focus active-pin-match');
     return $c.html();
 }
 
+// CRITICAL FIX: Safe wrapper to prevent "QuotaExceeded" from freezing your page turning
+function safeSetLocal(key, val) {
+    try {
+        localStorage.setItem(key, val);
+    } catch(e) {
+        console.warn("Storage Limit Reached. Cannot auto-save.");
+        if (!window.quotaWarningShown) {
+            showToast("⚠️ Storage Full! Auto-save paused. Keep turning pages, but use 'Export' to save.");
+            window.quotaWarningShown = true;
+        }
+    }
+}
+
 function autoSaveToBrowser() {
     if ($('#canvas').html().length > 100) {
-        localStorage.setItem(`nd_${LECTURE_ID}_canvas`, cleanCanvasForSave());
-        localStorage.setItem(`nd_${LECTURE_ID}_nav`, $('#nav-list-container').html());
-        localStorage.setItem(`nd_${LECTURE_ID}_pages`, totalPages);
-        localStorage.setItem(`nd_${LECTURE_ID}_title`, $('#lecture-title').text());
-        localStorage.setItem(`nd_${LECTURE_ID}_width`, parseInt($('#canvas').attr('data-width')) || 800); 
+        safeSetLocal(`nd_${LECTURE_ID}_canvas`, cleanCanvasForSave());
+        safeSetLocal(`nd_${LECTURE_ID}_nav`, $('#nav-list-container').html());
+        safeSetLocal(`nd_${LECTURE_ID}_pages`, totalPages);
+        safeSetLocal(`nd_${LECTURE_ID}_title`, $('#lecture-title').text());
+        safeSetLocal(`nd_${LECTURE_ID}_width`, parseInt($('#canvas').attr('data-width')) || 800); 
     }
 }
 
 function restoreFromBrowser() {
+    let savedPages = parseInt(localStorage.getItem(`nd_${LECTURE_ID}_pages`));
+
+    if (savedPages && savedPages !== totalPages) {
+        localStorage.removeItem(`nd_${LECTURE_ID}_canvas`);
+        localStorage.removeItem(`nd_${LECTURE_ID}_nav`);
+    }
+
+    let $menu = $('#context-menu').detach(); // Protect context menu from being overwritten
+
     let savedCanvas = localStorage.getItem(`nd_${LECTURE_ID}_canvas`);
     let savedNav = localStorage.getItem(`nd_${LECTURE_ID}_nav`);
     let savedTitle = localStorage.getItem(`nd_${LECTURE_ID}_title`);
@@ -50,13 +74,13 @@ function restoreFromBrowser() {
             $('#canvas').attr('data-width', '800');
             $('#canvas').css('width', '800px');
         }
-
-        totalPages = parseInt(localStorage.getItem(`nd_${LECTURE_ID}_pages`)) || totalPages;
         showToast("🔄 Previous session restored.");
     } else {
         $('#canvas').attr('data-width', '800');
         $('#canvas').css('width', '800px');
     }
+
+    $('#canvas').append($menu); // Put context menu back safely
 
     $('.page').each(function() {
         let h = parseInt($(this).attr('data-page-height') || $(this).attr('data-height')) || 1000;
@@ -67,6 +91,31 @@ function restoreFromBrowser() {
     let activeH = parseInt($('.page.active').attr('data-page-height')) || 1000;
     $('#canvas').css('height', activeH + 'px');
     setZoom(currentZoom);
+}
+
+function saveHistory() { 
+    if (!lastSavedState) lastSavedState = cleanCanvasForSave();
+    let currentState = cleanCanvasForSave(); 
+    if (lastSavedState !== currentState) {
+        noteHistory.push(lastSavedState); 
+        if (noteHistory.length > 30) noteHistory.shift(); 
+        $('#undo-btn').prop('disabled', false); 
+    }
+    lastSavedState = currentState;
+}
+
+// CRITICAL FIX: Detach Context Menu before Undo so it doesn't get deleted
+function undo() { 
+    if (noteHistory.length > 0) { 
+        let $menu = $('#context-menu').detach(); 
+        let prevState = noteHistory.pop(); 
+        $('#canvas').html(prevState); 
+        $('#canvas').append($menu); 
+        lastSavedState = cleanCanvasForSave(); 
+        if (noteHistory.length === 0) $('#undo-btn').prop('disabled', true); 
+        refreshPinList(); updateContextMenu(); 
+        if (isEditing) { toggleEdit(); toggleEdit(); } 
+    } 
 }
 
 function changeCanvasHeight(delta) {
@@ -130,94 +179,8 @@ function deletePage(id, event) {
 
     $link.remove();
     $page.remove();
-
-    initNotebookSidebar();
     autoSaveToBrowser();
     showToast("🗑️ Page deleted.");
-}
-
-function initNotebookSidebar() {
-    chaptersData = [];
-    allPagesMap = {};
-    let currentChapter = { id: 'default', title: 'Uncategorized', pages: [] };
-    let pageIndex = 1;
-
-    $('#nav-list-container > div').each(function() {
-        if ($(this).hasClass('nav-chapter')) {
-            if (currentChapter.id === 'default' && currentChapter.pages.length > 0) {
-                chaptersData.push(currentChapter);
-            } else if (currentChapter.id !== 'default') {
-                chaptersData.push(currentChapter);
-            }
-            let chapTitle = $(this).find('.nav-text').text();
-            let chapId = $(this).attr('id').replace('link-', '');
-            currentChapter = { id: chapId, title: chapTitle, pages: [] };
-        } else if ($(this).hasClass('nav-link')) {
-            let pageId = $(this).attr('id').replace('link-', '');
-            currentChapter.pages.push({ id: pageId, index: pageIndex });
-            allPagesMap[pageId] = currentChapter.id;
-            pageIndex++;
-        }
-    });
-
-    if (currentChapter.pages.length > 0 || currentChapter.id !== 'default') {
-        chaptersData.push(currentChapter);
-    }
-
-    $('#ns-title').text($('#lecture-title').text());
-
-    if (chaptersData.length <= 1 && chaptersData[0].id === 'default') {
-        $('#ns-chapter-select').hide();
-    } else {
-        let opts = "";
-        chaptersData.forEach(c => {
-            opts += `<option value="${c.id}">Chapter: ${c.title}</option>`;
-        });
-        $('#ns-chapter-select').html(opts).show();
-    }
-
-    let activeChap = allPagesMap[current] || chaptersData[0].id;
-    $('#ns-chapter-select').val(activeChap);
-    renderNotebookStack(activeChap);
-}
-
-function renderNotebookStack(chapId) {
-    let chap = chaptersData.find(c => c.id === chapId);
-    if (!chap) return;
-
-    let html = "";
-    chap.pages.forEach((p, i) => {
-        let zIndex = chap.pages.length - i;
-        let activeClass = (p.id === current) ? "active-ns-card" : "";
-        html += `<div class="ns-page-card ${activeClass}" style="z-index:${zIndex};" onclick="goTo('${p.id}')">
-                    Page ${p.index}
-                 </div>`;
-    });
-    $('#ns-page-stack').html(html);
-
-    if (searchResults && searchResults.length > 0) {
-        searchResults.forEach(match => {
-            $(`.ns-page-card[onclick="goTo('${match.pageId}')"]`).addClass('search-match-nav');
-        });
-    }
-}
-
-function toggleLeftPanel() {
-    let $sb = $('#notebook-sidebar');
-    if (window.innerWidth <= 768) {
-        $sb.toggleClass('mobile-open');
-    } else {
-        $sb.toggleClass('closed');
-    }
-}
-
-function toggleRightPanel() {
-    let $rp = $('#notebook-right-panel');
-    if (window.innerWidth <= 768) {
-        $rp.toggleClass('mobile-open');
-    } else {
-        $rp.toggleClass('closed');
-    }
 }
 
 function setViewMode(mode) {
@@ -252,6 +215,28 @@ function toggleScrollMode() {
     showToast(currentViewMode === 'scroll' ? "📜 Scroll Mode Activated" : "📄 Single Page Mode Activated");
 }
 
+function skipBackward() {
+    let $navLinks = $('.nav-link').not('.nav-chapter');
+    let total = $navLinks.length;
+    if (total === 0) return;
+    let skipAmount = Math.max(1, Math.round(total * 0.20));
+    let currentIndex = $navLinks.index($('#link-' + current));
+    let targetIndex = Math.max(0, currentIndex - skipAmount);
+    let targetId = $navLinks.eq(targetIndex).attr('id');
+    if (targetId) goTo(targetId.replace('link-', ''));
+}
+
+function skipForward() {
+    let $navLinks = $('.nav-link').not('.nav-chapter');
+    let total = $navLinks.length;
+    if (total === 0) return;
+    let skipAmount = Math.max(1, Math.round(total * 0.20));
+    let currentIndex = $navLinks.index($('#link-' + current));
+    let targetIndex = Math.min(total - 1, currentIndex + skipAmount);
+    let targetId = $navLinks.eq(targetIndex).attr('id');
+    if (targetId) goTo(targetId.replace('link-', ''));
+}
+
 function prevPage() { 
     let prevId = $(`#link-${current}`).prevAll('.nav-link').not('.nav-chapter').first().attr('id'); 
     if (prevId) goTo(prevId.replace('link-', '')); 
@@ -265,7 +250,7 @@ function nextPage() {
 function goTo(id) {
     if (isEditing && id === current) return; 
 
-    saveNote(current); 
+    safeSetLocal(`nd_${LECTURE_ID}_note_` + current, $('#note-main').html()); 
 
     $('.nav-link').removeClass('active-nav');
     $('#link-' + id).addClass('active-nav');
@@ -275,20 +260,15 @@ function goTo(id) {
 
     updateContextMenu();
     refreshPinList();
-    $('#nav').removeClass('mobile-open'); 
 
-    let newChap = allPagesMap[current];
-    if (newChap && $('#ns-chapter-select').val() !== newChap) {
-        $('#ns-chapter-select').val(newChap);
-        renderNotebookStack(newChap);
-    } else {
-        $('.ns-page-card').removeClass('active-ns-card');
-        $(`.ns-page-card[onclick="goTo('${current}')"]`).addClass('active-ns-card');
-    }
+    if(window.innerWidth <= 768 && !$('body').hasClass('notebook-mode')) { 
+        $('#nav').addClass('closed'); 
+        $('#nav-toggle i').css('transform', 'rotate(0deg)');
+    } 
 
-    if (window.innerWidth <= 768 && $('#notebook-sidebar').hasClass('mobile-open')) {
-        toggleLeftPanel();
-    }
+    let totalNav = $('.nav-link').not('.nav-chapter').length;
+    let currentIndex = $('.nav-link').not('.nav-chapter').index($('#link-' + id)) + 1;
+    $('#nb-page-indicator').text(`${currentIndex} / ${totalNav}`);
 
     if (currentViewMode === 'single') {
         $('.page').removeClass('active');
@@ -313,8 +293,30 @@ function toggleNotebookView() {
 
     if (isNotebook) {
         if (isEditing) toggleEdit(); 
-        initNotebookSidebar(); 
+        $('#note-panel').removeClass('open');
+        $('#pin-panel').removeClass('open');
         showToast("📖 Notebook View Activated");
+    }
+}
+
+function toggleNav() {
+    $('#nav').toggleClass('closed');
+    let isClosed = $('#nav').hasClass('closed');
+    $('#nav-toggle i').css('transform', isClosed ? 'rotate(180deg)' : 'rotate(0deg)');
+}
+
+function toggleSearchBar() {
+    $('#sidebar-search').slideToggle(200);
+    $('#search-input').focus();
+}
+
+function togglePanel(type) {
+    if (type === 'note') {
+        $('#pin-panel').removeClass('open');
+        $('#note-panel').toggleClass('open');
+    } else {
+        $('#note-panel').removeClass('open');
+        $('#pin-panel').toggleClass('open');
     }
 }
 
@@ -327,7 +329,7 @@ function removeHighlights() {
 
     searchResults = [];
     currentSearchIndex = -1;
-    $('#search-counter, #ns-search-counter').text('0/0');
+    $('#search-counter').text('0/0');
 }
 
 function highlightNode(node, regex) {
@@ -377,18 +379,17 @@ function performSearch(query) {
 
         if (pageHasMatch) { 
             $(`#link-${pageId}`).addClass('search-match-nav'); 
-            $(`.ns-page-card[onclick="goTo('${pageId}')"]`).addClass('search-match-nav');
         }
     });
 
     if (searchResults.length > 0) {
-        $('#search-counter, #ns-search-counter').text(`0/${searchResults.length}`);
+        $('#search-counter').text(`0/${searchResults.length}`);
     }
 }
 
 function focusMatch() {
     let match = searchResults[currentSearchIndex];
-    $('#search-counter, #ns-search-counter').text(`${currentSearchIndex + 1}/${searchResults.length}`);
+    $('#search-counter').text(`${currentSearchIndex + 1}/${searchResults.length}`);
 
     if (current !== match.pageId) { goTo(match.pageId); }
 
@@ -447,10 +448,17 @@ function applyCrop() {
     tempImg.src = croppedDataUrl;
 }
 
+function liveUpdateOpacity(alpha) {
+    $('.selected-box').css('opacity', alpha);
+}
+function commitOpacity() {
+    saveHistory();
+}
+
 function updateContextMenu() {
     let $sel = $('.selected-box');
     if($sel.length > 0 && isEditing) {
-        $('#format-toolbar').css('display', 'flex');
+        $('#context-menu').css('display', 'flex');
 
         let hasImage = $sel.find('img').length > 0;
         if (hasImage) {
@@ -460,8 +468,43 @@ function updateContextMenu() {
             $('.menu-text-tools').css('display', 'flex'); 
             $('.menu-img-tools').hide();
         }
+
+        let currentOp = $sel.first().css('opacity');
+        $('#transparency-slider').val(currentOp !== undefined ? currentOp : 1);
+
+        let topPos = 999999; let leftPos = 999999;
+        $sel.each(function() {
+            let t = parseFloat($(this).css('top')) || 0; 
+            let l = parseFloat($(this).css('left')) || 0;
+            let ty = parseFloat($(this).attr('data-y')) || 0; 
+            let tx = parseFloat($(this).attr('data-x')) || 0;
+
+            let finalTop = t + ty;
+            let finalLeft = l + tx;
+
+            if(finalTop < topPos) topPos = finalTop; 
+            if(finalLeft < leftPos) leftPos = finalLeft;
+        });
+
+        $('#context-menu').css({display: 'flex', top: '-9999px', left: '-9999px'});
+        let cHeight = $('#context-menu').outerHeight() || 50;
+
+        let finalMenuTop = topPos - cHeight - 15;
+
+        if (finalMenuTop < 10) {
+            let maxBottom = 0;
+            $sel.each(function() {
+                let t = parseFloat($(this).css('top')) || 0;
+                let ty = parseFloat($(this).attr('data-y')) || 0;
+                let h = $(this).outerHeight();
+                if (t + ty + h > maxBottom) maxBottom = t + ty + h;
+            });
+            finalMenuTop = maxBottom + 15;
+        }
+
+        $('#context-menu').css({top: finalMenuTop + 'px', left: leftPos + 'px'});
     } else { 
-        $('#format-toolbar').hide(); 
+        $('#context-menu').hide(); 
     }
 }
 
@@ -495,21 +538,6 @@ function changeBoxStyle(property, value) {
     $('.selected-box').css(property, value);
 }
 
-function updateBgOpacity(alpha) {
-    $('.selected-box').each(function() {
-        let bg = $(this).css('background-color');
-        if (bg === 'transparent' || bg === 'rgba(0, 0, 0, 0)') {
-            $(this).css('background-color', `rgba(255, 255, 255, ${alpha})`); 
-        } else {
-            let rgb = bg.match(/\d+/g);
-            if (rgb && rgb.length >= 3) {
-                $(this).css('background-color', `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})`);
-            }
-        }
-    });
-    saveHistory();
-}
-
 function addPageBelow() {
     saveHistory();
     let newId = "new_" + Date.now();
@@ -517,18 +545,18 @@ function addPageBelow() {
     let newPage = `<div id="p-${newId}" class="page" data-page-height="1000" style="height: 1000px;"></div>`;
 
     $(`#link-${current}`).after(newNav); $(`#p-${current}`).after(newPage); 
-    goTo(newId); initNotebookSidebar();
+    goTo(newId);
 }
 
 function addChapterBelow() {
     saveHistory();
     let newId = "chap_" + Date.now();
-    let newNav = `<div class="nav-link nav-chapter" id="link-${newId}" onclick="goTo('${newId}')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text" contenteditable="${isEditing}">New Chapter</span><i class="fas fa-times delete-page-btn" onclick="deletePage('${newId}', event)" title="Delete Page"></i></div>`;
+    let newNav = `<div class="nav-link nav-chapter" id="link-${newId}" onclick="goTo('${newId}')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text" contenteditable="${isEditing}">New Section</span><i class="fas fa-times delete-page-btn" onclick="deletePage('${newId}', event)" title="Delete Page"></i></div>`;
 
     let newPage = `<div id="p-${newId}" class="page" data-page-height="1000" style="height: 1000px;">
         <div class="canvas-box selected-box" style="top:400px; left:100px; width:600px; max-width:600px; z-index:100; transform: translate(0px, 0px);">
             <div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div>
-            <div class="content-area" contenteditable="true" style="font-size: 48px; font-weight: bold; text-align: center; word-wrap: break-word; white-space: pre-wrap; overflow-wrap: break-word;">Chapter Title</div>
+            <div class="content-area" contenteditable="true" style="font-size: 48px; font-weight: bold; text-align: center; word-wrap: break-word; white-space: pre-wrap; overflow-wrap: break-word;">Section Title</div>
         </div>
     </div>`;
 
@@ -536,7 +564,6 @@ function addChapterBelow() {
     $(`#p-${current}`).after(newPage); 
 
     goTo(newId); 
-    initNotebookSidebar();
     if (!isEditing) { toggleEdit(); }
 }
 
@@ -650,7 +677,7 @@ function getSortedPins() {
         let $vis = $(this).find('.pin-visual'); 
         let state = $(this).attr('data-state') || 'dot';
         let isLinked = $(this).parent().hasClass('canvas-box');
-        
+
         let op = parseFloat($(this).css('opacity'));
         if (isNaN(op)) op = 1;
 
@@ -757,14 +784,20 @@ function refreshPinList() {
 function toggleEdit() {
     isEditing = !isEditing; 
     $('#edit-btn').toggleClass('active-view', isEditing);
-    $('.edit-tools').css('display', isEditing ? 'flex' : 'none');
     $('#canvas').toggleClass('edit-active'); 
     $('body').toggleClass('edit-active', isEditing);
+
+    if(isEditing) {
+        $('#canvas-global-tools').css('display', 'flex');
+    } else {
+        $('#canvas-global-tools').hide();
+    }
 
     $('.content-area').attr('contenteditable', isEditing); 
     $('.nav-text').attr('contenteditable', isEditing); 
 
     refreshPinList();
+    updateContextMenu();
 
     if(isEditing) {
         interact('.canvas-box').resizable({ 
@@ -776,16 +809,15 @@ function toggleEdit() {
                     let x = (parseFloat(target.getAttribute('data-x')) || 0); 
                     let y = (parseFloat(target.getAttribute('data-y')) || 0);
 
-                    // Divide the delta by currentZoom to stop cursor drifting
                     let currentW = parseFloat(target.style.width) || target.offsetWidth;
                     let currentH = parseFloat(target.style.height) || target.offsetHeight;
-                    
+
                     target.style.width = (currentW + (event.deltaRect.width / currentZoom)) + 'px'; 
                     target.style.height = (currentH + (event.deltaRect.height / currentZoom)) + 'px';
-                    
+
                     x += (event.deltaRect.left / currentZoom); 
                     y += (event.deltaRect.top / currentZoom);
-                    
+
                     target.style.transform = `translate(${x}px, ${y}px)`; 
                     target.setAttribute('data-x', x); 
                     target.setAttribute('data-y', y);
@@ -842,6 +874,14 @@ function syncListSizes() {
     });
 }
 
+// CRITICAL FIX: Safe Undo capture so typing triggers undo without crashing Context Menu
+$(document).on('focusin', '.content-area', function() {
+    if (!lastSavedState) lastSavedState = cleanCanvasForSave();
+});
+$(document).on('focusout', '.content-area', function() {
+    saveHistory(); 
+});
+
 $(document).on('selectionchange', function() {
     let sel = window.getSelection();
     if (sel.rangeCount > 0) {
@@ -866,23 +906,6 @@ function format(c, v=null) {
     syncListSizes(); 
     saveHistory(); 
 }
-
-function saveHistory() { 
-    noteHistory.push(cleanCanvasForSave()); 
-    if (noteHistory.length > 15) noteHistory.shift(); 
-    $('#undo-btn').prop('disabled', false); 
-}
-function undo() { 
-    if (noteHistory.length > 0) { 
-        $('#canvas').html(noteHistory.pop()); 
-        if (noteHistory.length === 0) $('#undo-btn').prop('disabled', true); 
-        refreshPinList(); updateContextMenu(); 
-        if (isEditing) { toggleEdit(); toggleEdit(); } 
-    } 
-}
-
-function saveNote(id) { localStorage.setItem(`nd_${LECTURE_ID}_note_`+id, $('#note-main').html()); }
-function switchTab(t) { $('.tab-btn').removeClass('active-tab'); $('.tab-content').removeClass('active-tab'); $(`.tab-btn[onclick*="${t}"]`).addClass('active-tab'); $('#'+t).addClass('active-tab'); }
 
 function addText() { saveHistory(); $(`#p-${current}`).append(`<div class="canvas-box selected-box" style="top:150px;left:150px;width:300px;max-width:calc(800px - 150px);z-index:100;background-color:rgba(255,255,255,0.8);transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><div class="content-area" contenteditable="true" style="word-wrap: break-word; white-space: pre-wrap; overflow-wrap: break-word;">New Label</div></div>`); if(isEditing) { toggleEdit(); toggleEdit(); } updateContextMenu(); }
 function addImg() { let i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.onchange = e => { let r = new FileReader(); r.readAsDataURL(e.target.files[0]); r.onload = ev => { saveHistory(); $(`#p-${current}`).append(`<div class="canvas-box selected-box" style="top:200px;left:200px;width:300px;max-width:calc(800px - 200px);z-index:10;transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><img src="${ev.target.result}" style="width:100%"></div>`); if(isEditing) { toggleEdit(); toggleEdit(); } updateContextMenu(); }; }; i.click(); }
@@ -915,8 +938,21 @@ function saveNotebookToFile() {
 
 $(document).ready(function() {
     restoreFromBrowser(); 
+    lastSavedState = cleanCanvasForSave(); 
     setInterval(autoSaveToBrowser, 30000); 
-    initNotebookSidebar();
+
+    interact('.draggable-nav').draggable({
+        listeners: {
+            move(event) {
+                let target = event.target;
+                let x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
+                let y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
+                target.style.transform = `translate(${x}px, ${y}px)`;
+                target.setAttribute('data-x', x);
+                target.setAttribute('data-y', y);
+            }
+        }
+    });
 
     if (window.innerWidth <= 768) { 
         if (window.innerWidth <= 840) setZoom(window.innerWidth / 840);
@@ -959,7 +995,7 @@ $(document).ready(function() {
                 let newOrder = [];
                 $('#nav-list-container .nav-link').each(function() { newOrder.push($(this).attr('id').replace('link-', '')); });
                 newOrder.forEach(id => { $('#canvas').append($(`#p-${id}`)); });
-                initNotebookSidebar(); autoSaveToBrowser(); 
+                autoSaveToBrowser(); 
             }
         });
     }
@@ -967,7 +1003,7 @@ $(document).ready(function() {
     let colorHtml = "";
     COLORS.forEach(c => { colorHtml += `<div class="color-swatch" style="background:${c};" data-color="${c}"></div>`; });
     $('#text-color-grid, #bg-color-grid').html(colorHtml);
-    
+
     $('#text-color-grid .color-swatch').click(function() { 
         restoreSelection();
         document.execCommand('foreColor', false, $(this).attr('data-color'));
@@ -1036,7 +1072,7 @@ $(document).ready(function() {
         if (e.ctrlKey && e.key.toLowerCase() === 's') { e.preventDefault(); saveNotebookToFile(); return; }
         if (e.ctrlKey && e.key.toLowerCase() === 'f') {
             e.preventDefault();
-            if (window.innerWidth <= 768) { $('#nav').addClass('mobile-open'); $('#workbench').removeClass('mobile-open'); }
+            if (window.innerWidth <= 768) { toggleNav(); }
             $('#search-input').focus(); return;
         }
         if (e.ctrlKey && e.key.toLowerCase() === 'z' && !isTyping) { e.preventDefault(); undo(); return; }
@@ -1108,8 +1144,9 @@ $(document).ready(function() {
         if(!$(e.target).is(':focus')) { e.preventDefault(); }
     });
 
+    // CRITICAL FIX: Images no longer de-select themselves when clicked
     $(document).on('mousedown', '#canvas', function(e) {
-        if ($(e.target).is('#canvas, .page, img')) {
+        if ($(e.target).is('#canvas, .page')) {
             $('.canvas-box').removeClass('selected-box');
             updateContextMenu();
         }
@@ -1181,15 +1218,6 @@ $(document).ready(function() {
 
         cvp.addEventListener('touchend', function(e) { if (e.touches.length < 2) isPinching = false; });
     }
-
-    $(document).on('click', function(e) {
-        if ($('body').hasClass('notebook-mode')) {
-            if ($(e.target).closest('#notebook-sidebar, #notebook-right-panel, #notebook-floating-nav, .pin, .canvas-box, .panel-toggle').length > 0) return; 
-            let w = window.innerWidth;
-            if (e.clientX < w * 0.25) { prevPage(); } 
-            else if (e.clientX > w * 0.75) { nextPage(); }
-        }
-    });
 
     goTo("0");
 });
