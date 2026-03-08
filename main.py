@@ -5,28 +5,38 @@ import base64
 from io import BytesIO
 from template import get_template
 
+# Bypassing the Replit Auto-Installer Bug
+try:
+    import pymupdf as fitz
+except ImportError:
+    import fitz
+
 st.set_page_config(page_title="NoteDump", layout="centered", initial_sidebar_state="collapsed")
 
 st.markdown("""
 <style>
+/* Base Setup */
 .stApp { background-color: #000000; }
-.top-nav { display: flex; justify-content: flex-end; align-items: center; padding: 10px 20px; }
+
+/* Keep Top Nav buttons strictly in the corner */
+.top-nav { display: flex; justify-content: flex-end; align-items: center; padding: 10px 20px; position: absolute; top: 0; right: 0; width: 100%; z-index: 999; }
 
 .guide-btn {
-    color: #ccc; text-decoration: none; font-size: 18px; font-weight: bold; font-family: sans-serif;
-    border: 2px solid #555; border-radius: 50%; width: 32px; height: 32px; 
+    color: #ccc; text-decoration: none; font-size: 16px; font-weight: bold; font-family: sans-serif;
+    border: 1px solid #555; border-radius: 50%; width: 28px; height: 28px; 
     display: flex; align-items: center; justify-content: center; 
-    background: #222; margin-right: 15px; transition: 0.2s;
+    background: #1a1a1a; margin-right: 12px; transition: 0.2s;
 }
-.guide-btn:hover { color: white; border-color: #4285f4; background: #1a1a1a; transform: scale(1.1); }
+.guide-btn:hover { color: white; border-color: #4285f4; transform: scale(1.1); }
 
 .coffee-btn {
-    color: #FFDD00; text-decoration: none; font-weight: bold; 
-    border: 1px solid #FFDD00; padding: 5px 12px; border-radius: 20px; 
-    transition: 0.2s;
+    color: #FFDD00; text-decoration: none; font-weight: bold; font-size: 12px;
+    border: 1px solid #FFDD00; padding: 4px 10px; border-radius: 20px; 
+    transition: 0.2s; white-space: nowrap;
 }
 .coffee-btn:hover { background: rgba(255, 221, 0, 0.1); color: #fff; }
 
+/* Modal Styling (Untouched) */
 .modal-window {
     position: fixed; background-color: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px);
     top: 0; right: 0; bottom: 0; left: 0; z-index: 99999;
@@ -44,26 +54,48 @@ st.markdown("""
     text-decoration: none; font-size: 28px; font-weight: bold; transition: 0.2s;
 }
 .modal-close:hover { color: #ff4b4b; }
-
 .modal-content h2 { margin-top: 0; color: #4285f4; font-size: 24px; border-bottom: 1px solid #333; padding-bottom: 10px;}
 .modal-content h4 { color: #FFDD00; margin-top: 20px; margin-bottom: 10px; font-size: 18px;}
 .modal-content li { margin-bottom: 10px; line-height: 1.5; font-size: 15px; color: #ccc;}
-.modal-content strong { color: white; }
 
-.hero { text-align: center; color: white; padding: 20px 0; }
-.logo-container { display: flex; align-items: center; justify-content: center; gap: 15px; }
-.logo-text { font-size: 75px; font-weight: 800; }
-.logo-icon { font-size: 65px; }
-.support-text { font-size: 14px; color: #666; margin-top: 10px; }
+/* MAIN HERO AREA: The alignment fix is here */
+.hero { text-align: center; color: white; padding: 10px 0; max-width: 500px; margin: 0 auto; }
+.logo-container { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 0px;}
+.logo-text { font-size: 55px; font-weight: 800; margin: 0;}
+.logo-icon { font-size: 48px; margin: 0;}
+.tagline { font-size: 18px; color: #999; margin-top: -8px !important; margin-bottom: 8px !important; font-weight: normal; }
+.support-text { font-size: 12px; color: #555; margin-top: 2px !important; margin-bottom: 20px !important; }
 
-[data-testid="stFileUploader"] { display: flex; justify-content: center; }
-[data-testid="stFileUploader"] section { 
-    width: 500px !important; 
-    text-align: center !important; 
-    background-color: #161616 !important; 
-    border: 1px dashed #333 !important;
+/* FILE UPLOADER: Heavily compressed vertically to prevent scrolling */
+[data-testid="stFileUploader"] { 
+    width: 100% !important; 
+    max-width: 500px !important; 
+    margin: 0 auto !important; 
 }
-.or-divider { text-align: center; color: #555; margin: 30px 0; font-size: 14px; font-weight: bold; letter-spacing: 1px; }
+[data-testid="stFileUploader"] section { 
+    background-color: #111 !important; 
+    border: 1px dashed #333 !important;
+    padding: 15px !important; /* Extremely tight padding */
+    border-radius: 12px !important;
+    min-height: unset !important;
+}
+/* Shink the upload icon/text */
+[data-testid="stFileUploader"] section > div:first-child { margin-bottom: 5px !important; }
+[data-testid="stFileUploader"] section span { font-size: 14px !important; margin-bottom: 2px !important; }
+[data-testid="stFileUploader"] section small { font-size: 11px !important; color: #777 !important; }
+/* Shrink the button */
+[data-testid="stFileUploader"] button { margin-top: 5px !important; padding: 2px 10px !important; font-size: 12px !important;}
+
+/* Fix the file name appearance after upload */
+[data-testid="stUploadedFile"] { padding: 5px 0 !important; }
+[data-testid="stUploadedFile"] div, [data-testid="stUploadedFile"] span, [data-testid="stUploadedFile"] p { font-size: 12px !important; }
+
+/* Divider & Scratch Button: Compact and aligned */
+.or-divider { text-align: center; color: #444; margin: 15px 0; font-size: 11px; font-weight: bold; letter-spacing: 2px; }
+
+/* Ensure blank button is aligned with uploader box */
+.blank-container { width: 100%; max-width: 500px; margin: 0 auto; text-align: center; }
+div.stDownloadButton { text-align: center; }
 </style>
 
 <div class="top-nav">
@@ -75,18 +107,7 @@ st.markdown("""
 <div class="modal-content">
 <a href="#" class="modal-close" title="Close">&times;</a>
 <h2>📝 Welcome to NoteDump</h2>
-<p style="font-size: 16px; line-height: 1.5; color: #bbb;"><strong>Our Goal:</strong> NoteDump transforms static lecture slides into a fast, interactive, and offline-first digital notebook. Built for students and teachers who need to annotate, organize, and study without relying on cloud subscriptions.</p>
-<h4>✨ Core Features & Interface Guide</h4>
-<ul>
-<li><strong>100% Offline & Private:</strong> NoteDump runs entirely inside your browser. Your notes auto-save to your local device. Click <em>Export Notebook</em> to save your work as a standalone HTML file to share or back up.</li>
-<li><strong>Interactive Teardrop Pins:</strong> Drop map-style pins anywhere on a slide. You can rotate them to point at specific diagrams, link them securely to images so they move together, and write detailed notes for each pin.</li>
-<li><strong>Notebook View:</strong> Activate the distraction-free reading mode. It features a sleek, semi-transparent overlapping page stack on the left, and a dedicated control panel on the right.</li>
-<li><strong>Smart Search Navigation:</strong> Type a keyword in the search bar and press <strong>Enter</strong> to instantly jump to the next matching word or pin. The app automatically flips pages and highlights the active match in bright orange.</li>
-<li><strong>Full Editing Suite:</strong> Add custom text boxes, crop and resize images, change layer ordering (send to front/back), adjust text background transparency, and format text freely.</li>
-<li><strong>Chapter Organization:</strong> Insert Chapter Dividers to automatically group your slides. The side panel lets you easily filter your page stack by chapter.</li>
-<li><strong>True Dark Mode:</strong> Seamlessly toggle the entire canvas and interface into a deep charcoal theme to prevent eye strain during late-night study sessions.</li>
-<li><strong>Trackpad Zoom:</strong> Hold <em>Ctrl</em> (or <em>Cmd</em>) and scroll/pinch on your trackpad to smoothly zoom in and out of the canvas without zooming the entire browser window.</li>
-</ul>
+<p>Transforming your notes into interactive offline notebooks.</p>
 </div>
 </div>
 
@@ -95,88 +116,156 @@ st.markdown("""
 <span class="logo-icon">📝</span>
 <span class="logo-text">NoteDump</span>
 </div>
-<p style="font-size: 22px; color: #999; margin-top: -5px;">Transforming your lectures into a notebook</p>
-<p class="support-text">Supports: PowerPoint • Google Slides • Canva (Export as PPTX)</p>
+<p class="tagline">PowerPoint & PDF into an Interactive Notebook</p>
+<p class="support-text">PPTX • PPT • PDF</p>
 </div>
 """, unsafe_allow_html=True)
 
-up = st.file_uploader("", type=["pptx", "ppt"])
+up = st.file_uploader("", type=["pptx", "ppt", "pdf"])
 
 if up:
     try:
-        ppt = Presentation(up)
         nav, slides = "", ""
+        file_name = up.name.lower()
+        total_pages = 0
 
-        def parse_shapes(shapes, slide_height, slide_width):
-            html_content = ""
-            for shape in shapes:
-                try:
-                    if shape.shape_type == 6: 
-                        html_content += parse_shapes(shape.shapes, slide_height, slide_width)
-                        continue
+        # ENGINE 1: PPTX PARSER (Untouched)
+        if file_name.endswith(('.pptx', '.ppt')):
+            ppt = Presentation(up)
+            total_pages = len(ppt.slides)
 
-                    top = (shape.top / slide_height) * 1000 if shape.top else 0
-                    left = (shape.left / slide_width) * 800 if shape.left else 0
-                    width = (shape.width / slide_width) * 800 if shape.width else 200
+            def parse_shapes(shapes, slide_height, slide_width):
+                html_content = ""
+                for shape in shapes:
+                    try:
+                        if shape.shape_type == 6: 
+                            html_content += parse_shapes(shape.shapes, slide_height, slide_width)
+                            continue
 
-                    if shape.shape_type == 13: 
-                        img_stream = BytesIO(shape.image.blob)
-                        base64_img = base64.b64encode(img_stream.getvalue()).decode()
-                        html_content += f'''
-                        <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; max-width: calc(800px - {left}px); transform: translate(0px, 0px);">
-                            <img src="data:image/png;base64,{base64_img}" style="width:100%;">
-                        </div>'''
+                        top = (shape.top / slide_height) * 1000 if shape.top else 0
+                        left = (shape.left / slide_width) * 800 if shape.left else 0
+                        width = (shape.width / slide_width) * 800 if shape.width else 200
 
-                    elif shape.has_table:
-                        table_html = "<table style='width:100%; border-collapse: collapse; font-size:12px;' border='1'>"
-                        for row in shape.table.rows:
-                            table_html += "<tr>"
-                            for cell in row.cells:
-                                table_html += f"<td style='padding:5px;'>{html.escape(cell.text)}</td>"
-                            table_html += "</tr>"
-                        table_html += "</table>"
-                        html_content += f'''
-                        <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; max-width: calc(800px - {left}px); background:rgba(255,255,255,0.9); transform: translate(0px, 0px);">
-                            <div class="content-area">{table_html}</div>
-                        </div>'''
+                        if shape.shape_type == 13: 
+                            img_stream = BytesIO(shape.image.blob)
+                            base64_img = base64.b64encode(img_stream.getvalue()).decode()
+                            html_content += f'''
+                            <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; max-width: calc(800px - {left}px); transform: translate(0px, 0px);">
+                                <img src="data:image/png;base64,{base64_img}" style="width:100%;">
+                            </div>'''
 
-                    elif shape.has_text_frame and shape.text.strip():
-                        html_text = ""
-                        for paragraph in shape.text_frame.paragraphs:
-                            p_text = ""
-                            for run in paragraph.runs:
-                                r_txt = html.escape(run.text)
-                                if getattr(run.font, 'bold', False) == True:
-                                    r_txt = f"<strong>{r_txt}</strong>"
-                                if getattr(run.font, 'italic', False) == True:
-                                    r_txt = f"<em>{r_txt}</em>"
-                                if getattr(run.font, 'underline', False) == True:
-                                    r_txt = f"<u>{r_txt}</u>"
-                                p_text += r_txt
+                        elif shape.has_table:
+                            table_html = "<table style='width:100%; border-collapse: collapse; font-size:12px;' border='1'>"
+                            for row in shape.table.rows:
+                                table_html += "<tr>"
+                                for cell in row.cells:
+                                    table_html += f"<td style='padding:5px;'>{html.escape(cell.text)}</td>"
+                                table_html += "</tr>"
+                            table_html += "</table>"
+                            html_content += f'''
+                            <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; max-width: calc(800px - {left}px); background:rgba(255,255,255,0.9); transform: translate(0px, 0px);">
+                                <div class="content-area">{table_html}</div>
+                            </div>'''
 
-                            if not p_text.strip():
-                                html_text += "<br>"
+                        elif shape.has_text_frame and shape.text.strip():
+                            html_text = ""
+                            for paragraph in shape.text_frame.paragraphs:
+                                p_text = ""
+                                for run in paragraph.runs:
+                                    r_txt = html.escape(run.text)
+                                    if getattr(run.font, 'bold', False) == True:
+                                        r_txt = f"<strong>{r_txt}</strong>"
+                                    if getattr(run.font, 'italic', False) == True:
+                                        r_txt = f"<em>{r_txt}</em>"
+                                    if getattr(run.font, 'underline', False) == True:
+                                        r_txt = f"<u>{r_txt}</u>"
+                                    p_text += r_txt
+
+                                if not p_text.strip():
+                                    html_text += "<br>"
+                                else:
+                                    html_text += f"<div>{p_text}</div>"
+
+                            html_content += f'''
+                            <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; max-width: calc(800px - {left}px); transform: translate(0px, 0px);">
+                                <div class="content-area" style="word-wrap: break-word; white-space: pre-wrap; overflow-wrap: break-word;">{html_text}</div>
+                            </div>'''
+                    except Exception as e:
+                        continue 
+
+                return html_content
+
+            for i, slide in enumerate(ppt.slides):
+                title_text = slide.shapes.title.text if slide.shapes.title else f"Slide {i+1}"
+                nav += f'<div class="nav-link" id="link-{i}" onclick="goTo(\'{i}\')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text">{html.escape(title_text)}</span></div>'
+
+                slides += f'<div id="p-{i}" class="page {"active" if i==0 else ""}" data-page-height="1000" style="height:1000px;"> '
+                slides += parse_shapes(slide.shapes, ppt.slide_height, ppt.slide_width)
+                slides += '</div>'
+
+        # ENGINE 2: SMART PDF PARSER (Untouched)
+        elif file_name.endswith('.pdf'):
+            doc = fitz.open(stream=up.read(), filetype="pdf")
+            total_pages = len(doc)
+
+            for i, page in enumerate(doc):
+                page_width = page.rect.width
+                page_height = page.rect.height
+                scale = 800.0 / page_width if page_width > 0 else 1
+                scaled_height = int(page_height * scale)
+
+                nav += f'<div class="nav-link" id="link-{i}" onclick="goTo(\'{i}\')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text">Page {i+1}</span></div>'
+                slides += f'<div id="p-{i}" class="page {"active" if i==0 else ""}" data-page-height="{scaled_height}" style="height:{scaled_height}px;"> '
+
+                blocks = page.get_text("dict")["blocks"]
+                html_content = ""
+
+                for b in blocks:
+                    bbox = b["bbox"]
+                    top = bbox[1] * scale
+                    left = bbox[0] * scale
+                    width = (bbox[2] - bbox[0]) * scale
+
+                    if b["type"] == 0: 
+                        text_html = ""
+                        for line in b["lines"]:
+                            line_html = ""
+                            for span in line["spans"]:
+                                txt = html.escape(span["text"])
+                                if not txt.strip():
+                                    line_html += " "
+                                    continue
+
+                                if span["flags"] & 16: 
+                                    txt = f"<strong>{txt}</strong>"
+                                if span["flags"] & 2: 
+                                    txt = f"<em>{txt}</em>"
+                                line_html += txt
+
+                            if not line_html.strip():
+                                text_html += "<br>"
                             else:
-                                html_text += f"<div>{p_text}</div>"
+                                text_html += f"<div>{line_html}</div>"
 
                         html_content += f'''
                         <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; max-width: calc(800px - {left}px); transform: translate(0px, 0px);">
-                            <div class="content-area" style="word-wrap: break-word; white-space: pre-wrap; overflow-wrap: break-word;">{html_text}</div>
+                            <div class="content-area" style="word-wrap: break-word; white-space: pre-wrap; overflow-wrap: break-word; font-family: sans-serif;">{text_html}</div>
                         </div>'''
-                except Exception as e:
-                    continue 
 
-            return html_content
+                    elif b["type"] == 1: 
+                        img_bytes = b.get("image")
+                        if img_bytes:
+                            base64_img = base64.b64encode(img_bytes).decode()
+                            html_content += f'''
+                            <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; max-width: calc(800px - {left}px); transform: translate(0px, 0px);">
+                                <img src="data:image/png;base64,{base64_img}" style="width:100%;">
+                            </div>'''
 
-        for i, slide in enumerate(ppt.slides):
-            title_text = slide.shapes.title.text if slide.shapes.title else f"Slide {i+1}"
-            nav += f'<div class="nav-link" id="link-{i}" onclick="goTo(\'{i}\')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text">{html.escape(title_text)}</span></div>'
+                slides += html_content
+                slides += '</div>'
 
-            slides += f'<div id="p-{i}" class="page {"active" if i==0 else ""}"> '
-            slides += parse_shapes(slide.shapes, ppt.slide_height, ppt.slide_width)
-            slides += '</div>'
-
-        final_html = get_template(len(ppt.slides)).replace("{{NAV_LINKS}}", nav).replace("{{SLIDE_CONTENT}}", slides).replace("{{LECTURE_ID}}", html.escape(up.name))
+        # Assemble Final HTML
+        final_html = get_template(total_pages).replace("{{NAV_LINKS}}", nav).replace("{{SLIDE_CONTENT}}", slides).replace("{{LECTURE_ID}}", html.escape(up.name))
 
         st.markdown("<br>", unsafe_allow_html=True)
         st.download_button(
@@ -187,20 +276,27 @@ if up:
             use_container_width=True
         )
     except Exception as e:
-        st.error(f"Error Processing File: {e}")
+        if "has no attribute 'open'" in str(e):
+            st.error("🚨 REPLIT PACKAGE ERROR: You have the wrong 'fitz' package installed. Please open the Shell tab, run `pip uninstall fitz -y`, then run `pip install PyMuPDF -y` and restart the app.")
+        else:
+            st.error(f"Error Processing File: {e}")
 
-st.markdown('<div class="or-divider">— OR START FROM SCRATCH —</div>', unsafe_allow_html=True)
+# COMPACT DIVIDER & BLANK BUTTON AREA
+st.markdown("""
+<div class="blank-container">
+<div class="or-divider">OR</div>
+</div>
+""", unsafe_allow_html=True)
 
 blank_nav = '<div class="nav-link active-nav" id="link-0" onclick="goTo(\'0\')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text">Page 1</span></div>'
-blank_slides = '<div id="p-0" class="page active"></div>'
+blank_slides = '<div id="p-0" class="page active" data-page-height="1000" style="height:1000px;"></div>'
 blank_html = get_template(1).replace("{{NAV_LINKS}}", blank_nav).replace("{{SLIDE_CONTENT}}", blank_slides).replace("{{LECTURE_ID}}", "New_Notebook")
 
-col1, col2, col3 = st.columns([1, 2, 1])
-with col2:
-    st.download_button(
-        label="📓 Create Blank Notebook", 
-        data=blank_html, 
-        file_name="NoteDump_Blank.html", 
-        mime="text/html",
-        use_container_width=True
-    )
+# Center and shink the button to match the uploader box, removing Streamlit columns
+st.download_button(
+    label="📓 Create Blank Notebook", 
+    data=blank_html, 
+    file_name="NoteDump_Blank.html", 
+    mime="text/html",
+    use_container_width=True
+)
