@@ -15,10 +15,7 @@ st.set_page_config(page_title="NoteDump", layout="centered", initial_sidebar_sta
 
 st.markdown("""
 <style>
-/* Base Setup */
 .stApp { background-color: #000000; }
-
-/* Keep Top Nav buttons strictly in the corner */
 .top-nav { display: flex; justify-content: flex-end; align-items: center; padding: 10px 20px; position: absolute; top: 0; right: 0; width: 100%; z-index: 999; }
 
 .guide-btn {
@@ -36,7 +33,6 @@ st.markdown("""
 }
 .coffee-btn:hover { background: rgba(255, 221, 0, 0.1); color: #fff; }
 
-/* Modal Styling (Untouched) */
 .modal-window {
     position: fixed; background-color: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px);
     top: 0; right: 0; bottom: 0; left: 0; z-index: 99999;
@@ -58,7 +54,6 @@ st.markdown("""
 .modal-content h4 { color: #FFDD00; margin-top: 20px; margin-bottom: 10px; font-size: 18px;}
 .modal-content li { margin-bottom: 10px; line-height: 1.5; font-size: 15px; color: #ccc;}
 
-/* MAIN HERO AREA: The alignment fix is here */
 .hero { text-align: center; color: white; padding: 10px 0; max-width: 500px; margin: 0 auto; }
 .logo-container { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 0px;}
 .logo-text { font-size: 55px; font-weight: 800; margin: 0;}
@@ -66,7 +61,6 @@ st.markdown("""
 .tagline { font-size: 18px; color: #999; margin-top: -8px !important; margin-bottom: 8px !important; font-weight: normal; }
 .support-text { font-size: 12px; color: #555; margin-top: 2px !important; margin-bottom: 20px !important; }
 
-/* FILE UPLOADER: Heavily compressed vertically to prevent scrolling */
 [data-testid="stFileUploader"] { 
     width: 100% !important; 
     max-width: 500px !important; 
@@ -75,25 +69,20 @@ st.markdown("""
 [data-testid="stFileUploader"] section { 
     background-color: #111 !important; 
     border: 1px dashed #333 !important;
-    padding: 15px !important; /* Extremely tight padding */
+    padding: 15px !important; 
     border-radius: 12px !important;
     min-height: unset !important;
 }
-/* Shink the upload icon/text */
 [data-testid="stFileUploader"] section > div:first-child { margin-bottom: 5px !important; }
 [data-testid="stFileUploader"] section span { font-size: 14px !important; margin-bottom: 2px !important; }
 [data-testid="stFileUploader"] section small { font-size: 11px !important; color: #777 !important; }
-/* Shrink the button */
 [data-testid="stFileUploader"] button { margin-top: 5px !important; padding: 2px 10px !important; font-size: 12px !important;}
 
-/* Fix the file name appearance after upload */
 [data-testid="stUploadedFile"] { padding: 5px 0 !important; }
 [data-testid="stUploadedFile"] div, [data-testid="stUploadedFile"] span, [data-testid="stUploadedFile"] p { font-size: 12px !important; }
 
-/* Divider & Scratch Button: Compact and aligned */
 .or-divider { text-align: center; color: #444; margin: 15px 0; font-size: 11px; font-weight: bold; letter-spacing: 2px; }
 
-/* Ensure blank button is aligned with uploader box */
 .blank-container { width: 100%; max-width: 500px; margin: 0 auto; text-align: center; }
 div.stDownloadButton { text-align: center; }
 </style>
@@ -129,7 +118,7 @@ if up:
         file_name = up.name.lower()
         total_pages = 0
 
-        # ENGINE 1: PPTX PARSER (Untouched)
+        # ENGINE 1: PPTX PARSER
         if file_name.endswith(('.pptx', '.ppt')):
             ppt = Presentation(up)
             total_pages = len(ppt.slides)
@@ -203,7 +192,7 @@ if up:
                 slides += parse_shapes(slide.shapes, ppt.slide_height, ppt.slide_width)
                 slides += '</div>'
 
-        # ENGINE 2: SMART PDF PARSER (Untouched)
+        # ENGINE 2: SMART PDF PARSER
         elif file_name.endswith('.pdf'):
             doc = fitz.open(stream=up.read(), filetype="pdf")
             total_pages = len(doc)
@@ -268,9 +257,11 @@ if up:
         final_html = get_template(total_pages).replace("{{NAV_LINKS}}", nav).replace("{{SLIDE_CONTENT}}", slides).replace("{{LECTURE_ID}}", html.escape(up.name))
 
         st.markdown("<br>", unsafe_allow_html=True)
+
+        # CRITICAL FIX: Encode as UTF-8 bytes to perfectly preserve Greek letters and Math symbols
         st.download_button(
             label="📥 Download My Notebook", 
-            data=final_html, 
+            data=final_html.encode('utf-8'), 
             file_name=f"NoteDump_{up.name}.html", 
             mime="text/html",
             use_container_width=True
@@ -281,7 +272,6 @@ if up:
         else:
             st.error(f"Error Processing File: {e}")
 
-# COMPACT DIVIDER & BLANK BUTTON AREA
 st.markdown("""
 <div class="blank-container">
 <div class="or-divider">OR</div>
@@ -292,10 +282,9 @@ blank_nav = '<div class="nav-link active-nav" id="link-0" onclick="goTo(\'0\')">
 blank_slides = '<div id="p-0" class="page active" data-page-height="1000" style="height:1000px;"></div>'
 blank_html = get_template(1).replace("{{NAV_LINKS}}", blank_nav).replace("{{SLIDE_CONTENT}}", blank_slides).replace("{{LECTURE_ID}}", "New_Notebook")
 
-# Center and shink the button to match the uploader box, removing Streamlit columns
 st.download_button(
     label="📓 Create Blank Notebook", 
-    data=blank_html, 
+    data=blank_html.encode('utf-8'), 
     file_name="NoteDump_Blank.html", 
     mime="text/html",
     use_container_width=True
