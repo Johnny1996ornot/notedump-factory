@@ -12,9 +12,59 @@ let currentViewMode = 'single';
 let savedSelection = null;
 let lastSavedState = "";
 
+// SVG Drawing Globals
+let isDrawMode = false;
+let isDrawing = false;
+let currentSvgPath = null;
+let pathString = "";
+
 const COLORS = ['#FF5252', '#FF9800', '#FFEB3B', '#4CAF50', '#2196F3', '#9C27B0', '#795548', '#BCAAA4', '#9E9E9E', '#E0E0E0', '#FFFFFF', '#000000'];
 
-// CRITICAL FIX: Ensure the yellow box doesn't get saved permanently
+let lastMouseX = 150;
+let lastMouseY = 150;
+
+$(document).on('mousemove', function(e) {
+    lastMouseX = e.clientX;
+    lastMouseY = e.clientY;
+});
+
+function getPasteCoords() {
+    let canvasEl = document.getElementById('canvas');
+    if (!canvasEl) return { x: 150, y: 150 };
+    let rect = canvasEl.getBoundingClientRect();
+
+    let x = (lastMouseX - rect.left) / currentZoom;
+    let y = (lastMouseY - rect.top) / currentZoom;
+
+    let maxW = $('#canvas').width() - 50;
+    let maxH = $(`#p-${current}`).height() || 1000;
+    if (x < 10) x = 50; if (y < 10) y = 50;
+    if (x > maxW) x = maxW - 100; if (y > maxH - 50) y = maxH - 100;
+    return { x: x, y: y };
+}
+
+function getScreenCenterCoords() {
+    let cvp = document.getElementById('canvas-viewport');
+    let canvas = document.getElementById('canvas');
+    if (!cvp || !canvas) return { x: 150, y: 150 };
+
+    let rect = canvas.getBoundingClientRect();
+    let cvpRect = cvp.getBoundingClientRect();
+
+    let centerX = cvpRect.left + (cvp.clientWidth / 2);
+    let centerY = cvpRect.top + (cvp.clientHeight / 2);
+
+    let x = (centerX - rect.left) / currentZoom;
+    let y = (centerY - rect.top) / currentZoom;
+
+    let maxW = $('#canvas').width() - 50;
+    let maxH = $(`#p-${current}`).height() || 1000;
+    if (x < 10) x = 50; if (y < 10) y = 50;
+    if (x > maxW) x = maxW - 100; if (y > maxH - 50) y = maxH - 100;
+
+    return { x, y };
+}
+
 function cleanCanvasForSave() {
     let $c = $('#canvas').clone();
     $c.find('#context-menu').remove(); 
@@ -24,12 +74,10 @@ function cleanCanvasForSave() {
     return $c.html();
 }
 
-// CRITICAL FIX: Safe wrapper to prevent "QuotaExceeded" from freezing your page turning
 function safeSetLocal(key, val) {
-    try {
-        localStorage.setItem(key, val);
-    } catch(e) {
-        console.warn("Storage Limit Reached. Cannot auto-save.");
+    try { localStorage.setItem(key, val); } 
+    catch(e) {
+        console.warn("Storage Limit Reached.");
         if (!window.quotaWarningShown) {
             showToast("⚠️ Storage Full! Auto-save paused. Keep turning pages, but use 'Export' to save.");
             window.quotaWarningShown = true;
@@ -49,14 +97,12 @@ function autoSaveToBrowser() {
 
 function restoreFromBrowser() {
     let savedPages = parseInt(localStorage.getItem(`nd_${LECTURE_ID}_pages`));
-
     if (savedPages && savedPages !== totalPages) {
         localStorage.removeItem(`nd_${LECTURE_ID}_canvas`);
         localStorage.removeItem(`nd_${LECTURE_ID}_nav`);
     }
 
-    let $menu = $('#context-menu').detach(); // Protect context menu from being overwritten
-
+    let $menu = $('#context-menu').detach();
     let savedCanvas = localStorage.getItem(`nd_${LECTURE_ID}_canvas`);
     let savedNav = localStorage.getItem(`nd_${LECTURE_ID}_nav`);
     let savedTitle = localStorage.getItem(`nd_${LECTURE_ID}_title`);
@@ -66,26 +112,23 @@ function restoreFromBrowser() {
         $('#canvas').html(savedCanvas);
         $('#nav-list-container').html(savedNav);
         if (savedTitle) $('#lecture-title').text(savedTitle);
-
         if (savedWidth) {
             $('#canvas').attr('data-width', savedWidth);
             $('#canvas').css('width', savedWidth + 'px');
-        } else {
-            $('#canvas').attr('data-width', '800');
-            $('#canvas').css('width', '800px');
+            $('#canvas-w-cm').val(Math.round((savedWidth / 37.795) * 10) / 10);
         }
         showToast("🔄 Previous session restored.");
-    } else {
-        $('#canvas').attr('data-width', '800');
-        $('#canvas').css('width', '800px');
     }
 
-    $('#canvas').append($menu); // Put context menu back safely
+    $('#canvas').append($menu);
 
     $('.page').each(function() {
         let h = parseInt($(this).attr('data-page-height') || $(this).attr('data-height')) || 1000;
         $(this).attr('data-page-height', h);
         $(this).css('height', h + 'px');
+        if($(this).hasClass('active')) {
+            $('#canvas-h-cm').val(Math.round((h / 37.795) * 10) / 10);
+        }
     });
 
     let activeH = parseInt($('.page.active').attr('data-page-height')) || 1000;
@@ -104,7 +147,6 @@ function saveHistory() {
     lastSavedState = currentState;
 }
 
-// CRITICAL FIX: Detach Context Menu before Undo so it doesn't get deleted
 function undo() { 
     if (noteHistory.length > 0) { 
         let $menu = $('#context-menu').detach(); 
@@ -113,47 +155,57 @@ function undo() {
         $('#canvas').append($menu); 
         lastSavedState = cleanCanvasForSave(); 
         if (noteHistory.length === 0) $('#undo-btn').prop('disabled', true); 
-        refreshPinList(); updateContextMenu(); 
+        refreshAnnotations(); updateContextMenu(); 
         if (isEditing) { toggleEdit(); toggleEdit(); } 
     } 
 }
 
-function changeCanvasHeight(delta) {
+function applyCanvasSettings() {
     saveHistory();
-    let isUniform = $('#uniform-height-check').is(':checked');
-    let pages = isUniform ? $('.page') : $(`#p-${current}`);
+    let wCm = parseFloat($('#canvas-w-cm').val()) || 21;
+    let hCm = parseFloat($('#canvas-h-cm').val()) || 29.7;
+    let grid = $('#grid-select').val();
+    let applyAll = $('#uniform-height-check').is(':checked');
+
+    let pxW = Math.round(wCm * 37.795);
+    let pxH = Math.round(hCm * 37.795);
+
+    $('#canvas').attr('data-width', pxW).css('width', pxW + 'px');
+
+    let pages = applyAll ? $('.page') : $(`#p-${current}`);
 
     pages.each(function() {
-        let currentH = parseInt($(this).attr('data-page-height')) || 1000;
-        let newH = currentH + delta;
-        if (newH < 500) newH = 500; 
+        $(this).attr('data-page-height', pxH).css('height', pxH + 'px');
 
-        $(this).attr('data-page-height', newH);
-        $(this).css('height', newH + 'px');
+        $(this).find('.page-grid-overlay').remove();
+        if (grid !== "0") {
+            let overlay = `<div class="page-grid-overlay grid-div-${grid}">`;
+            let cells = parseInt(grid);
+            for(let i=0; i<cells; i++) overlay += `<div class="grid-cell"></div>`;
+            overlay += `</div>`;
+            $(this).prepend(overlay);
+        }
     });
 
     if (currentViewMode === 'single') {
-        let activeH = parseInt($(`#p-${current}`).attr('data-page-height')) || 1000;
-        $('#canvas').css('height', activeH + 'px');
+        $('#canvas').css('height', pxH + 'px');
     }
 
     autoSaveToBrowser();
     updateContextMenu();
-    setZoom(currentZoom); 
+    setZoom(currentZoom);
+}
+
+function changeCanvasHeight(delta) {
+    let currentH = parseFloat($('#canvas-h-cm').val()) || 29.7;
+    $('#canvas-h-cm').val((currentH + (delta > 0 ? 1 : -1)).toFixed(1));
+    applyCanvasSettings();
 }
 
 function changeCanvasWidth(delta) {
-    saveHistory();
-    let currentW = parseInt($('#canvas').attr('data-width')) || 800;
-    let newW = currentW + delta;
-    if (newW < 400) newW = 400; 
-
-    $('#canvas').attr('data-width', newW);
-    $('#canvas').css('width', newW + 'px');
-
-    autoSaveToBrowser();
-    updateContextMenu();
-    setZoom(currentZoom); 
+    let currentW = parseFloat($('#canvas-w-cm').val()) || 21;
+    $('#canvas-w-cm').val((currentW + (delta > 0 ? 1 : -1)).toFixed(1));
+    applyCanvasSettings();
 }
 
 function deletePage(id, event) {
@@ -250,16 +302,13 @@ function nextPage() {
 function goTo(id) {
     if (isEditing && id === current) return; 
 
-    safeSetLocal(`nd_${LECTURE_ID}_note_` + current, $('#note-main').html()); 
-
     $('.nav-link').removeClass('active-nav');
     $('#link-' + id).addClass('active-nav');
 
     current = id.toString();
-    $('#note-main').html(localStorage.getItem(`nd_${LECTURE_ID}_note_` + current) || "");
 
     updateContextMenu();
-    refreshPinList();
+    refreshAnnotations();
 
     if(window.innerWidth <= 768 && !$('body').hasClass('notebook-mode')) { 
         $('#nav').addClass('closed'); 
@@ -275,6 +324,7 @@ function goTo(id) {
         $('#p-' + id).addClass('active');
         let pageH = parseInt($(`#p-${current}`).attr('data-page-height')) || 1000;
         $('#canvas').css('height', pageH + 'px');
+        $('#canvas-h-cm').val(Math.round((pageH / 37.795) * 10) / 10);
     } else {
         let $p = $(`#p-${id}`);
         if($p.length) {
@@ -293,8 +343,9 @@ function toggleNotebookView() {
 
     if (isNotebook) {
         if (isEditing) toggleEdit(); 
-        $('#note-panel').removeClass('open');
+        $('#sticky-panel').removeClass('open');
         $('#pin-panel').removeClass('open');
+        $('body').removeClass('panel-open');
         showToast("📖 Notebook View Activated");
     }
 }
@@ -310,13 +361,25 @@ function toggleSearchBar() {
     $('#search-input').focus();
 }
 
+function closeSearchBar() {
+    $('#sidebar-search').slideUp(200);
+    $('#search-input').val('');
+    removeHighlights();
+}
+
 function togglePanel(type) {
-    if (type === 'note') {
+    if (type === 'sticky') {
         $('#pin-panel').removeClass('open');
-        $('#note-panel').toggleClass('open');
+        $('#sticky-panel').toggleClass('open');
     } else {
-        $('#note-panel').removeClass('open');
+        $('#sticky-panel').removeClass('open');
         $('#pin-panel').toggleClass('open');
+    }
+
+    if ($('#sticky-panel').hasClass('open') || $('#pin-panel').hasClass('open')) {
+        $('body').addClass('panel-open');
+    } else {
+        $('body').removeClass('panel-open');
     }
 }
 
@@ -325,7 +388,7 @@ function removeHighlights() {
     let canvas = document.getElementById('canvas');
     if(canvas) canvas.normalize();
     $('.pin').removeClass('pin-search-match active-pin-match');
-    $('.nav-link, .ns-page-card').removeClass('search-match-nav');
+    $('.nav-link').removeClass('search-match-nav');
 
     searchResults = [];
     currentSearchIndex = -1;
@@ -360,7 +423,7 @@ function performSearch(query) {
         let pageId = $(this).attr('id').replace('p-', ''); let pageHasMatch = false;
 
         $(this).find('.content-area').each(function() { 
-            highlightNode(this, regex); 
+            if(highlightNode(this, regex)) pageHasMatch = true;
         });
 
         $(this).find('mark.search-hi').each(function() {
@@ -448,9 +511,66 @@ function applyCrop() {
     tempImg.src = croppedDataUrl;
 }
 
-function liveUpdateOpacity(alpha) {
-    $('.selected-box').css('opacity', alpha);
+function showExportModal() {
+    $('#export-modal-bg').show();
 }
+
+function printToPDF() {
+    $('#export-modal-bg').hide();
+    if (isEditing) toggleEdit();
+
+    let wasDark = $('body').hasClass('dark');
+    let wasScrollMode = currentViewMode === 'scroll';
+
+    $('body').removeClass('dark');
+    if (!wasScrollMode) {
+        $('#canvas').addClass('scroll-mode');
+        $('#canvas').css('height', 'auto');
+    }
+
+    setTimeout(() => {
+        window.print();
+        if (wasDark) $('body').addClass('dark');
+        if (!wasScrollMode) {
+            $('#canvas').removeClass('scroll-mode');
+            let pageH = parseInt($(`#p-${current}`).attr('data-page-height')) || 1000;
+            $('#canvas').css('height', pageH + 'px');
+        }
+    }, 500);
+}
+
+function removeBoxBg() {
+    saveHistory();
+    $('.selected-box').removeAttr('data-bg-rgb').css('background-color', 'transparent');
+    $('#transparency-slider').val(0);
+}
+
+function liveUpdateOpacity(alpha) {
+    $('.selected-box').each(function() {
+        let $img = $(this).find('img');
+        if ($img.length > 0) {
+            $img.css('opacity', alpha);
+        } else {
+            let r=255, g=255, b=255;
+            let savedRgb = $(this).attr('data-bg-rgb');
+            if (savedRgb) {
+                let pts = savedRgb.split(',');
+                r=pts[0]; g=pts[1]; b=pts[2];
+            } else {
+                let bg = $(this).css('background-color');
+                if (bg !== 'transparent' && bg !== 'rgba(0, 0, 0, 0)') {
+                    let match = bg.match(/\d+/g);
+                    if(match && match.length >= 3) {
+                        r=match[0]; g=match[1]; b=match[2];
+                        $(this).attr('data-bg-rgb', `${r},${g},${b}`);
+                    }
+                }
+            }
+            $(this).css('background-color', `rgba(${r}, ${g}, ${b}, ${alpha})`);
+        }
+    });
+}
+
 function commitOpacity() {
     saveHistory();
 }
@@ -469,7 +589,16 @@ function updateContextMenu() {
             $('.menu-img-tools').hide();
         }
 
-        let currentOp = $sel.first().css('opacity');
+        let currentOp = 1;
+        let $firstSel = $sel.first();
+        if ($firstSel.find('img').length > 0) {
+            currentOp = $firstSel.find('img').css('opacity');
+        } else {
+            let bg = $firstSel.css('background-color');
+            let parts = bg.match(/[\d.]+/g);
+            if(parts && parts.length === 4) { currentOp = parts[3]; }
+            else if(bg === 'transparent' || bg === 'rgba(0, 0, 0, 0)') { currentOp = 0; }
+        }
         $('#transparency-slider').val(currentOp !== undefined ? currentOp : 1);
 
         let topPos = 999999; let leftPos = 999999;
@@ -488,8 +617,18 @@ function updateContextMenu() {
 
         $('#context-menu').css({display: 'flex', top: '-9999px', left: '-9999px'});
         let cHeight = $('#context-menu').outerHeight() || 50;
+        let cWidth = $('#context-menu').outerWidth() || 350;
 
+        let canvasW = $('#canvas').width();
         let finalMenuTop = topPos - cHeight - 15;
+        let finalMenuLeft = leftPos;
+
+        if (finalMenuLeft + cWidth > canvasW) {
+            finalMenuLeft = canvasW - cWidth - 5;
+        }
+        if (finalMenuLeft < 5) {
+            finalMenuLeft = 5;
+        }
 
         if (finalMenuTop < 10) {
             let maxBottom = 0;
@@ -502,7 +641,7 @@ function updateContextMenu() {
             finalMenuTop = maxBottom + 15;
         }
 
-        $('#context-menu').css({top: finalMenuTop + 'px', left: leftPos + 'px'});
+        $('#context-menu').css({top: finalMenuTop + 'px', left: finalMenuLeft + 'px'});
     } else { 
         $('#context-menu').hide(); 
     }
@@ -567,37 +706,9 @@ function addChapterBelow() {
     if (!isEditing) { toggleEdit(); }
 }
 
-function togglePinLink(index) {
+function dropStickyNote() {
     saveHistory();
-    let pinsArr = getSortedPins();
-    let $pin = pinsArr[index].el;
-
-    let isLinked = $pin.parent().hasClass('canvas-box');
-    let pinRect = $pin[0].getBoundingClientRect();
-
-    if (isLinked) {
-        let $page = $(`#p-${current}`); let pageRect = $page[0].getBoundingClientRect(); $page.append($pin);
-        let relTop = (pinRect.top - pageRect.top) / currentZoom; let relLeft = (pinRect.left - pageRect.left) / currentZoom;
-        $pin.css({ transform: 'translate(0px, 0px)', top: relTop + 'px', left: relLeft + 'px' });
-        $pin.attr('data-x', 0).attr('data-y', 0); showToast("📌 Pin Unlinked (Locked to Background)");
-    } else {
-        $pin.hide(); let el = document.elementFromPoint(pinRect.left + (pinRect.width/2), pinRect.top + (pinRect.height/2)); $pin.show();
-        let $targetBox = $(el).closest('.canvas-box');
-        if ($targetBox.length > 0) {
-            let boxRect = $targetBox[0].getBoundingClientRect(); $targetBox.append($pin);
-            let relTop = (pinRect.top - boxRect.top) / currentZoom; let relLeft = (pinRect.left - boxRect.left) / currentZoom;
-            $pin.css({ transform: 'translate(0px, 0px)', top: relTop + 'px', left: relLeft + 'px' });
-            $pin.attr('data-x', 0).attr('data-y', 0); showToast("🔗 Pin Linked! (Will move with image)");
-        } else { 
-            showToast("⚠️ Drag the pin over an image first to link it."); 
-        }
-    }
-    refreshPinList();
-}
-
-function dropPin() {
-    saveHistory();
-    let $target = $('.selected-box').length > 0 ? $('.selected-box') : $(`#p-${current}`);
+    let $target = $(`#p-${current}`);
 
     let highestOrder = -1;
     $(`#p-${current} .pin`).each(function() {
@@ -606,18 +717,38 @@ function dropPin() {
     });
 
     $target.append(`
-        <div class="pin" data-note="Label" data-state="dot" data-order="${highestOrder + 1}" style="top:30px;left:50%; margin-left:-12px; transform: translate(0px, 0px); opacity:1;">
+        <div class="pin" data-type="sticky" data-note="Sticky Note" data-state="square" data-order="${highestOrder + 1}" style="top:30px;left:50%; margin-left:-12px; transform: translate(0px, 0px); opacity:1;">
+            <div class="pin-visual" style="background:#ffeb3b;"></div>
+        </div>
+    `);
+    refreshAnnotations(); 
+    if(!$('#sticky-panel').hasClass('open')) togglePanel('sticky');
+}
+
+function addPinToSelectedImage() {
+    saveHistory();
+    let $box = $('.selected-box').first();
+    if ($box.length === 0) return;
+
+    let highestOrder = -1;
+    $(`#p-${current} .pin`).each(function() {
+        let o = parseInt($(this).attr('data-order')) || 0;
+        if (o > highestOrder) highestOrder = o;
+    });
+
+    $box.append(`
+        <div class="pin" data-type="pin" data-note="Image Pin" data-state="dot" data-order="${highestOrder + 1}" style="top:50%; left:50%; transform: translate(0px, 0px); opacity:1;">
             <div class="pin-visual" style="background:#ea4335;"></div>
         </div>
     `);
-    refreshPinList(); 
-    if(isEditing) { toggleEdit(); toggleEdit(); }
+    refreshAnnotations();
+    if(!$('#pin-panel').hasClass('open')) togglePanel('pin');
 }
 
 function cyclePinShape(index) {
     saveHistory();
-    let pinsArr = getSortedPins();
-    let $pin = pinsArr[index].el;
+    let annosArr = getAnnotations();
+    let $pin = annosArr[index].el;
 
     let states = ['dot', 'up', 'right', 'down', 'left']; 
     let currentState = $pin.attr('data-state') || 'dot';
@@ -626,20 +757,20 @@ function cyclePinShape(index) {
     let nextState = states[nextIndex];
 
     $pin.attr('data-state', nextState); 
-    refreshPinList();
+    refreshAnnotations();
 }
 
 function updatePinStyle(index, property, value) {
     saveHistory(); 
-    let pinsArr = getSortedPins();
-    let $pin = pinsArr[index].el;
+    let annosArr = getAnnotations();
+    let $pin = annosArr[index].el;
     let $visual = $pin.find('.pin-visual');
 
     if(property === 'size') { 
         $visual.css({width: value + 'px', height: value + 'px'}); 
         $pin.css({width: value + 'px', height: value + 'px'}); 
     } else if (property === 'opacity') {
-        $pin.css('opacity', value);
+        $visual.css('opacity', value);
     } else { 
         $visual.css(property, value); 
     }
@@ -647,41 +778,42 @@ function updatePinStyle(index, property, value) {
 
 function updatePinText(index, newText) { 
     saveHistory(); 
-    let pinsArr = getSortedPins();
-    pinsArr[index].el.attr('data-note', newText); 
+    let annosArr = getAnnotations();
+    annosArr[index].el.attr('data-note', newText); 
 }
 
 function focusPin(index) { 
-    let pinsArr = getSortedPins();
-    if(pinsArr[index]) pinsArr[index].el.addClass('pin-active-focus'); 
+    let annosArr = getAnnotations();
+    if(annosArr[index]) annosArr[index].el.addClass('pin-active-focus'); 
 }
 
 function unfocusPin(index) { 
-    let pinsArr = getSortedPins();
-    if(pinsArr[index]) pinsArr[index].el.removeClass('pin-active-focus'); 
+    let annosArr = getAnnotations();
+    if(annosArr[index]) annosArr[index].el.removeClass('pin-active-focus'); 
 }
 
 function deletePin(index) { 
     saveHistory(); 
-    let pinsArr = getSortedPins();
-    pinsArr[index].el.remove(); 
-    refreshPinList(); 
+    let annosArr = getAnnotations();
+    annosArr[index].el.remove(); 
+    refreshAnnotations(); 
 }
 
-function getSortedPins() {
-    let pins = [];
+function getAnnotations() {
+    let annos = [];
     $(`#p-${current} .pin`).each(function(i) { 
         if (!$(this).attr('data-order')) $(this).attr('data-order', i);
+        $(this).attr('data-list-idx', i); 
 
         let offset = $(this).offset(); 
         let $vis = $(this).find('.pin-visual'); 
         let state = $(this).attr('data-state') || 'dot';
-        let isLinked = $(this).parent().hasClass('canvas-box');
+        let type = $(this).attr('data-type') || 'pin'; 
 
-        let op = parseFloat($(this).css('opacity'));
+        let op = parseFloat($vis.css('opacity'));
         if (isNaN(op)) op = 1;
 
-        pins.push({ 
+        annos.push({ 
             el: $(this),
             originalIndex: i, 
             order: parseInt($(this).attr('data-order')),
@@ -691,53 +823,64 @@ function getSortedPins() {
             size: $vis.width(), 
             opacity: op,
             state: state, 
-            isLinked: isLinked 
+            type: type
         }); 
     });
 
-    pins.sort((a, b) => a.order - b.order); 
-    return pins;
+    annos.sort((a, b) => a.order - b.order); 
+    return annos;
 }
 
-function refreshPinList() {
-    let pins = getSortedPins();
-    let h = pins.length ? "" : "<p style='text-align:center; font-size:10px; color:#888;'>No pins.</p>";
+function refreshAnnotations() {
+    let annos = getAnnotations();
+    let stickyHtml = ""; 
+    let pinHtml = "";
 
-    pins.forEach((p, i) => { 
-        let hex = p.color.match(/\d+/g).map(x => parseInt(x).toString(16).padStart(2, '0')).join('');
-        let iconClass = "fa-caret-up";
+    let stickyCount = 0;
+    let pinCount = 0;
+
+    annos.forEach((p, i) => { 
+        let displayNum = 0;
+        if(p.type === 'sticky') {
+            stickyCount++; displayNum = stickyCount;
+        } else {
+            pinCount++; displayNum = pinCount;
+        }
+
+        let hex = "ea4335";
+        let rgbMatch = p.color.match(/\d+/g);
+        if(rgbMatch && rgbMatch.length >= 3) {
+            hex = rgbMatch.slice(0,3).map(x => parseInt(x).toString(16).padStart(2, '0')).join('');
+        }
+
+        let iconClass = "fa-map-marker-alt";
         let iconRotation = "0deg";
 
-        if(p.state === 'dot') iconClass = "fa-circle";
-        if(p.state === 'right') iconRotation = "90deg";
-        if(p.state === 'down') iconRotation = "180deg";
-        if(p.state === 'left') iconRotation = "270deg";
+        if(p.type === 'sticky') {
+            iconClass = "fa-sticky-note";
+        } else {
+            if(p.state === 'dot') iconClass = "fa-circle";
+            if(p.state === 'right') iconRotation = "90deg";
+            if(p.state === 'down') iconRotation = "180deg";
+            if(p.state === 'left') iconRotation = "270deg";
+        }
 
-        let iconStyle = (p.state !== 'dot') ? `transform: rotate(${iconRotation}); transition: 0.2s;` : "";
-        let linkIcon = p.isLinked ? "fa-link" : "fa-unlink"; 
-        let linkColor = p.isLinked ? "#4CAF50" : "inherit"; 
-        let linkTitle = p.isLinked ? "Unlink from Image" : "Link to Image underneath";
-
+        let iconStyle = (p.state !== 'dot' && p.type !== 'sticky') ? `transform: rotate(${iconRotation}); transition: 0.2s;` : "";
         let safeNote = p.note ? p.note.replace(/"/g, '&quot;') : "";
 
-        h += `
-            <div class="sketch-pin-card" data-orig-idx="${p.originalIndex}" title="${safeNote}" onmouseenter="focusPin(${i})" onmouseleave="unfocusPin(${i})">
-                <div class="pin-card-left">
-                    <div class="sketch-btn sketch-num pin-drag-handle" title="Drag to reorder" style="width:100%; padding:0; justify-content:center; cursor: grab;">#${i+1}</div>
+        let shapeCycleBtn = p.type === 'pin' ? `<button class="sketch-btn pin-tool-item" style="width:100%; padding:0; justify-content:center;" onclick="cyclePinShape(${i})" title="Cycle Pointer Direction"><i class="fas ${iconClass}" style="${iconStyle}"></i></button>` : `<div style="display:flex; justify-content:center; align-items:center; color:#888; font-size:14px; padding: 4px 0;"><i class="fas fa-sticky-note"></i></div>`;
 
+        let cardStr = `
+            <div id="anno-card-${p.originalIndex}" class="sketch-pin-card" data-orig-idx="${p.originalIndex}" title="${safeNote}" onmouseenter="focusPin(${i})" onmouseleave="unfocusPin(${i})">
+                <div class="pin-card-left">
+                    <div class="sketch-btn sketch-num pin-drag-handle" title="Drag to reorder" style="width:100%; padding:0; justify-content:center; cursor: grab;">#${displayNum}</div>
                     <label class="sketch-color-wrap pin-tool-item" title="Color">
                         <input type="color" value="#${hex}" onchange="updatePinStyle(${i}, 'background', this.value)">
                     </label>
-                    <button class="sketch-btn pin-tool-item" style="width:100%; padding:0; justify-content:center;" onclick="cyclePinShape(${i})" title="Cycle Pointer Direction">
-                        <i class="fas ${iconClass}" style="${iconStyle}"></i>
-                    </button>
-                    <button class="sketch-btn pin-tool-item" style="width:100%; padding:0; justify-content:center; color:${linkColor};" onclick="togglePinLink(${i})" title="${linkTitle}">
-                        <i class="fas ${linkIcon}"></i>
-                    </button>
+                    ${shapeCycleBtn}
                 </div>
                 <div class="pin-card-right">
                     <textarea class="sketch-textarea" style="flex-grow:1; margin:0;" oninput="updatePinText(${i}, this.value)" placeholder="Label">${p.note}</textarea>
-
                     <div class="pin-card-bottom pin-tool-item" style="display: flex; gap: 4px;">
                         <div class="sketch-btn sketch-size-wrap" title="Size" style="flex:1;">
                             Size <input type="range" min="10" max="60" value="${p.size}" oninput="updatePinStyle(${i}, 'size', this.value)">
@@ -751,35 +894,124 @@ function refreshPinList() {
                     </div>
                 </div>
             </div>`; 
+
+        if (p.type === 'sticky') stickyHtml += cardStr;
+        else pinHtml += cardStr;
     });
 
-    $('#pin-list-container').html(h);
+    if(!stickyHtml) stickyHtml = "<p style='text-align:center; font-size:10px; color:#888; padding:10px;'>No sticky notes on this page.</p>";
+    if(!pinHtml) pinHtml = "<p style='text-align:center; font-size:10px; color:#888; padding:10px;'>No pins on this page.<br><br>Click an image and use the Blue Pin button to add one.</p>";
 
+    $('#sticky-list-container').html(stickyHtml);
+    $('#pin-list-container').html(pinHtml);
+
+    if (window.stickySortable) window.stickySortable.destroy();
     if (window.pinSortable) window.pinSortable.destroy();
-    let pinContainer = document.getElementById('pin-list-container');
-    if (pinContainer) {
-        window.pinSortable = new Sortable(pinContainer, {
-            animation: 150,
-            handle: '.pin-drag-handle',
-            fallbackOnBody: true, 
-            swapThreshold: 0.65,
-            onEnd: function (evt) {
-                saveHistory();
-                let $page = $(`#p-${current}`);
-                let allCurrentPins = $page.find('.pin').toArray();
 
-                $('#pin-list-container .sketch-pin-card').each(function(index) {
-                    let oldIdx = parseInt($(this).attr('data-orig-idx'));
-                    let pinEl = allCurrentPins[oldIdx];
-                    $(pinEl).attr('data-order', index);
-                    $page.append(pinEl);
-                });
+    let initSortable = (containerId) => {
+        let el = document.getElementById(containerId);
+        if (el) {
+            return new Sortable(el, {
+                animation: 150, handle: '.pin-drag-handle', fallbackOnBody: true, swapThreshold: 0.65,
+                onEnd: function () {
+                    saveHistory();
+                    let allAnnos = $(`#p-${current} .pin`).toArray(); 
+                    $('.sketch-pin-card').each(function(index) {
+                        let oldIdx = parseInt($(this).attr('data-orig-idx'));
+                        $(allAnnos[oldIdx]).attr('data-order', index);
+                    });
+                    refreshAnnotations();
+                }
+            });
+        }
+    };
 
-                refreshPinList();
-            }
-        });
+    window.stickySortable = initSortable('sticky-list-container');
+    window.pinSortable = initSortable('pin-list-container');
+}
+
+// ==== NEW SVG DRAWING ENGINE ====
+function toggleDrawMode() {
+    if(!isEditing) return;
+    isDrawMode = !isDrawMode;
+    $('#draw-btn').toggleClass('active-view', isDrawMode);
+
+    if (isDrawMode) {
+        $('#canvas').addClass('drawing-active');
+        $('.canvas-box, .pin').css('pointer-events', 'none'); 
+    } else {
+        $('#canvas').removeClass('drawing-active');
+        $('.canvas-box, .pin').css('pointer-events', 'auto');
     }
 }
+
+function getPageSvg() {
+    let $page = $(`#p-${current}`);
+    let $svg = $page.find('svg.draw-layer');
+    if ($svg.length === 0) {
+        let svgHtml = `<svg class="draw-layer" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:90;"></svg>`;
+        $page.append(svgHtml);
+        $svg = $page.find('svg.draw-layer');
+    }
+    return $svg[0];
+}
+
+$(document).on('mousedown', function(e) {
+    if (!isDrawMode || !isEditing) return;
+    if ($(e.target).closest('#canvas-global-tools, #nav, .floating-panel').length > 0) return;
+
+    isDrawing = true;
+    let rect = $(`#p-${current}`)[0].getBoundingClientRect();
+    let x = (e.clientX - rect.left) / currentZoom;
+    let y = (e.clientY - rect.top) / currentZoom;
+
+    pathString = `M ${x} ${y}`;
+
+    let color = $('#draw-color').val() || '#ff4b4b';
+    let size = $('#draw-size').val() || 3;
+
+    let svg = getPageSvg();
+    let path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', pathString);
+    path.setAttribute('stroke', color);
+    path.setAttribute('stroke-width', size);
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('stroke-linejoin', 'round');
+    path.setAttribute('class', 'drawn-path');
+    path.style.pointerEvents = "auto"; 
+
+    svg.appendChild(path);
+    currentSvgPath = path;
+
+    e.preventDefault(); 
+});
+
+$(document).on('mousemove', function(e) {
+    if (!isDrawing || !currentSvgPath) return;
+    let rect = $(`#p-${current}`)[0].getBoundingClientRect();
+    let x = (e.clientX - rect.left) / currentZoom;
+    let y = (e.clientY - rect.top) / currentZoom;
+
+    pathString += ` L ${x} ${y}`;
+    currentSvgPath.setAttribute('d', pathString);
+});
+
+$(document).on('mouseup', function(e) {
+    if (isDrawing) {
+        isDrawing = false;
+        currentSvgPath = null;
+        saveHistory();
+    }
+});
+
+// Double click to securely erase a drawing stroke
+$(document).on('dblclick', '.drawn-path', function(e) {
+    if (!isEditing) return;
+    $(this).remove();
+    saveHistory();
+});
+// ================================
 
 function toggleEdit() {
     isEditing = !isEditing; 
@@ -791,12 +1023,17 @@ function toggleEdit() {
         $('#canvas-global-tools').css('display', 'flex');
     } else {
         $('#canvas-global-tools').hide();
+        // Securely exit draw mode if edit mode is disabled
+        isDrawMode = false;
+        $('#draw-btn').removeClass('active-view');
+        $('#canvas').removeClass('drawing-active');
+        $('.canvas-box, .pin').css('pointer-events', 'auto');
     }
 
     $('.content-area').attr('contenteditable', isEditing); 
     $('.nav-text').attr('contenteditable', isEditing); 
 
-    refreshPinList();
+    refreshAnnotations();
     updateContextMenu();
 
     if(isEditing) {
@@ -836,12 +1073,12 @@ function toggleEdit() {
                     event.target.setAttribute('data-x', x); 
                     event.target.setAttribute('data-y', y);
                     updateContextMenu();
-                }, end: refreshPinList 
+                }, end: refreshAnnotations 
             }
         });
 
         interact('.pin').draggable({ 
-            modifiers: [ interact.modifiers.restrictRect({ restriction: '#canvas', endOnly: false }) ],
+            modifiers: [ interact.modifiers.restrictRect({ restriction: 'parent', endOnly: false }) ],
             listeners: { 
                 start: saveHistory, 
                 move(event) {
@@ -850,7 +1087,22 @@ function toggleEdit() {
                     event.target.style.transform = `translate(${x}px, ${y}px)`; 
                     event.target.setAttribute('data-x', x); 
                     event.target.setAttribute('data-y', y);
-                }, end: refreshPinList 
+                }, 
+                end: function(event) {
+                    let $pin = $(event.target);
+                    if ($pin.parent().hasClass('canvas-box')) {
+                        let pinRect = $pin[0].getBoundingClientRect();
+                        let boxRect = $pin.parent()[0].getBoundingClientRect();
+                        let relLeft = pinRect.left - boxRect.left;
+                        let relTop = pinRect.top - boxRect.top;
+                        let percLeft = (relLeft / boxRect.width) * 100;
+                        let percTop = (relTop / boxRect.height) * 100;
+
+                        $pin.css({ transform: 'translate(0px, 0px)', left: percLeft + '%', top: percTop + '%' });
+                        $pin.attr('data-x', 0).attr('data-y', 0);
+                    }
+                    refreshAnnotations(); 
+                }
             }
         });
     } else { 
@@ -874,7 +1126,9 @@ function syncListSizes() {
     });
 }
 
-// CRITICAL FIX: Safe Undo capture so typing triggers undo without crashing Context Menu
+let colorHtml = "";
+COLORS.forEach(c => { colorHtml += `<div class="color-swatch" style="background:${c};" data-color="${c}" onmousedown="event.preventDefault();"></div>`; });
+
 $(document).on('focusin', '.content-area', function() {
     if (!lastSavedState) lastSavedState = cleanCanvasForSave();
 });
@@ -882,12 +1136,29 @@ $(document).on('focusout', '.content-area', function() {
     saveHistory(); 
 });
 
+// FIX: Automatically update dropdown UI when user clicks text
 $(document).on('selectionchange', function() {
     let sel = window.getSelection();
     if (sel.rangeCount > 0) {
-        let $node = $(sel.anchorNode);
+        let node = sel.anchorNode;
+        let $node = $(node);
         if ($node.closest('.content-area').length > 0) {
             savedSelection = sel.getRangeAt(0);
+
+            let parentNode = node.nodeType === 3 ? node.parentNode : node;
+            let computedSize = window.getComputedStyle(parentNode).fontSize;
+            if (computedSize) {
+                let pxVal = Math.round(parseFloat(computedSize));
+                let select = document.getElementById('font-size-select');
+                if (select) {
+                    let optionExists = Array.from(select.options).some(opt => opt.value == pxVal);
+                    if (!optionExists) {
+                        $(select).find('.dynamic-opt').remove();
+                        $(select).append(`<option value="${pxVal}" class="dynamic-opt">${pxVal}</option>`);
+                    }
+                    select.value = pxVal;
+                }
+            }
         }
     }
 });
@@ -902,15 +1173,77 @@ function restoreSelection() {
 
 function format(c, v=null) { 
     restoreSelection(); 
+    document.execCommand('styleWithCSS', false, true); 
     document.execCommand(c, false, v); 
     syncListSizes(); 
     saveHistory(); 
 }
 
-function addText() { saveHistory(); $(`#p-${current}`).append(`<div class="canvas-box selected-box" style="top:150px;left:150px;width:300px;max-width:calc(800px - 150px);z-index:100;background-color:rgba(255,255,255,0.8);transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><div class="content-area" contenteditable="true" style="word-wrap: break-word; white-space: pre-wrap; overflow-wrap: break-word;">New Label</div></div>`); if(isEditing) { toggleEdit(); toggleEdit(); } updateContextMenu(); }
-function addImg() { let i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.onchange = e => { let r = new FileReader(); r.readAsDataURL(e.target.files[0]); r.onload = ev => { saveHistory(); $(`#p-${current}`).append(`<div class="canvas-box selected-box" style="top:200px;left:200px;width:300px;max-width:calc(800px - 200px);z-index:10;transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><img src="${ev.target.result}" style="width:100%"></div>`); if(isEditing) { toggleEdit(); toggleEdit(); } updateContextMenu(); }; }; i.click(); }
+// THE DOM SPECIFICITY NUKE & BOX LEVEL SIZER
+function applyFontSize(px) {
+    if(!px) return;
+    let pxStr = px + 'px';
+
+    let sel = window.getSelection();
+
+    // IF TEXT IS HIGHLIGHTED: Nuke conflicting inner spans and enforce new size
+    if (sel && sel.rangeCount > 0 && sel.toString().length > 0 && $(sel.anchorNode).closest('.content-area').length > 0) {
+        restoreSelection();
+        document.execCommand('styleWithCSS', false, true);
+        document.execCommand("fontSize", false, "7"); 
+
+        $('.content-area font[size="7"]').each(function() {
+            $(this).css({'font-size': pxStr, 'line-height': 'normal'}).removeAttr('size');
+            $(this).find('*').css({'font-size': '', 'line-height': ''});
+        });
+
+        $('.content-area *').each(function() {
+            let fs = $(this).css('font-size');
+            let style = $(this).attr('style') || '';
+            if (fs === '48px' || fs === 'xxx-large' || fs === '-webkit-xxx-large' || style.includes('xxx-large') || style.includes('48px')) {
+                $(this).css({'font-size': pxStr, 'line-height': 'normal'});
+                $(this).find('*').css({'font-size': '', 'line-height': ''});
+            }
+        });
+    } else {
+        // SUPERPOWER: If no specific text is highlighted, apply size to the entire selected box!
+        let $box = $('.selected-box .content-area');
+        if ($box.length > 0) {
+            $box.css({'font-size': pxStr, 'line-height': 'normal'});
+            $box.find('*').css({'font-size': '', 'line-height': ''});
+            $box.find('font').removeAttr('size');
+        }
+    }
+
+    syncListSizes();
+    saveHistory();
+}
+
+function addTextCenter() { 
+    saveHistory(); 
+    let coords = getScreenCenterCoords();
+    $(`#p-${current}`).append(`<div class="canvas-box selected-box" style="top:${coords.y}px;left:${coords.x}px;width:300px;max-width:calc(800px - ${coords.x}px);z-index:100;background-color:transparent;transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><div class="content-area" contenteditable="true" style="word-wrap: break-word; white-space: pre-wrap; overflow-wrap: break-word;">New Label</div></div>`); 
+    if(isEditing) { toggleEdit(); toggleEdit(); } 
+    updateContextMenu(); 
+}
+
+function addImgCenter() { 
+    let i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; 
+    i.onchange = e => { 
+        let r = new FileReader(); r.readAsDataURL(e.target.files[0]); 
+        r.onload = ev => { 
+            saveHistory(); 
+            let coords = getScreenCenterCoords();
+            $(`#p-${current}`).append(`<div class="canvas-box selected-box" style="top:${coords.y}px;left:${coords.x}px;width:300px;max-width:calc(800px - ${coords.x}px);z-index:10;transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><img src="${ev.target.result}" style="width:100%"></div>`); 
+            if(isEditing) { toggleEdit(); toggleEdit(); } 
+            updateContextMenu(); 
+        }; 
+    }; 
+    i.click(); 
+}
 
 function saveNotebookToFile() {
+    $('#export-modal-bg').hide();
     saveHistory();
     if(isEditing) toggleEdit(); 
 
@@ -952,6 +1285,19 @@ $(document).ready(function() {
                 target.setAttribute('data-y', y);
             }
         }
+    });
+
+    $(document).on('mouseenter', '.pin', function() {
+        let idx = $(this).attr('data-list-idx');
+        let $card = $(`#anno-card-${idx}`);
+        $('.sketch-pin-card').removeClass('highlight-card');
+        if ($card.length) {
+            $card.addClass('highlight-card');
+            $card[0].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    });
+    $(document).on('mouseleave', '.pin', function() {
+        $('.sketch-pin-card').removeClass('highlight-card');
     });
 
     if (window.innerWidth <= 768) { 
@@ -1000,16 +1346,26 @@ $(document).ready(function() {
         });
     }
 
-    let colorHtml = "";
-    COLORS.forEach(c => { colorHtml += `<div class="color-swatch" style="background:${c};" data-color="${c}"></div>`; });
     $('#text-color-grid, #bg-color-grid').html(colorHtml);
 
-    $('#text-color-grid .color-swatch').click(function() { 
+    $('#text-color-grid .color-swatch').click(function(e) { 
+        e.preventDefault();
         restoreSelection();
+        document.execCommand('styleWithCSS', false, true);
         document.execCommand('foreColor', false, $(this).attr('data-color'));
         saveHistory();
     });
-    $('#bg-color-grid .color-swatch').click(function() { changeBoxStyle('background-color', $(this).attr('data-color')); });
+    $('#bg-color-grid .color-swatch').click(function(e) { 
+        e.preventDefault();
+        let hex = $(this).attr('data-color');
+        let r = parseInt(hex.slice(1, 3), 16);
+        let g = parseInt(hex.slice(3, 5), 16);
+        let b = parseInt(hex.slice(5, 7), 16);
+        $('.selected-box').attr('data-bg-rgb', `${r},${g},${b}`);
+        let currentOp = $('#transparency-slider').val() || 1;
+        if (currentOp == 0) { currentOp = 1; $('#transparency-slider').val(1); }
+        changeBoxStyle('background-color', `rgba(${r},${g},${b},${currentOp})`);
+    });
 
     $(document).on('input', '.content-area', syncListSizes);
 
@@ -1085,11 +1441,18 @@ $(document).ready(function() {
             if (e.ctrlKey && e.key.toLowerCase() === 'v' && !isTyping) {
                 if(customClipboard.length > 0) {
                     e.preventDefault(); saveHistory(); $('.canvas-box').removeClass('selected-box'); 
-                    customClipboard.forEach(htmlStr => {
+
+                    let coords = getPasteCoords();
+
+                    customClipboard.forEach((htmlStr, idx) => {
                         let $newBox = $(htmlStr);
-                        let currentTop = parseFloat($newBox.css('top')) || 100;
-                        let currentLeft = parseFloat($newBox.css('left')) || 100;
-                        $newBox.css({ top: (currentTop + 20) + 'px', left: (currentLeft + 20) + 'px' });
+                        $newBox.attr('data-x', 0);
+                        $newBox.attr('data-y', 0);
+
+                        let placeX = coords.x + (idx * 20);
+                        let placeY = coords.y + (idx * 20);
+
+                        $newBox.css({ top: placeY + 'px', left: placeX + 'px', transform: 'translate(0px, 0px)' });
                         $newBox.addClass('selected-box'); $(`#p-${current}`).append($newBox);
                     });
                     toggleEdit(); toggleEdit(); updateContextMenu();
@@ -1105,6 +1468,7 @@ $(document).ready(function() {
 
         let items = (e.originalEvent || e).clipboardData.items;
         let pastedImage = false;
+        let coords = getPasteCoords();
 
         for (let i = 0; i < items.length; i++) {
             if (items[i].type.indexOf("image") === 0) {
@@ -1114,7 +1478,7 @@ $(document).ready(function() {
                 r.onload = ev => {
                     saveHistory();
                     $('.canvas-box').removeClass('selected-box');
-                    $(`#p-${current}`).append(`<div class="canvas-box selected-box" style="top:200px;left:200px;width:300px;max-width:calc(800px - 200px);z-index:10;transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><img src="${ev.target.result}" style="width:100%"></div>`);
+                    $(`#p-${current}`).append(`<div class="canvas-box selected-box" style="top:${coords.y}px;left:${coords.x}px;width:300px;max-width:calc(800px - ${coords.x}px);z-index:10;transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><img src="${ev.target.result}" style="width:100%"></div>`);
                     if(isEditing) { toggleEdit(); toggleEdit(); }
                     updateContextMenu();
                 };
@@ -1128,25 +1492,43 @@ $(document).ready(function() {
             if (pastedText && pastedText.trim() !== "") {
                 e.preventDefault(); saveHistory(); $('.canvas-box').removeClass('selected-box');
                 let safeText = $('<div>').text(pastedText).html().replace(/\n/g, '<br>');
-                $(`#p-${current}`).append(`<div class="canvas-box selected-box" style="top:150px;left:150px;width:300px;max-width:calc(800px - 150px);z-index:100;background-color:rgba(255,255,255,0.8);transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><div class="content-area" contenteditable="true" style="word-wrap: break-word; white-space: pre-wrap; overflow-wrap: break-word;">${safeText}</div></div>`);
+                $(`#p-${current}`).append(`<div class="canvas-box selected-box" style="top:${coords.y}px;left:${coords.x}px;width:300px;max-width:calc(800px - ${coords.x}px);z-index:100;background-color:transparent;transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><div class="content-area" contenteditable="true" style="word-wrap: break-word; white-space: pre-wrap; overflow-wrap: break-word;">${safeText}</div></div>`);
                 if(isEditing) { toggleEdit(); toggleEdit(); }
                 updateContextMenu();
             }
         }
     });
 
+    // FIX: Automatically update dropdown UI when user clicks a box without highlighting text
     $(document).on('mousedown', '.canvas-box', function(e) {
         if(!isEditing) return;
         if(!e.shiftKey && !$(this).hasClass('selected-box')) { $('.canvas-box').removeClass('selected-box'); }
         $(this).addClass('selected-box');
+
+        let $ca = $(this).find('.content-area');
+        if ($ca.length > 0) {
+            let computedSize = window.getComputedStyle($ca[0]).fontSize;
+            if (computedSize) {
+                let pxVal = Math.round(parseFloat(computedSize));
+                let select = document.getElementById('font-size-select');
+                if (select) {
+                    let optionExists = Array.from(select.options).some(opt => opt.value == pxVal);
+                    if (!optionExists) {
+                        $(select).find('.dynamic-opt').remove();
+                        $(select).append(`<option value="${pxVal}" class="dynamic-opt">${pxVal}</option>`);
+                    }
+                    select.value = pxVal;
+                }
+            }
+        }
+
         updateContextMenu();
         if ($(e.target).closest('.content-area').length > 0) { return; }
         if(!$(e.target).is(':focus')) { e.preventDefault(); }
     });
 
-    // CRITICAL FIX: Images no longer de-select themselves when clicked
     $(document).on('mousedown', '#canvas', function(e) {
-        if ($(e.target).is('#canvas, .page')) {
+        if ($(e.target).is('#canvas, .page, .page-grid-overlay')) {
             $('.canvas-box').removeClass('selected-box');
             updateContextMenu();
         }
