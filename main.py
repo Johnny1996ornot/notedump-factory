@@ -334,4 +334,12 @@ st.markdown("""
 
 blank_nav = '<div class="nav-link active-nav" id="link-0" onclick="goTo(\'0\')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text">Page 1</span></div>'
 blank_slides = '<div id="p-0" class="page active" data-page-height="1000" style="height:1000px;"></div>'
-blank_html = get_template(1).replace("{{NAV_LINKS
+blank_html = get_template(1).replace("{{NAV_LINKS}}", blank_nav).replace("{{SLIDE_CONTENT}}", blank_slides).replace("{{LECTURE_ID}}", "New_Notebook")
+
+st.download_button(
+    label="📓 Create Blank Notebook", 
+    data=blank_html.encode('utf-8'), 
+    file_name="NoteDump_Blank.html", 
+    mime="text/html",
+    use_container_width=True
+)
