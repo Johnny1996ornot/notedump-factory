@@ -117,32 +117,49 @@ if up:
         nav, slides = "", ""
         file_name = up.name.lower()
         total_pages = 0
+        base_w = 960 # Default beautiful width for the web
+        base_h = 540
 
-        # ENGINE 1: PPTX PARSER
+        # ==========================================
+        # ENGINE 1: ASPECT-AWARE PPTX PARSER
+        # ==========================================
         if file_name.endswith(('.pptx', '.ppt')):
             ppt = Presentation(up)
             total_pages = len(ppt.slides)
+
+            # Detect native PPTX dimensions
+            slide_width_emu = ppt.slide_width or 9144000
+            slide_height_emu = ppt.slide_height or 5143500
+            
+            # Calculate perfect aspect ratio
+            aspect_ratio = slide_height_emu / slide_width_emu
+            base_w = 1000 # Make it wide and crisp
+            base_h = int(base_w * aspect_ratio)
 
             def parse_shapes(shapes, slide_height, slide_width):
                 html_content = ""
                 for shape in shapes:
                     try:
-                        if shape.shape_type == 6: 
+                        if shape.shape_type == 6: # Grouped shapes
                             html_content += parse_shapes(shape.shapes, slide_height, slide_width)
                             continue
 
-                        top = (shape.top / slide_height) * 1000 if shape.top else 0
-                        left = (shape.left / slide_width) * 800 if shape.left else 0
-                        width = (shape.width / slide_width) * 800 if shape.width else 200
+                        # MATHEMATICALLY PERFECT POSITIONING
+                        top = (shape.top / slide_height) * base_h if shape.top else 0
+                        left = (shape.left / slide_width) * base_w if shape.left else 0
+                        width = (shape.width / slide_width) * base_w if shape.width else 200
+                        height = (shape.height / slide_height) * base_h if shape.height else 50
 
+                        # Images: Forced Object-Fit boundaries
                         if shape.shape_type == 13: 
                             img_stream = BytesIO(shape.image.blob)
                             base64_img = base64.b64encode(img_stream.getvalue()).decode()
                             html_content += f'''
-                            <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; max-width: calc(800px - {left}px); transform: translate(0px, 0px);">
-                                <img src="data:image/png;base64,{base64_img}" style="width:100%;">
+                            <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; height:{height}px; z-index:10; transform: translate(0px, 0px);">
+                                <img src="data:image/png;base64,{base64_img}" style="width:100%; height:100%; object-fit:contain;">
                             </div>'''
 
+                        # Tables
                         elif shape.has_table:
                             table_html = "<table style='width:100%; border-collapse: collapse; font-size:12px;' border='1'>"
                             for row in shape.table.rows:
@@ -152,23 +169,34 @@ if up:
                                 table_html += "</tr>"
                             table_html += "</table>"
                             html_content += f'''
-                            <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; max-width: calc(800px - {left}px); background:rgba(255,255,255,0.9); transform: translate(0px, 0px);">
+                            <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; background:rgba(255,255,255,0.9); z-index:15; transform: translate(0px, 0px);">
                                 <div class="content-area">{table_html}</div>
                             </div>'''
 
+                        # Text: Dynamic Font Scaling
                         elif shape.has_text_frame and shape.text.strip():
                             html_text = ""
                             for paragraph in shape.text_frame.paragraphs:
                                 p_text = ""
                                 for run in paragraph.runs:
                                     r_txt = html.escape(run.text)
-                                    if getattr(run.font, 'bold', False) == True:
-                                        r_txt = f"<strong>{r_txt}</strong>"
-                                    if getattr(run.font, 'italic', False) == True:
-                                        r_txt = f"<em>{r_txt}</em>"
-                                    if getattr(run.font, 'underline', False) == True:
-                                        r_txt = f"<u>{r_txt}</u>"
-                                    p_text += r_txt
+                                    
+                                    # Extract PPT font size and map it to web pixels
+                                    fs_style = ""
+                                    if hasattr(run.font, 'size') and run.font.size:
+                                        pt_size = run.font.size.pt
+                                        scale_factor = base_w / (slide_width / 12700) # 12700 EMU per Pt
+                                        px_size = max(10, int(pt_size * scale_factor * 1.33))
+                                        fs_style = f"font-size:{px_size}px;"
+
+                                    if getattr(run.font, 'bold', False) == True: r_txt = f"<strong>{r_txt}</strong>"
+                                    if getattr(run.font, 'italic', False) == True: r_txt = f"<em>{r_txt}</em>"
+                                    if getattr(run.font, 'underline', False) == True: r_txt = f"<u>{r_txt}</u>"
+                                    
+                                    if fs_style:
+                                        p_text += f"<span style='{fs_style}'>{r_txt}</span>"
+                                    else:
+                                        p_text += r_txt
 
                                 if not p_text.strip():
                                     html_text += "<br>"
@@ -176,7 +204,7 @@ if up:
                                     html_text += f"<div>{p_text}</div>"
 
                             html_content += f'''
-                            <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; max-width: calc(800px - {left}px); transform: translate(0px, 0px);">
+                            <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; min-height:{height}px; z-index:20; transform: translate(0px, 0px);">
                                 <div class="content-area" style="word-wrap: break-word; white-space: pre-wrap; overflow-wrap: break-word;">{html_text}</div>
                             </div>'''
                     except Exception as e:
@@ -188,34 +216,43 @@ if up:
                 title_text = slide.shapes.title.text if slide.shapes.title else f"Slide {i+1}"
                 nav += f'<div class="nav-link" id="link-{i}" onclick="goTo(\'{i}\')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text">{html.escape(title_text)}</span></div>'
 
-                slides += f'<div id="p-{i}" class="page {"active" if i==0 else ""}" data-page-height="1000" style="height:1000px;"> '
-                slides += parse_shapes(slide.shapes, ppt.slide_height, ppt.slide_width)
+                slides += f'<div id="p-{i}" class="page {"active" if i==0 else ""}" data-page-height="{base_h}" style="height:{base_h}px;"> '
+                slides += parse_shapes(slide.shapes, slide_height_emu, slide_width_emu)
                 slides += '</div>'
 
+        # ==========================================
         # ENGINE 2: SMART PDF PARSER
+        # ==========================================
         elif file_name.endswith('.pdf'):
             doc = fitz.open(stream=up.read(), filetype="pdf")
             total_pages = len(doc)
+            
+            # Use the first page to determine global canvas size
+            first_page = doc[0]
+            base_w = 900
+            scale = base_w / first_page.rect.width if first_page.rect.width > 0 else 1
+            base_h = int(first_page.rect.height * scale)
 
             for i, page in enumerate(doc):
                 page_width = page.rect.width
                 page_height = page.rect.height
-                scale = 800.0 / page_width if page_width > 0 else 1
-                scaled_height = int(page_height * scale)
+                p_scale = base_w / page_width if page_width > 0 else 1
+                scaled_height = int(page_height * p_scale)
 
                 nav += f'<div class="nav-link" id="link-{i}" onclick="goTo(\'{i}\')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text">Page {i+1}</span></div>'
                 slides += f'<div id="p-{i}" class="page {"active" if i==0 else ""}" data-page-height="{scaled_height}" style="height:{scaled_height}px;"> '
 
                 blocks = page.get_text("dict")["blocks"]
                 html_content = ""
-
+                
                 for b in blocks:
                     bbox = b["bbox"]
-                    top = bbox[1] * scale
-                    left = bbox[0] * scale
-                    width = (bbox[2] - bbox[0]) * scale
-
-                    if b["type"] == 0: 
+                    top = bbox[1] * p_scale
+                    left = bbox[0] * p_scale
+                    width = (bbox[2] - bbox[0]) * p_scale
+                    height = (bbox[3] - bbox[1]) * p_scale
+                    
+                    if b["type"] == 0: # Text
                         text_html = ""
                         for line in b["lines"]:
                             line_html = ""
@@ -224,41 +261,58 @@ if up:
                                 if not txt.strip():
                                     line_html += " "
                                     continue
-
-                                if span["flags"] & 16: 
-                                    txt = f"<strong>{txt}</strong>"
-                                if span["flags"] & 2: 
-                                    txt = f"<em>{txt}</em>"
-                                line_html += txt
-
+                                
+                                # Scale font size
+                                px_size = max(10, int(span["size"] * p_scale))
+                                fs_style = f"font-size:{px_size}px;"
+                                
+                                if span["flags"] & 16: txt = f"<strong>{txt}</strong>"
+                                if span["flags"] & 2: txt = f"<em>{txt}</em>"
+                                
+                                line_html += f"<span style='{fs_style}'>{txt}</span>"
+                                
                             if not line_html.strip():
                                 text_html += "<br>"
                             else:
                                 text_html += f"<div>{line_html}</div>"
-
+                        
                         html_content += f'''
-                        <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; max-width: calc(800px - {left}px); transform: translate(0px, 0px);">
+                        <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; min-height:{height}px; z-index:20; transform: translate(0px, 0px);">
                             <div class="content-area" style="word-wrap: break-word; white-space: pre-wrap; overflow-wrap: break-word; font-family: sans-serif;">{text_html}</div>
                         </div>'''
-
-                    elif b["type"] == 1: 
+                        
+                    elif b["type"] == 1: # Image
                         img_bytes = b.get("image")
                         if img_bytes:
                             base64_img = base64.b64encode(img_bytes).decode()
                             html_content += f'''
-                            <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; max-width: calc(800px - {left}px); transform: translate(0px, 0px);">
-                                <img src="data:image/png;base64,{base64_img}" style="width:100%;">
+                            <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; height:{height}px; z-index:10; transform: translate(0px, 0px);">
+                                <img src="data:image/png;base64,{base64_img}" style="width:100%; height:100%; object-fit:contain;">
                             </div>'''
 
                 slides += html_content
                 slides += '</div>'
 
-        # Assemble Final HTML
-        final_html = get_template(total_pages).replace("{{NAV_LINKS}}", nav).replace("{{SLIDE_CONTENT}}", slides).replace("{{LECTURE_ID}}", html.escape(up.name))
+        # Inject a micro-script to force the JS to recognize our new perfect Canvas dimensions on load
+        dimension_script = f"""
+        <script>
+            document.addEventListener("DOMContentLoaded", function() {{
+                var cvs = document.getElementById('canvas');
+                if(cvs) {{
+                    cvs.style.width = '{base_w}px';
+                    cvs.setAttribute('data-width', '{base_w}');
+                    var wInput = document.getElementById('canvas-w-cm');
+                    var hInput = document.getElementById('canvas-h-cm');
+                    if(wInput) wInput.value = (Math.round(({base_w} / 37.795) * 10) / 10).toFixed(1);
+                    if(hInput) hInput.value = (Math.round(({base_h} / 37.795) * 10) / 10).toFixed(1);
+                }}
+            }});
+        </script>
+        """
+        
+        final_html = get_template(total_pages).replace("{{NAV_LINKS}}", nav).replace("{{SLIDE_CONTENT}}", dimension_script + slides).replace("{{LECTURE_ID}}", html.escape(up.name))
 
         st.markdown("<br>", unsafe_allow_html=True)
-
-        # CRITICAL FIX: Encode as UTF-8 bytes to perfectly preserve Greek letters and Math symbols
         st.download_button(
             label="📥 Download My Notebook", 
             data=final_html.encode('utf-8'), 
