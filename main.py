@@ -5,6 +5,7 @@ import base64
 from io import BytesIO
 from template import get_template
 
+# Bypassing the Replit Auto-Installer Bug
 try:
     import pymupdf as fitz
 except ImportError:
@@ -116,8 +117,10 @@ if up:
         nav, slides = "", ""
         file_name = up.name.lower()
         total_pages = 0
-        base_w = 960 
-        base_h = 540
+
+        # DEFAULT SHORT BOND PAPER DIMENSIONS (8.5" x 11" -> ~ 21.6cm x 27.9cm -> 816px by 1054px)
+        base_w = 816 
+        base_h = 1054
 
         # ENGINE 1: PPTX
         if file_name.endswith(('.pptx', '.ppt')):
@@ -125,23 +128,20 @@ if up:
             total_pages = len(ppt.slides)
 
             slide_width_emu = ppt.slide_width or 9144000
-            slide_height_emu = ppt.slide_height or 5143500
-            aspect_ratio = slide_height_emu / slide_width_emu
-            base_w = 1000 
-            base_h = int(base_w * aspect_ratio)
+            scale_w = base_w / slide_width_emu
 
-            def parse_shapes(shapes, slide_height, slide_width):
+            def parse_shapes(shapes):
                 html_content = ""
                 for shape in shapes:
                     try:
                         if shape.shape_type == 6: 
-                            html_content += parse_shapes(shape.shapes, slide_height, slide_width)
+                            html_content += parse_shapes(shape.shapes)
                             continue
 
-                        top = (shape.top / slide_height) * base_h if shape.top else 0
-                        left = (shape.left / slide_width) * base_w if shape.left else 0
-                        width = (shape.width / slide_width) * base_w if shape.width else 200
-                        height = (shape.height / slide_height) * base_h if shape.height else 50
+                        top = (shape.top * scale_w) if shape.top else 0
+                        left = (shape.left * scale_w) if shape.left else 0
+                        width = (shape.width * scale_w) if shape.width else 200
+                        height = (shape.height * scale_w) if shape.height else 50
 
                         if shape.shape_type == 13: 
                             img_stream = BytesIO(shape.image.blob)
@@ -173,14 +173,13 @@ if up:
                                     fs_style = ""
                                     if hasattr(run.font, 'size') and run.font.size:
                                         pt_size = run.font.size.pt
-                                        scale_factor = base_w / (slide_width / 12700) 
-                                        px_size = max(10, int(pt_size * scale_factor * 1.33))
+                                        px_size = max(10, int(pt_size * scale_w * 12700 * 1.33))
                                         fs_style = f"font-size:{px_size}px;"
 
                                     if getattr(run.font, 'bold', False) == True: r_txt = f"<strong>{r_txt}</strong>"
                                     if getattr(run.font, 'italic', False) == True: r_txt = f"<em>{r_txt}</em>"
                                     if getattr(run.font, 'underline', False) == True: r_txt = f"<u>{r_txt}</u>"
-                                    
+
                                     if fs_style: p_text += f"<span style='{fs_style}'>{r_txt}</span>"
                                     else: p_text += r_txt
 
@@ -199,38 +198,37 @@ if up:
                 title_text = slide.shapes.title.text if slide.shapes.title else f"Slide {i+1}"
                 nav += f'<div class="nav-link" id="link-{i}" onclick="goTo(\'{i}\')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text">{html.escape(title_text)}</span></div>'
                 slides += f'<div id="p-{i}" class="page {"active" if i==0 else ""}" data-page-height="{base_h}" style="height:{base_h}px;"> '
-                slides += parse_shapes(slide.shapes, slide_height_emu, slide_width_emu)
+                slides += parse_shapes(slide.shapes)
                 slides += '</div>'
 
         # ENGINE 2: PDF
         elif file_name.endswith('.pdf'):
             doc = fitz.open(stream=up.read(), filetype="pdf")
             total_pages = len(doc)
-            
+
             first_page = doc[0]
-            base_w = 900
-            scale = base_w / first_page.rect.width if first_page.rect.width > 0 else 1
-            base_h = int(first_page.rect.height * scale)
+            base_w = 816
+            p_scale = base_w / first_page.rect.width if first_page.rect.width > 0 else 1
 
             for i, page in enumerate(doc):
                 page_width = page.rect.width
                 page_height = page.rect.height
                 p_scale = base_w / page_width if page_width > 0 else 1
-                scaled_height = int(page_height * p_scale)
+                scaled_height = max(1054, int(page_height * p_scale))
 
                 nav += f'<div class="nav-link" id="link-{i}" onclick="goTo(\'{i}\')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text">Page {i+1}</span></div>'
                 slides += f'<div id="p-{i}" class="page {"active" if i==0 else ""}" data-page-height="{scaled_height}" style="height:{scaled_height}px;"> '
 
                 blocks = page.get_text("dict")["blocks"]
                 html_content = ""
-                
+
                 for b in blocks:
                     bbox = b["bbox"]
                     top = bbox[1] * p_scale
                     left = bbox[0] * p_scale
                     width = (bbox[2] - bbox[0]) * p_scale
                     height = (bbox[3] - bbox[1]) * p_scale
-                    
+
                     if b["type"] == 0: 
                         text_html = ""
                         for line in b["lines"]:
@@ -240,23 +238,23 @@ if up:
                                 if not txt.strip():
                                     line_html += " "
                                     continue
-                                
+
                                 px_size = max(10, int(span["size"] * p_scale))
                                 fs_style = f"font-size:{px_size}px;"
-                                
+
                                 if span["flags"] & 16: txt = f"<strong>{txt}</strong>"
                                 if span["flags"] & 2: txt = f"<em>{txt}</em>"
-                                
+
                                 line_html += f"<span style='{fs_style}'>{txt}</span>"
-                                
+
                             if not line_html.strip(): text_html += "<br>"
                             else: text_html += f"<div>{line_html}</div>"
-                        
+
                         html_content += f'''
                         <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; min-height:{height}px; z-index:20; transform: translate(0px, 0px);">
                             <div class="content-area" style="word-wrap: break-word; white-space: pre-wrap; overflow-wrap: break-word; font-family: sans-serif;">{text_html}</div>
                         </div>'''
-                        
+
                     elif b["type"] == 1: 
                         img_bytes = b.get("image")
                         if img_bytes:
@@ -279,12 +277,12 @@ if up:
                     var wInput = document.getElementById('canvas-w-cm');
                     var hInput = document.getElementById('canvas-h-cm');
                     if(wInput) wInput.value = (Math.round(({base_w} / 37.795) * 10) / 10).toFixed(1);
-                    if(hInput) hInput.value = (Math.round(({base_h} / 37.795) * 10) / 10).toFixed(1);
+                    if(hInput) hInput.value = (Math.round((parseInt(cvs.style.height) / 37.795) * 10) / 10).toFixed(1);
                 }}
             }});
         </script>
         """
-        
+
         final_html = get_template(total_pages).replace("{{NAV_LINKS}}", nav).replace("{{SLIDE_CONTENT}}", dimension_script + slides).replace("{{LECTURE_ID}}", html.escape(up.name))
 
         st.markdown("<br>", unsafe_allow_html=True)
@@ -296,7 +294,10 @@ if up:
             use_container_width=True
         )
     except Exception as e:
-        st.error(f"Error Processing File: {e}")
+        if "has no attribute 'open'" in str(e):
+            st.error("🚨 REPLIT PACKAGE ERROR: You have the wrong 'fitz' package installed. Please open the Shell tab, run `pip uninstall fitz -y`, then run `pip install PyMuPDF -y` and restart the app.")
+        else:
+            st.error(f"Error Processing File: {e}")
 
 st.markdown("""
 <div class="blank-container">
@@ -305,7 +306,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 blank_nav = '<div class="nav-link active-nav" id="link-0" onclick="goTo(\'0\')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text">Page 1</span></div>'
-blank_slides = '<div id="p-0" class="page active" data-page-height="1000" style="height:1000px;"></div>'
+blank_slides = '<div id="p-0" class="page active" data-page-height="1054" style="height:1054px;"></div>'
 blank_html = get_template(1).replace("{{NAV_LINKS}}", blank_nav).replace("{{SLIDE_CONTENT}}", blank_slides).replace("{{LECTURE_ID}}", "New_Notebook")
 
 st.download_button(
