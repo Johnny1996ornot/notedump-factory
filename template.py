@@ -102,18 +102,18 @@ def get_template(total_pages):
                 <div class="separator" style="height:16px; margin: 0 6px;"></div>
                 <button class="ctx-btn" onclick="addImgCenter()" title="Add Image"><i class="fas fa-image" style="margin-right: 4px;"></i> Img</button>
                 <button class="ctx-btn" onclick="addTextCenter()" title="Add Text"><i class="fas fa-font" style="margin-right: 4px;"></i> Text</button>
-                
+
                 <div class="separator" style="height:16px; margin: 0 6px;"></div>
-                
+
                 <div style="display:flex; align-items:center; gap:4px; font-size:11px; color:var(--text); font-weight:bold;">
-                    W: <input type="number" id="canvas-w-cm" value="21" step="0.5" style="width:45px; border:1px solid #cbd5e1; border-radius:4px; padding:2px; text-align:center;" onchange="applyCanvasSettings()"> cm
+                    W: <input type="number" id="canvas-w-cm" value="21.6" step="3" style="width:45px; border:1px solid #cbd5e1; border-radius:4px; padding:2px; text-align:center;" onchange="applyCanvasSettings()"> cm
                 </div>
                 <div style="display:flex; align-items:center; gap:4px; font-size:11px; color:var(--text); font-weight:bold; margin-left:4px;">
-                    H: <input type="number" id="canvas-h-cm" value="29.7" step="0.5" style="width:45px; border:1px solid #cbd5e1; border-radius:4px; padding:2px; text-align:center;" onchange="applyCanvasSettings()"> cm
+                    H: <input type="number" id="canvas-h-cm" value="27.9" step="3" style="width:45px; border:1px solid #cbd5e1; border-radius:4px; padding:2px; text-align:center;" onchange="applyCanvasSettings()"> cm
                 </div>
-                
+
                 <div class="separator" style="height:16px; margin: 0 6px;"></div>
-                
+
                 <div style="display:flex; align-items:center; gap:4px; font-size:11px; color:var(--text); font-weight:bold;">
                     <i class="fas fa-border-all"></i>
                     <select id="grid-select" class="ctx-select" style="width: 70px; padding:2px;" onchange="applyCanvasSettings()">
@@ -131,6 +131,9 @@ def get_template(total_pages):
                 </label>
 
                 <div class="separator" style="height:16px; margin: 0 6px;"></div>
+                <button class="ctx-btn" onclick="mergeNextPage()" title="Merge this page with the next one"><i class="fas fa-object-group" style="margin-right: 4px;"></i> Merge</button>
+
+                <div class="separator" style="height:16px; margin: 0 6px;"></div>
                 <button class="ctx-btn" id="draw-btn" onclick="toggleDrawMode()" title="Toggle Draw Mode (Double-click stroke to delete)"><i class="fas fa-pen-nib" style="margin-right: 4px;"></i> Draw</button>
                 <input type="color" id="draw-color" value="#ef4444" title="Pen Color" style="width:20px; height:20px; border:none; padding:0; cursor:pointer; margin-left:4px;">
                 <input type="range" id="draw-size" min="1" max="20" value="3" style="width:40px; height:4px; margin:0 5px; cursor:pointer;" title="Pen Size">
@@ -140,14 +143,14 @@ def get_template(total_pages):
                 <div id="canvas-center-wrapper">
                     <div id="canvas">
                         {{{{SLIDE_CONTENT}}}}
-                        
+
                         <div id="context-menu" style="display:none; position:absolute; flex-direction:column; gap:4px; padding:8px 10px; border-radius:8px; background:white; border: 1px solid #cbd5e1; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index:10000;">
-                            
+
                             <div class="menu-text-tools" style="display:flex; gap:4px; align-items:center; background: #f8fafc; padding: 4px; border-radius: 4px; border: 1px solid #e2e8f0;">
                                 <select class="ctx-select" style="width: 75px;" onchange="format('fontName', this.value)">
                                     <option value="Arial">Arial</option><option value="Georgia">Georgia</option><option value="Times">Times</option>
                                 </select>
-                                
+
                                 <select class="ctx-select" id="font-size-select" style="width: 55px;" onchange="applyFontSize(this.value)" title="Font Size">
                                     <option value="" disabled hidden>Size</option>
                                     <option value="8">8</option><option value="10">10</option><option value="11">11</option>
@@ -188,9 +191,9 @@ def get_template(total_pages):
                                 </div>
 
                                 <div class="color-grid" id="bg-color-grid" title="Background Color"></div>
-                                
+
                                 <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="removeBoxBg()" title="Remove Background" style="margin-left:4px; padding: 4px 6px;"><i class="fas fa-eye-slash" style="color:#ef4444; margin-right:4px;"></i> No BG</button>
-                                
+
                                 <div class="separator" style="height:16px; margin: 0 2px;"></div>
 
                                 <div style="display:flex; flex-direction:column; gap:5px; align-items:center; margin: 0 8px;" title="Object Background Transparency">
@@ -208,7 +211,7 @@ def get_template(total_pages):
                     </div>
                 </div>
             </div>
-            
+
             <div id="fab-container">
                 <button class="fab-btn" onclick="togglePanel('sticky')" title="Sticky Notes"><i class="fas fa-sticky-note"></i></button>
                 <button class="fab-btn" onclick="togglePanel('pin')" title="Image Pins"><i class="fas fa-map-marker-alt"></i></button>
