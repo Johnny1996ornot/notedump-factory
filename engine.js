@@ -31,12 +31,12 @@ function getPasteCoords() {
     let canvasEl = document.getElementById('canvas');
     if (!canvasEl) return { x: 150, y: 150 };
     let rect = canvasEl.getBoundingClientRect();
-    
+
     let x = (lastMouseX - rect.left) / currentZoom;
     let y = (lastMouseY - rect.top) / currentZoom;
-    
+
     let maxW = $('#canvas').width() - 50;
-    let maxH = $(`#p-${current}`).height() || 1000;
+    let maxH = $(`#p-${current}`).height() || 1054;
     if (x < 10) x = 50; if (y < 10) y = 50;
     if (x > maxW) x = maxW - 100; if (y > maxH - 50) y = maxH - 100;
     return { x: x, y: y };
@@ -46,7 +46,7 @@ function getScreenCenterCoords() {
     let cvp = document.getElementById('canvas-viewport');
     let canvas = document.getElementById('canvas');
     if (!cvp || !canvas) return { x: 150, y: 150 };
-    
+
     let rect = canvas.getBoundingClientRect();
     let cvpRect = cvp.getBoundingClientRect();
 
@@ -55,9 +55,9 @@ function getScreenCenterCoords() {
 
     let x = (centerX - rect.left) / currentZoom;
     let y = (centerY - rect.top) / currentZoom;
-    
+
     let maxW = $('#canvas').width() - 50;
-    let maxH = $(`#p-${current}`).height() || 1000;
+    let maxH = $(`#p-${current}`).height() || 1054;
     if (x < 10) x = 50; if (y < 10) y = 50;
     if (x > maxW) x = maxW - 100; if (y > maxH - 50) y = maxH - 100;
 
@@ -90,7 +90,7 @@ function autoSaveToBrowser() {
         safeSetLocal(`nd_${LECTURE_ID}_nav`, $('#nav-list-container').html());
         safeSetLocal(`nd_${LECTURE_ID}_pages`, totalPages);
         safeSetLocal(`nd_${LECTURE_ID}_title`, $('#lecture-title').text());
-        safeSetLocal(`nd_${LECTURE_ID}_width`, parseInt($('#canvas').attr('data-width')) || 800); 
+        safeSetLocal(`nd_${LECTURE_ID}_width`, parseInt($('#canvas').attr('data-width')) || 816); 
     }
 }
 
@@ -122,7 +122,7 @@ function restoreFromBrowser() {
     $('#canvas').append($menu);
 
     $('.page').each(function() {
-        let h = parseInt($(this).attr('data-page-height') || $(this).attr('data-height')) || 1000;
+        let h = parseInt($(this).attr('data-page-height') || $(this).attr('data-height')) || 1054;
         $(this).attr('data-page-height', h);
         $(this).css('height', h + 'px');
         if($(this).hasClass('active')) {
@@ -130,7 +130,7 @@ function restoreFromBrowser() {
         }
     });
 
-    let activeH = parseInt($('.page.active').attr('data-page-height')) || 1000;
+    let activeH = parseInt($('.page.active').attr('data-page-height')) || 1054;
     $('#canvas').css('height', activeH + 'px');
     setZoom(currentZoom);
 }
@@ -159,10 +159,11 @@ function undo() {
     } 
 }
 
+// FIX: Pushes out-of-bounds elements back into the safety of the visible canvas instead of cropping them
 function applyCanvasSettings() {
     saveHistory();
-    let wCm = parseFloat($('#canvas-w-cm').val()) || 21;
-    let hCm = parseFloat($('#canvas-h-cm').val()) || 29.7;
+    let wCm = parseFloat($('#canvas-w-cm').val()) || 21.6;
+    let hCm = parseFloat($('#canvas-h-cm').val()) || 27.9;
     let grid = $('#grid-select').val();
     let applyAll = $('#uniform-height-check').is(':checked');
 
@@ -172,17 +173,43 @@ function applyCanvasSettings() {
     $('#canvas').attr('data-width', pxW).css('width', pxW + 'px');
 
     let pages = applyAll ? $('.page') : $(`#p-${current}`);
-    
+
     pages.each(function() {
-        $(this).attr('data-page-height', pxH).css('height', pxH + 'px');
-        
-        $(this).find('.page-grid-overlay').remove();
+        let $page = $(this);
+        $page.attr('data-page-height', pxH).css('height', pxH + 'px');
+
+        // Prevent elements from being cropped when reducing canvas size
+        $page.children('.canvas-box, .pin').each(function() {
+            let $el = $(this);
+            let currentTop = parseFloat($el.css('top')) || 0;
+            let currentLeft = parseFloat($el.css('left')) || 0;
+            let elH = $el.outerHeight() || 50;
+            let elW = $el.outerWidth() || 50;
+
+            let newTop = currentTop;
+            let newLeft = currentLeft;
+
+            if (currentTop + elH > pxH) {
+                newTop = Math.max(0, pxH - elH - 5);
+            }
+            if (currentLeft + elW > pxW) {
+                newLeft = Math.max(0, pxW - elW - 5);
+            }
+
+            if (newTop !== currentTop || newLeft !== currentLeft) {
+                $el.css({ top: newTop + 'px', left: newLeft + 'px', transform: 'translate(0px, 0px)' });
+                $el.attr('data-x', 0);
+                $el.attr('data-y', 0);
+            }
+        });
+
+        $page.find('.page-grid-overlay').remove();
         if (grid !== "0") {
             let overlay = `<div class="page-grid-overlay grid-div-${grid}">`;
             let cells = parseInt(grid);
             for(let i=0; i<cells; i++) overlay += `<div class="grid-cell"></div>`;
             overlay += `</div>`;
-            $(this).prepend(overlay);
+            $page.prepend(overlay);
         }
     });
 
@@ -196,14 +223,14 @@ function applyCanvasSettings() {
 }
 
 function changeCanvasHeight(delta) {
-    let currentH = parseFloat($('#canvas-h-cm').val()) || 29.7;
-    $('#canvas-h-cm').val((currentH + (delta > 0 ? 1 : -1)).toFixed(1));
+    let currentH = parseFloat($('#canvas-h-cm').val()) || 27.9;
+    $('#canvas-h-cm').val((currentH + (delta > 0 ? 3 : -3)).toFixed(1));
     applyCanvasSettings();
 }
 
 function changeCanvasWidth(delta) {
-    let currentW = parseFloat($('#canvas-w-cm').val()) || 21;
-    $('#canvas-w-cm').val((currentW + (delta > 0 ? 1 : -1)).toFixed(1));
+    let currentW = parseFloat($('#canvas-w-cm').val()) || 21.6;
+    $('#canvas-w-cm').val((currentW + (delta > 0 ? 3 : -3)).toFixed(1));
     applyCanvasSettings();
 }
 
@@ -232,6 +259,60 @@ function deletePage(id, event) {
     $page.remove();
     autoSaveToBrowser();
     showToast("🗑️ Page deleted.");
+}
+
+function mergeNextPage() {
+    let $nextLink = $(`#link-${current}`).nextAll('.nav-link').not('.nav-chapter').first();
+    if (!$nextLink.length) return showToast("⚠️ No next page to merge!");
+
+    saveHistory();
+    let nextId = $nextLink.attr('id').replace('link-', '');
+    let $currPage = $(`#p-${current}`);
+    let $nextPage = $(`#p-${nextId}`);
+
+    let currentH = parseInt($currPage.attr('data-page-height')) || 1054;
+    let nextH = parseInt($nextPage.attr('data-page-height')) || 1054;
+
+    let newH = currentH + nextH;
+    $currPage.attr('data-page-height', newH).css('height', newH + 'px');
+    $('#canvas-h-cm').val(Math.round((newH / 37.795) * 10) / 10);
+
+    $nextPage.find('.canvas-box, .pin').each(function() {
+        if ($(this).hasClass('pin') && $(this).parent().hasClass('canvas-box')) return; 
+
+        let t = parseFloat($(this).css('top')) || 0;
+        if ($(this).css('top').includes('%')) {
+            t = (parseFloat($(this).css('top')) / 100) * nextH; 
+        }
+        $(this).css('top', (t + currentH) + 'px');
+        $currPage.append($(this));
+    });
+
+    let $nextSvg = $nextPage.find('svg.draw-layer');
+    if ($nextSvg.length > 0) {
+        let currSvg = getPageSvg();
+        let g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('transform', `translate(0, ${currentH})`);
+
+        $nextSvg.find('.drawn-path').each(function() {
+            g.appendChild(this);
+        });
+        if(g.childNodes.length > 0) {
+            currSvg.appendChild(g);
+        }
+    }
+
+    $nextPage.remove();
+    $nextLink.remove();
+
+    if (currentViewMode === 'single') {
+        $('#canvas').css('height', newH + 'px');
+    }
+
+    autoSaveToBrowser();
+    updateContextMenu();
+    refreshAnnotations();
+    showToast("📄 Pages Successfully Merged!");
 }
 
 function setViewMode(mode) {
@@ -517,10 +598,10 @@ function showExportModal() {
 function printToPDF() {
     $('#export-modal-bg').hide();
     if (isEditing) toggleEdit();
-    
+
     let wasDark = $('body').hasClass('dark');
     let wasScrollMode = currentViewMode === 'scroll';
-    
+
     $('body').removeClass('dark');
     if (!wasScrollMode) {
         $('#canvas').addClass('scroll-mode');
@@ -587,7 +668,7 @@ function updateContextMenu() {
             $('.menu-text-tools').css('display', 'flex'); 
             $('.menu-img-tools').hide();
         }
-        
+
         let currentOp = 1;
         let $firstSel = $sel.first();
         if ($firstSel.find('img').length > 0) {
@@ -606,7 +687,7 @@ function updateContextMenu() {
             let l = parseFloat($(this).css('left')) || 0;
             let ty = parseFloat($(this).attr('data-y')) || 0; 
             let tx = parseFloat($(this).attr('data-x')) || 0;
-            
+
             let finalTop = t + ty;
             let finalLeft = l + tx;
 
@@ -617,19 +698,21 @@ function updateContextMenu() {
         $('#context-menu').css({display: 'flex', top: '-9999px', left: '-9999px'});
         let cHeight = $('#context-menu').outerHeight() || 50;
         let cWidth = $('#context-menu').outerWidth() || 350;
-        
+
+        let cvp = document.getElementById('canvas-viewport');
+        let vTop = cvp.scrollTop / currentZoom;
+        let vLeft = cvp.scrollLeft / currentZoom;
+        let vRight = vLeft + (cvp.clientWidth / currentZoom);
+
         let canvasW = $('#canvas').width();
         let finalMenuTop = topPos - cHeight - 15;
         let finalMenuLeft = leftPos;
-        
-        if (finalMenuLeft + cWidth > canvasW) {
-            finalMenuLeft = canvasW - cWidth - 5;
-        }
-        if (finalMenuLeft < 5) {
-            finalMenuLeft = 5;
-        }
-        
-        if (finalMenuTop < 10) {
+
+        if (finalMenuLeft < vLeft + 10) finalMenuLeft = vLeft + 10;
+        if (finalMenuLeft + cWidth > vRight - 10) finalMenuLeft = vRight - cWidth - 10;
+        if (finalMenuLeft + cWidth > canvasW) finalMenuLeft = canvasW - cWidth - 5;
+
+        if (finalMenuTop < vTop + 10) {
             let maxBottom = 0;
             $sel.each(function() {
                 let t = parseFloat($(this).css('top')) || 0;
@@ -728,7 +811,7 @@ function addPinToSelectedImage() {
     saveHistory();
     let $box = $('.selected-box').first();
     if ($box.length === 0) return;
-    
+
     let highestOrder = -1;
     $(`#p-${current} .pin`).each(function() {
         let o = parseInt($(this).attr('data-order')) || 0;
@@ -808,7 +891,7 @@ function getAnnotations() {
         let $vis = $(this).find('.pin-visual'); 
         let state = $(this).attr('data-state') || 'dot';
         let type = $(this).attr('data-type') || 'pin'; 
-        
+
         let op = parseFloat($vis.css('opacity'));
         if (isNaN(op)) op = 1;
 
@@ -846,7 +929,7 @@ function refreshAnnotations() {
             pinCount++; displayNum = pinCount;
         }
 
-        let hex = "ef4444"; // default to red
+        let hex = "ef4444"; 
         let rgbMatch = p.color.match(/\d+/g);
         if(rgbMatch && rgbMatch.length >= 3) {
             hex = rgbMatch.slice(0,3).map(x => parseInt(x).toString(16).padStart(2, '0')).join('');
@@ -866,7 +949,7 @@ function refreshAnnotations() {
 
         let iconStyle = (p.state !== 'dot' && p.type !== 'sticky') ? `transform: rotate(${iconRotation}); transition: 0.2s;` : "";
         let safeNote = p.note ? p.note.replace(/"/g, '&quot;') : "";
-        
+
         let shapeCycleBtn = p.type === 'pin' ? `<button class="sketch-btn pin-tool-item" style="width:100%; padding:0; justify-content:center;" onclick="cyclePinShape(${i})" title="Cycle Pointer Direction"><i class="fas ${iconClass}" style="${iconStyle}"></i></button>` : `<div style="display:flex; justify-content:center; align-items:center; color:#64748b; font-size:14px; padding: 4px 0;"><i class="fas fa-sticky-note"></i></div>`;
 
         let cardStr = `
@@ -893,7 +976,7 @@ function refreshAnnotations() {
                     </div>
                 </div>
             </div>`; 
-        
+
         if (p.type === 'sticky') stickyHtml += cardStr;
         else pinHtml += cardStr;
     });
@@ -924,7 +1007,7 @@ function refreshAnnotations() {
             });
         }
     };
-    
+
     window.stickySortable = initSortable('sticky-list-container');
     window.pinSortable = initSortable('pin-list-container');
 }
@@ -932,8 +1015,8 @@ function refreshAnnotations() {
 function toggleDrawMode() {
     if(!isEditing) return;
     isDrawMode = !isDrawMode;
-    $('#draw-btn').toggleClass('active-view', isDrawMode);
-    
+    $('#draw-btn').toggleClass('draw-active', isDrawMode);
+
     if (isDrawMode) {
         $('#canvas').addClass('drawing-active');
         $('.canvas-box, .pin').css('pointer-events', 'none'); 
@@ -957,17 +1040,17 @@ function getPageSvg() {
 $(document).on('mousedown', function(e) {
     if (!isDrawMode || !isEditing) return;
     if ($(e.target).closest('#canvas-global-tools, #nav, .floating-panel').length > 0) return;
-    
+
     isDrawing = true;
     let rect = $(`#p-${current}`)[0].getBoundingClientRect();
     let x = (e.clientX - rect.left) / currentZoom;
     let y = (e.clientY - rect.top) / currentZoom;
-    
+
     pathString = `M ${x} ${y}`;
-    
+
     let color = $('#draw-color').val() || '#ef4444';
     let size = $('#draw-size').val() || 3;
-    
+
     let svg = getPageSvg();
     let path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     path.setAttribute('d', pathString);
@@ -978,10 +1061,10 @@ $(document).on('mousedown', function(e) {
     path.setAttribute('stroke-linejoin', 'round');
     path.setAttribute('class', 'drawn-path');
     path.style.pointerEvents = "auto"; 
-    
+
     svg.appendChild(path);
     currentSvgPath = path;
-    
+
     e.preventDefault(); 
 });
 
@@ -990,7 +1073,7 @@ $(document).on('mousemove', function(e) {
     let rect = $(`#p-${current}`)[0].getBoundingClientRect();
     let x = (e.clientX - rect.left) / currentZoom;
     let y = (e.clientY - rect.top) / currentZoom;
-    
+
     pathString += ` L ${x} ${y}`;
     currentSvgPath.setAttribute('d', pathString);
 });
@@ -1020,7 +1103,7 @@ function toggleEdit() {
     } else {
         $('#canvas-global-tools').hide();
         isDrawMode = false;
-        $('#draw-btn').removeClass('active-view');
+        $('#draw-btn').removeClass('draw-active');
         $('#canvas').removeClass('drawing-active');
         $('.canvas-box, .pin').css('pointer-events', 'auto');
     }
@@ -1043,13 +1126,13 @@ function toggleEdit() {
 
                     let currentW = parseFloat(target.style.width) || target.offsetWidth;
                     let currentH = parseFloat(target.style.height) || target.offsetHeight;
-                    
+
                     target.style.width = (currentW + (event.deltaRect.width / currentZoom)) + 'px'; 
                     target.style.height = (currentH + (event.deltaRect.height / currentZoom)) + 'px';
-                    
+
                     x += (event.deltaRect.left / currentZoom); 
                     y += (event.deltaRect.top / currentZoom);
-                    
+
                     target.style.transform = `translate(${x}px, ${y}px)`; 
                     target.setAttribute('data-x', x); 
                     target.setAttribute('data-y', y);
@@ -1092,7 +1175,7 @@ function toggleEdit() {
                         let relTop = pinRect.top - boxRect.top;
                         let percLeft = (relLeft / boxRect.width) * 100;
                         let percTop = (relTop / boxRect.height) * 100;
-                        
+
                         $pin.css({ transform: 'translate(0px, 0px)', left: percLeft + '%', top: percTop + '%' });
                         $pin.attr('data-x', 0).attr('data-y', 0);
                     }
@@ -1138,7 +1221,7 @@ $(document).on('selectionchange', function() {
         let $node = $(node);
         if ($node.closest('.content-area').length > 0) {
             savedSelection = sel.getRangeAt(0);
-            
+
             let parentNode = node.nodeType === 3 ? node.parentNode : node;
             let computedSize = window.getComputedStyle(parentNode).fontSize;
             if (computedSize) {
@@ -1178,12 +1261,12 @@ function applyFontSize(px) {
     let pxStr = px + 'px';
 
     let sel = window.getSelection();
-    
+
     if (sel && sel.rangeCount > 0 && sel.toString().length > 0 && $(sel.anchorNode).closest('.content-area').length > 0) {
         restoreSelection();
         document.execCommand('styleWithCSS', false, true);
         document.execCommand("fontSize", false, "7"); 
-        
+
         $('.content-area font[size="7"]').each(function() {
             $(this).css({'font-size': pxStr, 'line-height': 'normal'}).removeAttr('size');
             $(this).find('*').css({'font-size': '', 'line-height': ''});
@@ -1338,7 +1421,7 @@ $(document).ready(function() {
     }
 
     $('#text-color-grid, #bg-color-grid').html(colorHtml);
-    
+
     $('#text-color-grid .color-swatch').click(function(e) { 
         e.preventDefault();
         restoreSelection();
@@ -1432,17 +1515,17 @@ $(document).ready(function() {
             if (e.ctrlKey && e.key.toLowerCase() === 'v' && !isTyping) {
                 if(customClipboard.length > 0) {
                     e.preventDefault(); saveHistory(); $('.canvas-box').removeClass('selected-box'); 
-                    
+
                     let coords = getPasteCoords();
-                    
+
                     customClipboard.forEach((htmlStr, idx) => {
                         let $newBox = $(htmlStr);
                         $newBox.attr('data-x', 0);
                         $newBox.attr('data-y', 0);
-                        
+
                         let placeX = coords.x + (idx * 20);
                         let placeY = coords.y + (idx * 20);
-                        
+
                         $newBox.css({ top: placeY + 'px', left: placeX + 'px', transform: 'translate(0px, 0px)' });
                         $newBox.addClass('selected-box'); $(`#p-${current}`).append($newBox);
                     });
@@ -1494,7 +1577,7 @@ $(document).ready(function() {
         if(!isEditing) return;
         if(!e.shiftKey && !$(this).hasClass('selected-box')) { $('.canvas-box').removeClass('selected-box'); }
         $(this).addClass('selected-box');
-        
+
         let $ca = $(this).find('.content-area');
         if ($ca.length > 0) {
             let computedSize = window.getComputedStyle($ca[0]).fontSize;
@@ -1511,7 +1594,7 @@ $(document).ready(function() {
                 }
             }
         }
-        
+
         updateContextMenu();
         if ($(e.target).closest('.content-area').length > 0) { return; }
         if(!$(e.target).is(':focus')) { e.preventDefault(); }
@@ -1604,7 +1687,7 @@ function setZoom(v) {
     $('#canvas').css('margin-right', `-${offsetW}px`);
 
     if (!$('#canvas').hasClass('scroll-mode')) {
-        let baseH = parseInt($('.page.active').attr('data-page-height')) || parseInt($('#canvas').attr('data-height')) || 1000;
+        let baseH = parseInt($('.page.active').attr('data-page-height')) || parseInt($('#canvas').attr('data-height')) || 1054;
         let scaledH = baseH * currentZoom;
         let offsetH = baseH - scaledH;
         $('#canvas').css('margin-bottom', `-${offsetH}px`);
