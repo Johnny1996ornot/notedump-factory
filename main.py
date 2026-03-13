@@ -110,14 +110,15 @@ div.stDownloadButton button:hover { background: #0ea5e9 !important; color: #fff 
 </div>
 """, unsafe_allow_html=True)
 
-up = st.file_uploader("", type=["pptx", "ppt", "pdf"])
+# FIX IMPLEMENTED HERE: Added proper label and hid it for accessibility compliance
+up = st.file_uploader("Upload a document", label_visibility="hidden", type=["pptx", "ppt", "pdf"])
 
 if up:
     try:
         nav, slides = "", ""
         file_name = up.name.lower()
         total_pages = 0
-
+        
         # DEFAULT SHORT BOND PAPER DIMENSIONS (8.5" x 11" -> ~ 21.6cm x 27.9cm -> 816px by 1054px)
         base_w = 816 
         base_h = 1054
@@ -179,7 +180,7 @@ if up:
                                     if getattr(run.font, 'bold', False) == True: r_txt = f"<strong>{r_txt}</strong>"
                                     if getattr(run.font, 'italic', False) == True: r_txt = f"<em>{r_txt}</em>"
                                     if getattr(run.font, 'underline', False) == True: r_txt = f"<u>{r_txt}</u>"
-
+                                    
                                     if fs_style: p_text += f"<span style='{fs_style}'>{r_txt}</span>"
                                     else: p_text += r_txt
 
@@ -205,7 +206,7 @@ if up:
         elif file_name.endswith('.pdf'):
             doc = fitz.open(stream=up.read(), filetype="pdf")
             total_pages = len(doc)
-
+            
             first_page = doc[0]
             base_w = 816
             p_scale = base_w / first_page.rect.width if first_page.rect.width > 0 else 1
@@ -221,14 +222,14 @@ if up:
 
                 blocks = page.get_text("dict")["blocks"]
                 html_content = ""
-
+                
                 for b in blocks:
                     bbox = b["bbox"]
                     top = bbox[1] * p_scale
                     left = bbox[0] * p_scale
                     width = (bbox[2] - bbox[0]) * p_scale
                     height = (bbox[3] - bbox[1]) * p_scale
-
+                    
                     if b["type"] == 0: 
                         text_html = ""
                         for line in b["lines"]:
@@ -238,23 +239,23 @@ if up:
                                 if not txt.strip():
                                     line_html += " "
                                     continue
-
+                                
                                 px_size = max(10, int(span["size"] * p_scale))
                                 fs_style = f"font-size:{px_size}px;"
-
+                                
                                 if span["flags"] & 16: txt = f"<strong>{txt}</strong>"
                                 if span["flags"] & 2: txt = f"<em>{txt}</em>"
-
+                                
                                 line_html += f"<span style='{fs_style}'>{txt}</span>"
-
+                                
                             if not line_html.strip(): text_html += "<br>"
                             else: text_html += f"<div>{line_html}</div>"
-
+                        
                         html_content += f'''
                         <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; min-height:{height}px; z-index:20; transform: translate(0px, 0px);">
                             <div class="content-area" style="word-wrap: break-word; white-space: pre-wrap; overflow-wrap: break-word; font-family: sans-serif;">{text_html}</div>
                         </div>'''
-
+                        
                     elif b["type"] == 1: 
                         img_bytes = b.get("image")
                         if img_bytes:
@@ -282,7 +283,7 @@ if up:
             }});
         </script>
         """
-
+        
         final_html = get_template(total_pages).replace("{{NAV_LINKS}}", nav).replace("{{SLIDE_CONTENT}}", dimension_script + slides).replace("{{LECTURE_ID}}", html.escape(up.name))
 
         st.markdown("<br>", unsafe_allow_html=True)
