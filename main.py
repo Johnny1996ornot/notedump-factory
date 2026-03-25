@@ -2,6 +2,7 @@ import streamlit as st
 from pptx import Presentation
 import html 
 import base64
+import time
 from io import BytesIO
 from template import get_template
 
@@ -13,6 +14,9 @@ except ImportError:
 
 st.set_page_config(page_title="NoteDump", layout="centered", initial_sidebar_state="collapsed")
 
+# ==========================================================================
+# SECTION 1: UI OVERRIDES & STYLING
+# ==========================================================================
 st.markdown("""
 <style>
 .stApp { background-color: #000000; }
@@ -110,7 +114,9 @@ div.stDownloadButton button:hover { background: #0ea5e9 !important; color: #fff 
 </div>
 """, unsafe_allow_html=True)
 
-# FIX IMPLEMENTED HERE: Added proper label and hid it for accessibility compliance
+# ==========================================================================
+# SECTION 2: FILE PARSING & PROCESSING
+# ==========================================================================
 up = st.file_uploader("Upload a document", label_visibility="hidden", type=["pptx", "ppt", "pdf"])
 
 if up:
@@ -118,12 +124,12 @@ if up:
         nav, slides = "", ""
         file_name = up.name.lower()
         total_pages = 0
-        
-        # DEFAULT SHORT BOND PAPER DIMENSIONS (8.5" x 11" -> ~ 21.6cm x 27.9cm -> 816px by 1054px)
+
+        unique_storage_id = f"{file_name}_{int(time.time())}"
+
         base_w = 816 
         base_h = 1054
 
-        # ENGINE 1: PPTX
         if file_name.endswith(('.pptx', '.ppt')):
             ppt = Presentation(up)
             total_pages = len(ppt.slides)
@@ -153,7 +159,7 @@ if up:
                             </div>'''
 
                         elif shape.has_table:
-                            table_html = "<table style='width:100%; border-collapse: collapse; font-size:12px;' border='1'>"
+                            table_html = "<table style='width:100%; height:100%; border-collapse: collapse; font-size:12px;' border='1'>"
                             for row in shape.table.rows:
                                 table_html += "<tr>"
                                 for cell in row.cells:
@@ -180,7 +186,7 @@ if up:
                                     if getattr(run.font, 'bold', False) == True: r_txt = f"<strong>{r_txt}</strong>"
                                     if getattr(run.font, 'italic', False) == True: r_txt = f"<em>{r_txt}</em>"
                                     if getattr(run.font, 'underline', False) == True: r_txt = f"<u>{r_txt}</u>"
-                                    
+
                                     if fs_style: p_text += f"<span style='{fs_style}'>{r_txt}</span>"
                                     else: p_text += r_txt
 
@@ -202,11 +208,10 @@ if up:
                 slides += parse_shapes(slide.shapes)
                 slides += '</div>'
 
-        # ENGINE 2: PDF
         elif file_name.endswith('.pdf'):
             doc = fitz.open(stream=up.read(), filetype="pdf")
             total_pages = len(doc)
-            
+
             first_page = doc[0]
             base_w = 816
             p_scale = base_w / first_page.rect.width if first_page.rect.width > 0 else 1
@@ -222,14 +227,14 @@ if up:
 
                 blocks = page.get_text("dict")["blocks"]
                 html_content = ""
-                
+
                 for b in blocks:
                     bbox = b["bbox"]
                     top = bbox[1] * p_scale
                     left = bbox[0] * p_scale
                     width = (bbox[2] - bbox[0]) * p_scale
                     height = (bbox[3] - bbox[1]) * p_scale
-                    
+
                     if b["type"] == 0: 
                         text_html = ""
                         for line in b["lines"]:
@@ -239,23 +244,23 @@ if up:
                                 if not txt.strip():
                                     line_html += " "
                                     continue
-                                
+
                                 px_size = max(10, int(span["size"] * p_scale))
                                 fs_style = f"font-size:{px_size}px;"
-                                
+
                                 if span["flags"] & 16: txt = f"<strong>{txt}</strong>"
                                 if span["flags"] & 2: txt = f"<em>{txt}</em>"
-                                
+
                                 line_html += f"<span style='{fs_style}'>{txt}</span>"
-                                
+
                             if not line_html.strip(): text_html += "<br>"
                             else: text_html += f"<div>{line_html}</div>"
-                        
+
                         html_content += f'''
                         <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; min-height:{height}px; z-index:20; transform: translate(0px, 0px);">
                             <div class="content-area" style="word-wrap: break-word; white-space: pre-wrap; overflow-wrap: break-word; font-family: sans-serif;">{text_html}</div>
                         </div>'''
-                        
+
                     elif b["type"] == 1: 
                         img_bytes = b.get("image")
                         if img_bytes:
@@ -283,8 +288,12 @@ if up:
             }});
         </script>
         """
-        
-        final_html = get_template(total_pages).replace("{{NAV_LINKS}}", nav).replace("{{SLIDE_CONTENT}}", dimension_script + slides).replace("{{LECTURE_ID}}", html.escape(up.name))
+
+        final_html = get_template(total_pages)\
+            .replace("{{NAV_LINKS}}", nav)\
+            .replace("{{SLIDE_CONTENT}}", dimension_script + slides)\
+            .replace("{{VISIBLE_TITLE}}", html.escape(up.name))\
+            .replace("{{STORAGE_ID}}", html.escape(unique_storage_id))
 
         st.markdown("<br>", unsafe_allow_html=True)
         st.download_button(
@@ -295,7 +304,10 @@ if up:
             use_container_width=True
         )
     except Exception as e:
-        if "has no attribute 'open'" in str(e):
+        err_msg = str(e).lower()
+        if "not a zip file" in err_msg or "badzipfile" in err_msg:
+            st.error("🚨 FORMAT ERROR: You uploaded an older `.ppt` file. Python-PPTX only supports modern `.pptx` files. Please open your file in PowerPoint, click 'Save As', choose `.pptx`, and upload the new file.")
+        elif "has no attribute 'open'" in err_msg:
             st.error("🚨 REPLIT PACKAGE ERROR: You have the wrong 'fitz' package installed. Please open the Shell tab, run `pip uninstall fitz -y`, then run `pip install PyMuPDF -y` and restart the app.")
         else:
             st.error(f"Error Processing File: {e}")
@@ -308,7 +320,13 @@ st.markdown("""
 
 blank_nav = '<div class="nav-link active-nav" id="link-0" onclick="goTo(\'0\')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text">Page 1</span></div>'
 blank_slides = '<div id="p-0" class="page active" data-page-height="1054" style="height:1054px;"></div>'
-blank_html = get_template(1).replace("{{NAV_LINKS}}", blank_nav).replace("{{SLIDE_CONTENT}}", blank_slides).replace("{{LECTURE_ID}}", "New_Notebook")
+
+unique_blank_id = f"New_Notebook_{int(time.time())}"
+blank_html = get_template(1)\
+    .replace("{{NAV_LINKS}}", blank_nav)\
+    .replace("{{SLIDE_CONTENT}}", blank_slides)\
+    .replace("{{VISIBLE_TITLE}}", "New_Notebook")\
+    .replace("{{STORAGE_ID}}", unique_blank_id)
 
 st.download_button(
     label="📓 Create Blank Notebook", 
