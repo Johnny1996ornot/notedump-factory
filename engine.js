@@ -13,14 +13,16 @@ let currentSearchIndex = -1;
 let currentViewMode = 'single';
 
 let savedSelection = null;
-let lastSavedState = "";
+let lastSavedState = null;
 
 let isDrawMode = false;
+let isEraserMode = false;
 let isDrawing = false;
 let currentSvgPath = null;
 let pathString = "";
 
-const COLORS = ['#ef4444', '#f97316', '#fde047', '#10b981', '#0ea5e9', '#4f46e5', '#8b5cf6', '#64748b', '#94a3b8', '#e2e8f0', '#ffffff', '#0f172a'];
+// Colors
+const COLORS = ['#ef4444', '#f97316', '#fde047', '#10b981', '#0ea5e9', '#1d4ed8', '#8b5cf6', '#64748b', '#94a3b8', '#e2e8f0', '#ffffff', '#0f172a'];
 
 let lastMouseX = 150;
 let lastMouseY = 150;
@@ -34,11 +36,24 @@ let isPlacingSticky = false;
 let typingTimer;
 const TYPING_DELAY = 800; 
 
+function showToast(msg) {
+    let toast = document.getElementById('toast-msg');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toast-msg';
+        toast.style.cssText = 'position:fixed; bottom:40px; left:50%; transform:translateX(-50%); background:rgba(15,23,42,0.95); color:white; padding:12px 24px; border-radius:30px; z-index:9999999; font-weight:bold; font-size:14px; box-shadow:0 4px 20px rgba(0,0,0,0.5); transition: opacity 0.3s; pointer-events:none;';
+        document.body.appendChild(toast);
+    }
+    toast.innerText = msg;
+    toast.style.opacity = '1';
+    setTimeout(() => { toast.style.opacity = '0'; }, 3500);
+}
+
 // ==========================================================================
 // SECTION 2: UTILITY & HELPER FUNCTIONS
 // ==========================================================================
 function getHighestZ() {
-    let maxZ = 100;
+    let maxZ = 10;
     $(`#p-${current} .canvas-box, #p-${current} .pin`).each(function() {
         let z = parseInt($(this).css('z-index')) || 10;
         if (z > maxZ) maxZ = z;
@@ -70,8 +85,37 @@ function restoreSelection() {
     }
 }
 
-$(document).on('keyup mouseup', '.content-area', function() {
+$(document).on('mousedown touchstart', function(e) {
+    if (!$(e.target).closest('.content-area').length && window.getSelection) {
+        if ($(e.target).closest('#context-menu').length > 0) return; 
+        window.getSelection().removeAllRanges();
+    }
+});
+
+$(document).on('keyup mouseup touchend', '.content-area', function() {
     saveSelection();
+});
+
+$(document).on('focus', '.content-area', function() {
+    $(this).closest('.canvas-box').addClass('is-editing');
+}).on('blur', '.content-area', function() {
+    $(this).closest('.canvas-box').removeClass('is-editing');
+});
+
+document.addEventListener('selectionchange', () => {
+    if (!isEditing) return;
+    let selection = window.getSelection();
+    if (selection.rangeCount > 0 && selection.anchorNode) {
+        let parentEl = selection.anchorNode.nodeType === 3 ? selection.anchorNode.parentNode : selection.anchorNode;
+        if ($(parentEl).closest('.content-area').length > 0) {
+            savedSelection = selection.getRangeAt(0);
+            let currentSize = window.getComputedStyle(parentEl).fontSize; 
+            let fontSizePicker = document.getElementById('font-size-select');
+            if (fontSizePicker) {
+                $(fontSizePicker).val(parseInt(currentSize));
+            }
+        }
+    }
 });
 
 function format(command, value = null) {
@@ -81,16 +125,31 @@ function format(command, value = null) {
 }
 
 function applyFontSize(size) {
+    saveHistory(); 
     restoreSelection();
     document.execCommand("fontSize", false, "7");
     let fontElements = document.getElementsByTagName("font");
+
     for (let i = 0, len = fontElements.length; i < len; ++i) {
         if (fontElements[i].size == "7") {
             fontElements[i].removeAttribute("size");
             fontElements[i].style.fontSize = size + "px";
+            $(fontElements[i]).find('*').css('font-size', '');
         }
     }
-    saveHistory();
+
+    let selStr = window.getSelection().toString();
+    let $activeBox = $('.selected-box');
+
+    if ($activeBox.length > 0) {
+        $activeBox.css({'height': 'auto', 'min-height': '50px', 'overflow': 'visible'});
+    }
+
+    if (!selStr && $activeBox.find('.content-area').length > 0) {
+        $activeBox.find('.content-area').css('font-size', size + 'px');
+        $activeBox.find('.content-area *').css('font-size', '');
+    }
+    saveHistory(); 
 }
 
 function applyLineHeight(val) {
@@ -108,9 +167,10 @@ function applyLineHeight(val) {
     }
 }
 
-$(document).on('mousemove', function(e) {
-    lastMouseX = e.clientX;
-    lastMouseY = e.clientY;
+$(document).on('mousemove touchmove', function(e) {
+    let isTouch = e.type.startsWith('touch');
+    lastMouseX = isTouch ? e.originalEvent.touches[0].clientX : e.clientX;
+    lastMouseY = isTouch ? e.originalEvent.touches[0].clientY : e.clientY;
 });
 
 function getPasteCoords() {
@@ -162,15 +222,73 @@ function formatTime(seconds) {
     return m + ":" + (s < 10 ? "0" : "") + s;
 }
 
-// ==========================================================================
-// SECTION 3: STORAGE, PERSISTENCE & EXPORT
-// ==========================================================================
-function cleanCanvasForSave() {
-    let $menu = $('#context-menu').detach();
-    let rawHtml = document.getElementById('canvas').innerHTML;
-    $('#canvas').append($menu);
+function enforceBoundaries() {
+    $('.canvas-box').each(function() {
+        let $p = $(this).closest('.page');
+        if (!$p.length) return;
 
-    return rawHtml.replace(/ selected-box| selected-cell| pin-active-focus| pin-text-visible| pin-text-left| pin-hover-visible| is-editing-text| is-rotating| is-selected/g, '');
+        let pw = $p.width(); 
+        let ph = $p.height();
+        let left = parseFloat($(this).css('left')) || 0;
+        let top = parseFloat($(this).css('top')) || 0;
+        let w = $(this).outerWidth() || 50;
+        let h = $(this).outerHeight() || 50;
+
+        let newLeft = left;
+        let newTop = top;
+
+        if (left < 0) newLeft = 10;
+        if (top < 0) newTop = 10;
+        if (left + w > pw) newLeft = Math.max(10, pw - w - 10);
+        if (top + h > ph) newTop = Math.max(10, ph - h - 10);
+
+        if (newLeft !== left || newTop !== top) {
+            $(this).css({ 'left': newLeft + 'px', 'top': newTop + 'px' });
+        }
+    });
+}
+
+// ==========================================================================
+// SECTION 3: STORAGE, PERSISTENCE & FAST UNDO
+// ==========================================================================
+function getPageHTML() {
+    let pageElement = document.getElementById('p-' + current);
+    if (!pageElement) return { html: "", style: "" };
+    let clone = pageElement.cloneNode(true);
+    let dirtyElements = clone.querySelectorAll('.selected-box, .selected-cell, .pin-active-focus, .pin-text-visible, .pin-text-left, .pin-hover-visible, .is-editing-text, .is-rotating, .is-selected');
+    dirtyElements.forEach(el => {
+        el.classList.remove('selected-box', 'selected-cell', 'pin-active-focus', 'pin-text-visible', 'pin-text-left', 'pin-hover-visible', 'is-editing-text', 'is-rotating', 'is-selected');
+        if (el.className.trim() === '') el.removeAttribute('class');
+    });
+    return { html: clone.innerHTML, style: pageElement.getAttribute('style') || "" };
+}
+
+function getFullCanvasHTML() {
+    let canvasElement = document.getElementById('canvas');
+    if (!canvasElement) return "";
+    let clone = canvasElement.cloneNode(true);
+    let menu = clone.querySelector('#context-menu');
+    if (menu) menu.remove();
+    let dirtyElements = clone.querySelectorAll('.selected-box, .selected-cell, .pin-active-focus, .pin-text-visible, .pin-text-left, .pin-hover-visible, .is-editing-text, .is-rotating, .is-selected');
+    dirtyElements.forEach(el => {
+        el.classList.remove('selected-box', 'selected-cell', 'pin-active-focus', 'pin-text-visible', 'pin-text-left', 'pin-hover-visible', 'is-editing-text', 'is-rotating', 'is-selected');
+        if (el.className.trim() === '') el.removeAttribute('class');
+    });
+    return clone.innerHTML;
+}
+
+async function autoSaveToBrowser() {
+    if ($('#canvas').html().length > 100) {
+        try {
+            await localforage.setItem(`nd_${LECTURE_ID}_canvas`, getFullCanvasHTML());
+            await localforage.setItem(`nd_${LECTURE_ID}_nav`, $('#nav-list-container').html());
+            await localforage.setItem(`nd_${LECTURE_ID}_pages`, totalPages);
+            await localforage.setItem(`nd_${LECTURE_ID}_title`, $('#lecture-title').text());
+            await localforage.setItem(`nd_${LECTURE_ID}_width`, parseInt($('#canvas').attr('data-width')) || 816); 
+        } catch(e) {
+            console.warn("Storage Limit Reached or Database Error.", e);
+        }
+    }
 }
 
 async function clearBrowserMemory() {
@@ -181,20 +299,6 @@ async function clearBrowserMemory() {
         await localforage.removeItem(`nd_${LECTURE_ID}_title`);
         await localforage.removeItem(`nd_${LECTURE_ID}_width`);
         location.reload();
-    }
-}
-
-async function autoSaveToBrowser() {
-    if ($('#canvas').html().length > 100) {
-        try {
-            await localforage.setItem(`nd_${LECTURE_ID}_canvas`, cleanCanvasForSave());
-            await localforage.setItem(`nd_${LECTURE_ID}_nav`, $('#nav-list-container').html());
-            await localforage.setItem(`nd_${LECTURE_ID}_pages`, totalPages);
-            await localforage.setItem(`nd_${LECTURE_ID}_title`, $('#lecture-title').text());
-            await localforage.setItem(`nd_${LECTURE_ID}_width`, parseInt($('#canvas').attr('data-width')) || 816); 
-        } catch(e) {
-            console.warn("Storage Limit Reached or Database Error.", e);
-        }
     }
 }
 
@@ -247,20 +351,20 @@ async function restoreFromBrowser() {
             }
         });
 
+        enforceBoundaries();
         updateCanvasDimensions();
         setZoom(currentZoom);
-        bindAudioEvents(); 
     } catch(e) {
         console.warn("Error restoring from IndexedDB", e);
     }
 }
 
 function saveHistory() { 
-    if (!lastSavedState) lastSavedState = cleanCanvasForSave();
-    let currentState = cleanCanvasForSave(); 
-    if (lastSavedState !== currentState) {
-        noteHistory.push(lastSavedState); 
-        if (noteHistory.length > 10) noteHistory.shift(); 
+    if (!lastSavedState) lastSavedState = getPageHTML();
+    let currentState = getPageHTML(); 
+    if (lastSavedState.html !== currentState.html || lastSavedState.style !== currentState.style) {
+        noteHistory.push({ page: current, state: lastSavedState }); 
+        if (noteHistory.length > 5) noteHistory.shift(); 
         $('#undo-btn').prop('disabled', false); 
     }
     lastSavedState = currentState;
@@ -268,95 +372,66 @@ function saveHistory() {
 
 function undo() { 
     if (noteHistory.length > 0) { 
-        let $menu = $('#context-menu').detach(); 
         let prevState = noteHistory.pop(); 
-        $('#canvas').html(prevState); 
+        let $menu = $('#context-menu').detach(); 
+        let $page = $(`#p-${prevState.page}`);
+        $page.html(prevState.state.html); 
+        $page.attr('style', prevState.state.style);
         $('#canvas').append($menu); 
-        lastSavedState = cleanCanvasForSave(); 
+        if(current !== prevState.page) goTo(prevState.page);
+        lastSavedState = getPageHTML(); 
         if (noteHistory.length === 0) $('#undo-btn').prop('disabled', true); 
-        refreshAnnotations(); updateContextMenu(); 
-        bindAudioEvents();
-        if (isEditing) { 
-            interact('.canvas-box').unset(); 
-            interact('.pin').unset(); 
-            toggleEdit(); toggleEdit(); 
-        } 
+        refreshAnnotations(); 
+        updateContextMenu(); 
+        if (isEditing) { interact('.canvas-box').unset(); interact('.pin').unset(); toggleEdit(); toggleEdit(); } 
     } 
 }
 
-function showExportModal() {
-    $('#export-modal-bg').show();
-}
+function showExportModal() { $('#export-modal-bg').show(); }
 
 function printToPDF() {
     $('#export-modal-bg').hide();
     if (isEditing) toggleEdit();
-
     let wasDark = $('body').hasClass('dark');
     let wasScrollMode = currentViewMode === 'scroll';
-
     $('body').removeClass('dark');
-    if (!wasScrollMode) {
-        $('#canvas').addClass('scroll-mode');
-    }
-
+    if (!wasScrollMode) $('#canvas').addClass('scroll-mode');
     setTimeout(() => {
         window.print();
         if (wasDark) $('body').addClass('dark');
-        if (!wasScrollMode) {
-            $('#canvas').removeClass('scroll-mode');
-        }
+        if (!wasScrollMode) $('#canvas').removeClass('scroll-mode');
     }, 500);
 }
 
 function saveNotebookToFile() {
     $('#export-modal-bg').hide();
-
     let wasEditing = isEditing;
     if (isEditing) toggleEdit();
-
     let documentClone = document.documentElement.cloneNode(true);
-
     let fullHtml = "<!DOCTYPE html>\n" + documentClone.outerHTML;
     let blob = new Blob([fullHtml], { type: "text/html;charset=utf-8" });
     let link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-
     let title = $('#lecture-title').text().trim() || "NoteDump_Saved";
     link.download = title + ".html";
-
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-
     if (wasEditing) toggleEdit();
     showToast("💾 Notebook saved successfully!");
 }
 
 function saveReadOnlyNotebook() {
     $('#export-modal-bg').hide();
-
     let wasEditing = isEditing;
-    if (isEditing) toggleEdit(); // Force into view mode
-
+    if (isEditing) toggleEdit(); 
     let documentClone = document.documentElement.cloneNode(true);
     let $clone = $(documentClone);
 
-    // Strip out all editing capabilities
-    $clone.find('#edit-btn').remove(); 
-    $clone.find('.action-btn[title="Add Page"]').remove();
-    $clone.find('.action-btn[title="Add Section"]').remove();
-    $clone.find('#fab-container').remove(); 
-    $clone.find('#canvas-global-tools').remove();
-    $clone.find('.del-btn').remove(); 
-    $clone.find('.delete-page-btn').remove(); 
+    $clone.find('#edit-btn, .action-btn[title="Add Page"], .action-btn[title="Add Section"], #fab-container, #canvas-global-tools, .del-btn, .delete-page-btn, .sketch-del, .sticky-dropdown-tools, .ipc-bottom-row').remove(); 
     $clone.find('.drag-handle').removeClass('drag-handle'); 
     $clone.find('.pin-drag-handle').removeClass('pin-drag-handle'); 
-    $clone.find('.sketch-del').remove(); 
-    $clone.find('.sticky-dropdown-tools').remove();
-    $clone.find('.ipc-bottom-row').remove(); 
 
-    // Make text areas readonly in the clone
     $clone.find('textarea').attr('readonly', true);
     $clone.find('[contenteditable="true"]').attr('contenteditable', 'false');
 
@@ -368,9 +443,7 @@ function saveReadOnlyNotebook() {
     let blob = new Blob([fullHtml], { type: "text/html;charset=utf-8" });
     let link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-
     link.download = currentTitle + "_ReadOnly.html";
-
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -399,11 +472,59 @@ function updateCanvasDimensions() {
     setZoom(currentZoom);
 }
 
+function showLinesModal() { $('#lines-modal-bg').show(); }
+
+function toggleLines() {
+    let isActive = $('#global-lines-check').is(':checked');
+    if (isActive) {
+        applyLinesFromModal(true); 
+    } else {
+        saveHistory();
+        $(`#p-${current}`).css('background-image', 'none');
+    }
+}
+
+function applyLinesFromModal(skipHide = false) {
+    saveHistory();
+    if (!skipHide) $('#lines-modal-bg').hide();
+    $('#global-lines-check').prop('checked', true);
+
+    let useH = $('#lines-h-check').is(':checked');
+    let useV = $('#lines-v-check').is(':checked');
+    let cmH = parseFloat($('#lines-h-cm').val()) || 1.5;
+    let cmV = parseFloat($('#lines-v-cm').val()) || 1.5;
+
+    let pxH = Math.round(cmH * 37.795);
+    let pxV = Math.round(cmV * 37.795);
+
+    let $activePage = $(`#p-${current}`);
+
+    if (!useH && !useV) {
+        $activePage.css('background-image', 'none');
+        return;
+    }
+
+    let svgPath = "";
+    let bgW = useV ? pxV : 10;
+    let bgH = useH ? pxH : 10;
+
+    if (useH) svgPath += `<line x1="0" y1="${pxH-1}" x2="${bgW}" y2="${pxH-1}" stroke="%23cbd5e1" stroke-width="2" />`;
+    if (useV) svgPath += `<line x1="${pxV-1}" y1="0" x2="${pxV-1}" y2="${bgH}" stroke="%23cbd5e1" stroke-width="2" />`;
+
+    let svgUrl = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="${bgW}" height="${bgH}">${svgPath}</svg>`;
+
+    $activePage.css({
+        'background-image': `url('${svgUrl}')`,
+        'background-size': `${bgW}px ${bgH}px`,
+        'background-repeat': 'repeat'
+    });
+    showToast("Notebook guidelines applied!");
+}
+
 function applyCanvasSettings() {
     saveHistory();
     let wCm = parseFloat($('#canvas-w-cm').val()) || 21.6;
     let hCm = parseFloat($('#canvas-h-cm').val()) || 27.9;
-    let grid = $('#grid-select').val();
     let applyAll = $('#uniform-height-check').is(':checked');
 
     let pxW = Math.round(wCm * 37.795);
@@ -426,40 +547,19 @@ function applyCanvasSettings() {
             let newTop = currentTop;
             let newLeft = currentLeft;
 
-            if (currentTop + elH > pxH) { newTop = Math.max(0, pxH - elH - 5); }
-            if (currentLeft + elW > pxW) { newLeft = Math.max(0, pxW - elW - 5); }
+            if (currentTop + elH > pxH && elH < pxH) { newTop = Math.max(0, pxH - elH - 5); }
+            if (currentLeft + elW > pxW && elW < pxW) { newLeft = Math.max(0, pxW - elW - 5); }
 
             if (newTop !== currentTop || newLeft !== currentLeft) {
                 $el.css({ top: newTop + 'px', left: newLeft + 'px', transform: 'translate(0px, 0px)' });
                 $el.attr('data-x', 0); $el.attr('data-y', 0);
             }
         });
-
-        $page.find('.page-grid-overlay').remove();
-        if (grid !== "0") {
-            let overlay = `<div class="page-grid-overlay grid-div-${grid}">`;
-            let cells = parseInt(grid);
-            for(let i=0; i<cells; i++) overlay += `<div class="grid-cell"></div>`;
-            overlay += `</div>`;
-            $page.prepend(overlay);
-        }
     });
 
     updateCanvasDimensions();
     autoSaveToBrowser();
     updateContextMenu();
-}
-
-function changeCanvasHeight(delta) {
-    let currentH = parseFloat($('#canvas-h-cm').val()) || 27.9;
-    $('#canvas-h-cm').val((currentH + (delta > 0 ? 3 : -3)).toFixed(1));
-    applyCanvasSettings();
-}
-
-function changeCanvasWidth(delta) {
-    let currentW = parseFloat($('#canvas-w-cm').val()) || 21.6;
-    $('#canvas-w-cm').val((currentW + (delta > 0 ? 3 : -3)).toFixed(1));
-    applyCanvasSettings();
 }
 
 function mergeNextPage() {
@@ -480,11 +580,8 @@ function mergeNextPage() {
 
     $nextPage.find('.canvas-box, .pin').each(function() {
         if ($(this).hasClass('pin') && $(this).parent().hasClass('canvas-box')) return; 
-
         let t = parseFloat($(this).css('top')) || 0;
-        if ($(this).css('top').includes('%')) {
-            t = (parseFloat($(this).css('top')) / 100) * nextH; 
-        }
+        if ($(this).css('top').includes('%')) t = (parseFloat($(this).css('top')) / 100) * nextH; 
         $(this).css('top', (t + currentH) + 'px');
         $currPage.append($(this));
     });
@@ -494,13 +591,8 @@ function mergeNextPage() {
         let currSvg = getPageSvg();
         let g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         g.setAttribute('transform', `translate(0, ${currentH})`);
-
-        $nextSvg.find('.drawn-path').each(function() {
-            g.appendChild(this);
-        });
-        if(g.childNodes.length > 0) {
-            currSvg.appendChild(g);
-        }
+        $nextSvg.find('.drawn-path').each(function() { g.appendChild(this); });
+        if(g.childNodes.length > 0) currSvg.appendChild(g);
     }
 
     $nextPage.remove();
@@ -534,7 +626,6 @@ function splitPage() {
 
     $currPage.find('.canvas-box, .pin').each(function() {
         if ($(this).hasClass('pin') && $(this).parent().hasClass('canvas-box')) return; 
-
         let t = parseFloat($(this).css('top')) || 0;
         if (t >= newH) {
             $(this).css('top', (t - newH) + 'px');
@@ -560,9 +651,7 @@ function splitPage() {
         });
     }
 
-    if (currentViewMode === 'single') {
-        $('#canvas-h-cm').val(Math.round((newH / 37.795) * 10) / 10);
-    }
+    if (currentViewMode === 'single') $('#canvas-h-cm').val(Math.round((newH / 37.795) * 10) / 10);
 
     updateCanvasDimensions();
     autoSaveToBrowser();
@@ -652,7 +741,6 @@ function goTo(id) {
     if (currentViewMode === 'single') {
         $('.page').removeClass('active');
         $('#p-' + id).addClass('active');
-
         recenterViewport();
     } else {
         let $p = $(`#p-${id}`);
@@ -726,12 +814,29 @@ function toggleNotebookView() {
     $('body').toggleClass('notebook-mode');
     let isNotebook = $('body').hasClass('notebook-mode');
 
+    let metaViewport = document.querySelector('meta[name="viewport"]');
+    if (!metaViewport) {
+        metaViewport = document.createElement('meta');
+        metaViewport.name = "viewport";
+        document.head.appendChild(metaViewport);
+    }
+
     if (isNotebook) {
         if (isEditing) toggleEdit(); 
         $('#sticky-panel').removeClass('open');
         $('#pin-panel').removeClass('open');
         $('body').removeClass('panel-open');
+
+        metaViewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes');
         showToast("📖 Notebook View Activated");
+    } else {
+        metaViewport.setAttribute('content', 'width=1200');
+        showToast("🖥️ Desktop Editing View Activated");
+
+        setTimeout(() => {
+            updateCanvasDimensions();
+            recenterViewport();
+        }, 300);
     }
 }
 
@@ -785,7 +890,7 @@ function deletePage(id, event) {
 }
 
 // ==========================================================================
-// SECTION 5: TOOLS (Search, Image Crop, Context Menu, BG Color)
+// SECTION 5: TOOLS (Search, Dashboards, BG Color, Image Crop)
 // ==========================================================================
 function toggleSearchBar() {
     $('#sidebar-search').slideToggle(200);
@@ -981,6 +1086,7 @@ function updateContextMenu() {
     let $sel = $('.selected-box');
     if($sel.length > 0 && isEditing) {
         $('#context-menu').css('display', 'flex');
+        $('#context-menu').removeClass('is-vertical-menu');
 
         let hasTable = $sel.find('table').length > 0;
         let hasAudio = $sel.find('.custom-audio-player').length > 0;
@@ -991,22 +1097,28 @@ function updateContextMenu() {
             $('.menu-table-tools').css('display', 'flex');
             $('.menu-img-tools').hide(); 
             $('.menu-text-tools').css('display', 'flex'); 
+            $('.menu-text-tools span').html('Text<br>Color');
             $('.menu-bg-tools').css('display', 'flex'); 
+            $('.menu-bg-tools span').html('Background<br>Color');
         } else if (hasImage) {
             $('.menu-table-tools').hide();
             $('.menu-text-tools').hide(); 
-            $('.menu-bg-tools').hide(); // Hide background tools for images
+            $('.menu-bg-tools').hide(); 
             $('.menu-img-tools').css('display', 'flex');
         } else if (hasAudio) {
             $('.menu-table-tools').hide();
             $('.menu-img-tools').hide();
-            $('.menu-text-tools').hide(); 
+            $('.menu-text-tools').css('display', 'flex'); 
+            $('.menu-text-tools span').html('Player<br>BG');
             $('.menu-bg-tools').css('display', 'flex'); 
+            $('.menu-bg-tools span').html('Button<br>Color');
         } else {
             $('.menu-table-tools').hide();
             $('.menu-img-tools').hide();
             $('.menu-text-tools').css('display', 'flex'); 
+            $('.menu-text-tools span').html('Text<br>Color');
             $('.menu-bg-tools').css('display', 'flex'); 
+            $('.menu-bg-tools span').html('Background<br>Color');
         }
 
         let currentOp = 1;
@@ -1048,32 +1160,37 @@ function updateContextMenu() {
         });
 
         $('#context-menu').css({display: 'flex', top: '-9999px', left: '-9999px'});
+
         let cHeight = $('#context-menu').outerHeight() || 50;
         let cWidth = $('#context-menu').outerWidth() || 350;
 
         let cvp = document.getElementById('canvas-viewport');
-
-        let vTop = (cvp.scrollTop - 150) / currentZoom;
-        let vLeft = (cvp.scrollLeft - 400) / currentZoom;
+        let vTop = (cvp.scrollTop) / currentZoom;
+        let vLeft = (cvp.scrollLeft) / currentZoom;
         let vRight = vLeft + (cvp.clientWidth / currentZoom);
+        let vBottom = vTop + (cvp.clientHeight / currentZoom);
 
-        let canvasW = parseInt($('#canvas').attr('data-width')) || 816;
         let finalMenuTop = topPos - cHeight - 15;
-        let finalMenuLeft = leftPos;
+        let finalMenuLeft = leftPos + ($sel.outerWidth() / 2) - (cWidth / 2);
 
         if (finalMenuLeft < vLeft + 10) finalMenuLeft = vLeft + 10;
         if (finalMenuLeft + cWidth > vRight - 10) finalMenuLeft = vRight - cWidth - 10;
-        if (finalMenuLeft + cWidth > canvasW) finalMenuLeft = canvasW - cWidth - 5;
 
         if (finalMenuTop < vTop + 10) {
-            let maxBottom = 0;
-            $sel.each(function() {
-                let t = parseFloat($(this).css('top')) || 0;
-                let ty = parseFloat($(this).attr('data-y')) || 0;
-                let h = $(this).outerHeight();
-                if (t + ty + h > maxBottom) maxBottom = t + ty + h;
-            });
-            finalMenuTop = maxBottom + 15;
+            $('#context-menu').addClass('is-vertical-menu');
+            cHeight = $('#context-menu').outerHeight() || 300;
+            cWidth = $('#context-menu').outerWidth() || 60;
+
+            finalMenuTop = Math.max(vTop + 10, topPos);
+            if (finalMenuTop + cHeight > vBottom - 10) {
+                finalMenuTop = vBottom - cHeight - 10;
+            }
+
+            finalMenuLeft = leftPos + $sel.outerWidth() + 10;
+
+            if (finalMenuLeft + cWidth > vRight - 10) {
+                finalMenuLeft = leftPos - cWidth - 10; 
+            }
         }
 
         $('#context-menu').css({top: finalMenuTop + 'px', left: finalMenuLeft + 'px'});
@@ -1152,106 +1269,31 @@ function addChapterBelow() {
     if (!isEditing) { toggleEdit(); }
 }
 
-function activateTextPlacement() {
-    isPlacingText = true;
-    $('#canvas').addClass('text-placement-active');
-    showToast("Click anywhere on the page to place your text.");
+function activateTextPlacement(e) {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    setTimeout(() => {
+        isPlacingText = true;
+        $('#canvas').addClass('text-placement-active');
+        showToast("📝 Tap anywhere on the page to place text.");
+        if (window.innerWidth <= 768 || (document.querySelector('meta[name="viewport"]') && document.querySelector('meta[name="viewport"]').content.includes('1200'))) {
+            $('#canvas-global-tools').hide(); 
+        }
+    }, 150);
 }
 
-function dropStickyNote() {
-    isPlacingSticky = true;
-    $('#canvas').addClass('text-placement-active');
-    showToast("📍 Click anywhere on the page to drop your sticky note.");
+function dropStickyNote(e) {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    setTimeout(() => {
+        isPlacingSticky = true;
+        $('#canvas').addClass('text-placement-active');
+        showToast("📍 Tap anywhere on the page to place your sticky note.");
+        $('.floating-panel').removeClass('open');
+        $('body').removeClass('panel-open');
+        if (window.innerWidth <= 768 || (document.querySelector('meta[name="viewport"]') && document.querySelector('meta[name="viewport"]').content.includes('1200'))) {
+            $('#canvas-global-tools').hide();
+        }
+    }, 150);
 }
-
-function addAudioCenter() { 
-    let i = document.createElement('input'); i.type = 'file'; i.accept = 'audio/*'; 
-    i.onchange = e => { 
-        let file = e.target.files[0];
-        if (!file) return;
-
-        let r = new FileReader(); 
-        r.readAsDataURL(file); 
-        r.onload = ev => { 
-            saveHistory(); 
-            let coords = getScreenCenterCoords(350, 55);
-
-            let $newAudioContainer = $(`
-                <div class="canvas-box selected-box" style="top:${coords.y}px; left:${coords.x}px; width:350px; height:55px; padding:0; z-index:${getHighestZ()}; transform: translate(0px, 0px); border-radius:30px;">
-                    <div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div>
-                    <div class="custom-audio-player">
-                        <button class="audio-play-btn"><i class="fas fa-play"></i></button>
-                        <div class="audio-track"><div class="audio-progress"></div></div>
-                        <span class="audio-time">0:00</span>
-                        <div class="audio-expanded-controls">
-                            <button class="audio-skip-btn" data-skip="-10" title="Back 10s"><i class="fas fa-undo"></i></button>
-                            <button class="audio-skip-btn" data-skip="10" title="Forward 10s"><i class="fas fa-redo"></i></button>
-                            <button class="audio-speed-btn" title="Playback Speed">1x</button>
-                        </div>
-                        <audio src="${ev.target.result}" style="display:none;"></audio>
-                    </div>
-                </div>
-            `);
-
-            $(`#p-${current}`).append($newAudioContainer); 
-
-            $newAudioContainer.find('audio').on('loadedmetadata', function() {
-                $(this).siblings('.audio-time').text('0:00 / ' + formatTime(this.duration));
-            });
-
-            if(isEditing) { toggleEdit(); toggleEdit(); } 
-            updateContextMenu(); 
-        }; 
-    }; 
-    i.click(); 
-}
-
-$(document).on('click', '.audio-skip-btn', function(e) {
-    e.stopPropagation();
-    let audio = $(this).closest('.custom-audio-player').find('audio')[0];
-    if (audio) audio.currentTime += parseFloat($(this).attr('data-skip'));
-});
-
-$(document).on('click', '.audio-speed-btn', function(e) {
-    e.stopPropagation();
-    let audio = $(this).closest('.custom-audio-player').find('audio')[0];
-    if (!audio) return;
-    let speeds = [1, 1.25, 1.5, 2];
-    let nextSpeed = speeds[(speeds.indexOf(audio.playbackRate) + 1) % speeds.length] || 1;
-    audio.playbackRate = nextSpeed;
-    $(this).text(nextSpeed + 'x');
-});
-
-$(document).on('click', '.audio-play-btn', function(e) {
-    e.stopPropagation(); 
-    let $player = $(this).closest('.custom-audio-player');
-    let audio = $player.find('audio')[0];
-    let $icon = $(this).find('i');
-
-    if (audio.paused) {
-        $('audio').each(function(){ 
-            if(this !== audio) {
-                this.pause(); 
-                $(this).siblings('.audio-play-btn').find('i').removeClass('fa-pause').addClass('fa-play'); 
-            }
-        });
-        audio.play();
-        $icon.removeClass('fa-play').addClass('fa-pause');
-    } else {
-        audio.pause();
-        $icon.removeClass('fa-pause').addClass('fa-play');
-    }
-});
-
-$(document).on('click', '.audio-track', function(e) {
-    e.stopPropagation();
-    let audio = $(this).siblings('audio')[0];
-    if (audio && audio.duration) {
-        let pct = e.offsetX / $(this).width();
-        audio.currentTime = pct * audio.duration;
-        $(this).find('.audio-progress').css('width', (pct * 100) + '%');
-    }
-});
 
 function addTableCenter() {
     $('#table-modal-bg').show();
@@ -1382,39 +1424,23 @@ function equalizeTable() {
     let percW = (100 / maxCols).toFixed(4) + '%';
     let percH = (100 / numRows).toFixed(4) + '%';
 
-    // Force strict table layout and strip bad inline styles
     $table.removeAttr('style').css({
-        'table-layout': 'fixed',
-        'width': '100%',
-        'height': '100%',
-        'border-collapse': 'collapse',
-        'font-size': '12px',
-        'margin': '0',
-        'padding': '0'
+        'table-layout': 'fixed', 'width': '100%', 'height': '100%',
+        'border-collapse': 'collapse', 'font-size': '12px', 'margin': '0', 'padding': '0'
     });
 
     let colgroupHtml = "";
-    for(let c=0; c<maxCols; c++){
-        colgroupHtml += `<col style="width:${percW};">`;
-    }
+    for(let c=0; c<maxCols; c++) colgroupHtml += `<col style="width:${percW};">`;
 
     $table.find('colgroup').remove();
     $table.prepend(`<colgroup>${colgroupHtml}</colgroup>`);
-
     $table.find('tr').css('height', percH);
 
-    // Aggressively force cells to obey math
     $table.find('td, th').each(function() {
         $(this).css({
-            'width': percW,
-            'height': percH,
-            'border': '1px solid #cbd5e1',
-            'padding': '4px 6px',
-            'word-break': 'break-word',
-            'white-space': 'pre-wrap',
-            'vertical-align': 'top',
-            'overflow': 'hidden',
-            'resize': 'none'
+            'width': percW, 'height': percH, 'border': '1px solid #cbd5e1', 'padding': '4px 6px',
+            'word-break': 'break-word', 'white-space': 'pre-wrap', 'vertical-align': 'top',
+            'overflow': 'hidden', 'resize': 'none'
         });
     });
 
@@ -1478,13 +1504,91 @@ function addImgCenter() {
     i.click(); 
 }
 
+function addAudioCenter() {
+    let i = document.createElement('input'); i.type = 'file'; i.accept = 'audio/*';
+    i.onchange = e => {
+        let r = new FileReader(); r.readAsDataURL(e.target.files[0]);
+        r.onload = ev => {
+            saveHistory();
+            let coords = getScreenCenterCoords(350, 50); 
+            let audioHtml = `
+                <div class="custom-audio-player">
+                    <button class="audio-play-btn" onclick="togglePlay(this)" data-state="paused"><i class="fas fa-play"></i></button>
+                    <div class="audio-track" onclick="seekAudio(event, this)">
+                        <div class="audio-progress"></div>
+                    </div>
+                    <span class="audio-time">0:00</span>
+                    <button class="audio-skip-btn" onclick="skipAudio(this, -5)" title="Backward 5s"><i class="fas fa-undo-alt"></i></button>
+                    <button class="audio-skip-btn" onclick="skipAudio(this, 5)" title="Forward 5s"><i class="fas fa-redo-alt"></i></button>
+                    <button class="audio-speed-btn" onclick="toggleSpeed(this)" title="Playback Speed">1x</button>
+                    <audio src="${ev.target.result}" style="display:none;" ontimeupdate="updateAudioUI(this)" onloadedmetadata="initAudioUI(this)" onended="resetAudioUI(this)"></audio>
+                </div>
+            `;
+            $(`#p-${current}`).append(`<div class="canvas-box selected-box" style="top:${coords.y}px;left:${coords.x}px;width:350px;height:auto;z-index:${getHighestZ()};transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div>${audioHtml}</div>`);
+            if(isEditing) { toggleEdit(); toggleEdit(); }
+            updateContextMenu();
+        };
+    };
+    i.click();
+}
+
+function skipAudio(btn, amount) {
+    let audio = $(btn).siblings('audio')[0];
+    audio.currentTime = Math.max(0, Math.min(audio.currentTime + amount, audio.duration));
+}
+
+function toggleSpeed(btn) {
+    let audio = $(btn).siblings('audio')[0];
+    let speeds = [1, 1.5, 2, 0.5]; 
+    let currentSpeed = audio.playbackRate || 1;
+    let nextIndex = (speeds.indexOf(currentSpeed) + 1) % speeds.length;
+    let nextSpeed = speeds[nextIndex] || 1;
+    audio.playbackRate = nextSpeed;
+    $(btn).text(nextSpeed + 'x');
+}
+
+function togglePlay(btn) {
+    let audio = $(btn).siblings('audio')[0];
+    let icon = $(btn).find('i');
+    if (audio.paused) {
+        audio.play();
+        icon.removeClass('fa-play').addClass('fa-pause');
+    } else {
+        audio.pause();
+        icon.removeClass('fa-pause').addClass('fa-play');
+    }
+}
+function updateAudioUI(audio) {
+    let pct = (audio.currentTime / audio.duration) * 100;
+    $(audio).siblings('.audio-track').find('.audio-progress').css('width', pct + '%');
+    $(audio).siblings('.audio-time').text(formatTime(audio.currentTime));
+}
+function initAudioUI(audio) {
+    $(audio).siblings('.audio-time').text(formatTime(audio.duration));
+}
+function resetAudioUI(audio) {
+    let btn = $(audio).siblings('.audio-play-btn');
+    btn.find('i').removeClass('fa-pause').addClass('fa-play');
+    $(audio).siblings('.audio-track').find('.audio-progress').css('width', '0%');
+    $(audio).siblings('.audio-time').text(formatTime(audio.duration));
+}
+function seekAudio(e, track) {
+    let audio = $(track).siblings('audio')[0];
+    let rect = track.getBoundingClientRect();
+    let clickX = (e.clientX || e.originalEvent.touches[0].clientX) - rect.left;
+    let pct = clickX / rect.width;
+    audio.currentTime = pct * audio.duration;
+}
+
 // ==========================================================================
 // SECTION 7: PINS & ANNOTATIONS SYSTEM
 // ==========================================================================
 function addPinToSelectedImage() {
     saveHistory();
     let $box = $('.selected-box').first();
-    if ($box.length === 0) return;
+    if ($box.length === 0 || $box.find('img').length === 0) {
+        return showToast("⚠️ Image pins can only be added to images!");
+    }
 
     let highestOrder = -1;
     $(`#p-${current} .pin`).each(function() {
@@ -1493,8 +1597,8 @@ function addPinToSelectedImage() {
     });
 
     $box.append(`
-        <div class="pin" data-type="pin" data-shape="marker" data-note="Image Pin" data-angle="0" data-order="${highestOrder + 1}" style="top:50%; left:50%; width:32px; height:32px; margin-top:-16px; margin-left:-16px; transform: translate(0px, 0px); opacity:1; --pin-color: #ef4444;">
-            <div class="pin-rotator-group" style="transform: rotate(0deg);">
+        <div class="pin" data-type="pin" data-shape="marker" data-note="Image Pin" data-angle="0" data-scale="1" data-order="${highestOrder + 1}" style="top:50%; left:50%; width:32px; height:32px; margin-top:-16px; margin-left:-16px; transform: translate(0px, 0px); opacity:1; --pin-color: #ef4444;">
+            <div class="pin-rotator-group" style="transform: rotate(0deg) scale(1);">
                 <div class="pin-rotation-ring">
                     <div class="pin-rotate-dot" title="Drag to freely rotate pin"></div>
                 </div>
@@ -1539,8 +1643,9 @@ $(document).on('mousemove touchmove', function(e) {
     if(isRotatingPin && activePinToRotate) {
         e.preventDefault(); 
 
-        let clientX = e.clientX || (e.originalEvent.touches && e.originalEvent.touches[0].clientX);
-        let clientY = e.clientY || (e.originalEvent.touches && e.originalEvent.touches[0].clientY);
+        let isTouch = e.type.startsWith('touch');
+        let clientX = isTouch ? e.originalEvent.touches[0].clientX : e.clientX;
+        let clientY = isTouch ? e.originalEvent.touches[0].clientY : e.clientY;
 
         let rect = activePinToRotate[0].getBoundingClientRect();
 
@@ -1551,7 +1656,9 @@ $(document).on('mousemove touchmove', function(e) {
         let visualAngle = angle + 90;
 
         activePinToRotate.attr('data-angle', visualAngle);
-        activePinToRotate.find('.pin-rotator-group').css('transform', `rotate(${visualAngle}deg)`);
+
+        let currentScale = parseFloat(activePinToRotate.attr('data-scale')) || 1;
+        activePinToRotate.find('.pin-rotator-group').css('transform', `rotate(${visualAngle}deg) scale(${currentScale})`);
     }
 });
 
@@ -1571,7 +1678,8 @@ function updatePinAngle(origIdx, val) {
     debouncedSaveHistory();
     let $pin = getPinEl(origIdx);
     $pin.attr('data-angle', val);
-    $pin.find('.pin-rotator-group').css('transform', `rotate(${val}deg)`);
+    let currentScale = parseFloat($pin.attr('data-scale')) || 1;
+    $pin.find('.pin-rotator-group').css('transform', `rotate(${val}deg) scale(${currentScale})`);
 }
 
 function updatePinStyle(origIdx, property, value) {
@@ -1582,7 +1690,15 @@ function updatePinStyle(origIdx, property, value) {
     if(property === 'size') { 
         let s = parseInt(value);
         if ($pin.attr('data-type') === 'pin') {
-            $pin.css({width: s + 'px', height: s + 'px', marginTop: -(s/2) + 'px', marginLeft: -(s/2) + 'px'}); 
+            if ($pin.attr('data-shape') === 'rectangle') {
+                let currentH = parseInt($pin.css('height')) || 24;
+                $pin.css({width: s + 'px', height: currentH + 'px'}); 
+            } else {
+                let scaleVal = s / 32; 
+                $pin.attr('data-scale', scaleVal);
+                let currentAngle = parseFloat($pin.attr('data-angle')) || 0;
+                $pin.find('.pin-rotator-group').css('transform', `rotate(${currentAngle}deg) scale(${scaleVal})`);
+            }
         } else {
             $visual.css({width: s + 'px', height: s + 'px'}); 
         }
@@ -1612,6 +1728,7 @@ function togglePinShape(origIdx) {
     else if (nextShape === 'triangle') $btn.addClass('fa-caret-up');
 }
 
+// FIX: Removing the hardcoded class that broke interact.js draggable
 function toggleImagePinShape(origIdx) {
     debouncedSaveHistory();
     let $pin = getPinEl(origIdx);
@@ -1619,14 +1736,32 @@ function toggleImagePinShape(origIdx) {
     let nextShape = 'marker';
     let iconClass = 'fa-map-marker-alt';
 
-    if (currentShape === 'marker') { nextShape = 'arrow'; iconClass = 'fa-location-arrow'; }
-    else if (currentShape === 'arrow') { nextShape = 'triangle'; iconClass = 'fa-caret-up'; }
-    else { nextShape = 'marker'; iconClass = 'fa-map-marker-alt'; }
+    if (currentShape === 'marker') { 
+        nextShape = 'arrow'; iconClass = 'fa-location-arrow'; 
+        $pin.css({width: '32px', height: '32px', marginTop: '-16px', marginLeft: '-16px'});
+    }
+    else if (currentShape === 'arrow') { 
+        nextShape = 'rectangle'; iconClass = 'fa-vector-square'; 
+        let currentScale = parseFloat($pin.attr('data-scale')) || 1;
+        let rectWidth = Math.max(140, currentScale * 32); 
+        $pin.css({width: rectWidth + 'px', height: '24px', marginTop: '0', marginLeft: '0'});
+        $pin.attr('data-angle', 0);
+        $pin.find('.pin-rotator-group').css('transform', 'rotate(0deg) scale(1)');
+    }
+    else { 
+        nextShape = 'marker'; iconClass = 'fa-map-marker-alt'; 
+        let currentScale = parseFloat($pin.attr('data-scale')) || 1;
+        $pin.css({width: '32px', height: '32px', marginTop: '-16px', marginLeft: '-16px'});
+        $pin.find('.pin-rotator-group').css('transform', `rotate(0deg) scale(${currentScale})`);
+    }
 
     $pin.attr('data-shape', nextShape);
+    $pin.removeClass('pin-resize-target'); 
 
     let $btn = $(`#btn-img-shape-${origIdx} i`);
-    $btn.removeClass('fa-map-marker-alt fa-location-arrow fa-caret-up').addClass(iconClass);
+    $btn.removeClass('fa-map-marker-alt fa-location-arrow fa-vector-square').addClass(iconClass);
+
+    refreshAnnotations();
 }
 
 function addListToPin(origIdx, prefix) {
@@ -1674,8 +1809,8 @@ function switchTabToBox($box) {
     }
 }
 
-function focusPin(origIdx) { getPinEl(origIdx).addClass('pin-active-focus'); }
-function unfocusPin(origIdx) { getPinEl(origIdx).removeClass('pin-active-focus'); }
+function focusPin(origIdx) { getPinEl(origIdx).addClass('pin-hover-visible'); }
+function unfocusPin(origIdx) { getPinEl(origIdx).removeClass('pin-hover-visible'); }
 function deletePin(origIdx) { saveHistory(); getPinEl(origIdx).remove(); refreshAnnotations(); }
 
 function getAnnotations() {
@@ -1695,6 +1830,10 @@ function getAnnotations() {
 
         let pColor = $(this)[0].style.getPropertyValue('--pin-color') || '#ef4444';
 
+        let size = $(this).width();
+        let scale = parseFloat($(this).attr('data-scale')) || 1;
+        if (type === 'pin' && shape !== 'rectangle') size = scale * 32;
+
         annos.push({ 
             el: $(this),
             originalIndex: i, 
@@ -1702,7 +1841,7 @@ function getAnnotations() {
             y: offset ? offset.top : 0, 
             note: $(this).attr('data-note'), 
             color: pColor, 
-            size: $(this).width(), 
+            size: Math.round(size), 
             opacity: op,
             angle: angle,
             type: type,
@@ -1748,6 +1887,8 @@ function refreshAnnotations() {
     let $closeBtn = $header.find('.close-panel-btn');
     $header.empty().append($headerTitle, $closeBtn);
 
+    $headerTitle.html('<i class="fas fa-shapes"></i> Annotations');
+
     $('.pin-panel-tools').remove(); 
     let $toolsRow = $('<div class="pin-panel-tools"></div>');
     $header.after($toolsRow);
@@ -1767,7 +1908,7 @@ function refreshAnnotations() {
     let numImages = groupedData.images.size;
     if(!numImages) {
         $toolsRow.css('justify-content', 'center');
-        $panelBody.html("<p style='text-align:center; font-size:10px; color:#64748b; padding:10px;'>No image pins on this page.<br><br>Click an image and use the Blue Pin button to add one.</p>");
+        $panelBody.html("<p style='text-align:center; font-size:10px; color:#64748b; padding:10px;'>No annotations on this page.<br><br>Click an image and use the Blue Pin button to add one.</p>");
     } else {
         $toolsRow.css('justify-content', 'flex-start');
 
@@ -1778,8 +1919,13 @@ function refreshAnnotations() {
         let $tabsRow = $('<div class="pin-tabs-row"></div>');
         $toolsRow.append($tabsRow);
 
-        let orderedParents = $(`#p-${current} .canvas-box`).toArray();
-        let sortedParents = Array.from(groupedData.images.keys()).sort((a,b) => orderedParents.indexOf(a) - orderedParents.indexOf(b));
+        let sortedParents = Array.from(groupedData.images.keys()).sort((a, b) => {
+            let pinsA = groupedData.images.get(a).pins;
+            let minA = Math.min(...pinsA.map(p => p.order));
+            let pinsB = groupedData.images.get(b).pins;
+            let minB = Math.min(...pinsB.map(p => p.order));
+            return minA - minB;
+        });
 
         sortedParents.forEach((parentElement) => {
             let imgData = groupedData.images.get(parentElement);
@@ -1815,10 +1961,16 @@ function refreshAnnotations() {
                 }
                 let safeNote = p.note ? p.note.replace(/"/g, '&quot;') : "";
 
-                let shapeIcon = p.shape === 'arrow' ? 'fa-location-arrow' : (p.shape === 'triangle' ? 'fa-caret-up' : 'fa-map-marker-alt');
+                let shapeIcon = p.shape === 'arrow' ? 'fa-location-arrow' : (p.shape === 'rectangle' ? 'fa-vector-square' : 'fa-map-marker-alt');
+                let placeholderTxt = p.shape === 'rectangle' ? 'Redaction / Block Note...' : 'Pin Note...';
+
+                let isRect = p.shape === 'rectangle';
+                let sliderHtml = isRect ? 
+                    `<span style="font-size:10px; font-style:italic; color:#94a3b8; margin-left: 8px;">Use corner handle on canvas to resize</span>` :
+                    `<input type="range" min="15" max="300" value="${p.size}" class="sexy-slider" oninput="updatePinStyle(${p.originalIndex}, 'size', this.value)">`;
 
                 let cardStr = `
-                    <div id="anno-card-${p.originalIndex}" class="custom-image-pin-layout" data-orig-idx="${p.originalIndex}" title="${safeNote}" onmouseenter="focusPin(${p.originalIndex})" onmouseleave="unfocusPin(${p.originalIndex})">
+                    <div id="anno-card-${p.originalIndex}" class="custom-image-pin-layout" data-orig-idx="${p.originalIndex}" onmouseenter="focusPin(${p.originalIndex})" onmouseleave="unfocusPin(${p.originalIndex})">
                         <div class="ipc-top-row">
                             <div class="ipc-left-col ipc-tool-item">
                                 <div class="sketch-btn sketch-num pin-drag-handle" title="Drag to reorder" style="background:#1e293b; color:white; width:28px; height:28px; border-radius:4px;">#${displayNum}</div>
@@ -1828,12 +1980,12 @@ function refreshAnnotations() {
                                 <button id="btn-img-shape-${p.originalIndex}" class="sketch-btn" onclick="toggleImagePinShape(${p.originalIndex})" title="Change Shape" style="width:28px; height:28px; background:#1e293b;"><i class="fas ${shapeIcon}"></i></button>
                             </div>
                             <div class="ipc-right-col" style="display:flex; flex-direction:column; justify-content:space-between;">
-                                <textarea id="pin-text-${p.originalIndex}" class="sketch-textarea" oninput="updatePinText(${p.originalIndex}, this.value)" placeholder="Image Pin Note..." style="flex-grow:1; margin-bottom:6px; min-height:45px;">${p.note}</textarea>
+                                <textarea id="pin-text-${p.originalIndex}" class="sketch-textarea" oninput="updatePinText(${p.originalIndex}, this.value)" placeholder="${placeholderTxt}" style="flex-grow:1; margin-bottom:6px; min-height:45px;">${p.note}</textarea>
 
                                 <div class="ipc-bottom-row ipc-tool-item" style="display: flex; gap: 6px; align-items: center; margin-top: auto;">
-                                    <div class="ipc-size-bar" style="flex:1; background:#1e293b; padding: 0 10px; border-radius: 6px; display: flex; align-items: center; gap: 8px; height:28px;">
+                                    <div class="ipc-size-bar" style="flex:1; background:${isRect ? '#334155' : '#1e293b'}; padding: 0 10px; border-radius: 6px; display: flex; align-items: center; gap: 8px; height:28px;">
                                         <span style="font-size:10px; font-weight:bold; color:#cbd5e1; text-transform:uppercase;">Size</span>
-                                        <input type="range" min="15" max="100" value="${p.size}" class="sexy-slider" oninput="updatePinStyle(${p.originalIndex}, 'size', this.value)">
+                                        ${sliderHtml}
                                     </div>
                                     <button class="sketch-btn sketch-del" onclick="deletePin(${p.originalIndex})" title="Delete Pin" style="width:28px; height:28px; background:#ef4444; flex-shrink:0;"><i class="fas fa-times"></i></button>
                                 </div>
@@ -1885,7 +2037,7 @@ function refreshAnnotations() {
             let shapeIcon = p.shape === 'circle' ? 'fa-circle' : (p.shape === 'triangle' ? 'fa-caret-up' : 'fa-square');
 
             let cardStr = `
-                <div id="anno-card-${p.originalIndex}" class="custom-sticky-card" data-orig-idx="${p.originalIndex}" title="${safeNote}" onmouseenter="focusPin(${p.originalIndex})" onmouseleave="unfocusPin(${p.originalIndex})">
+                <div id="anno-card-${p.originalIndex}" class="custom-sticky-card" data-orig-idx="${p.originalIndex}" onmouseenter="focusPin(${p.originalIndex})" onmouseleave="unfocusPin(${p.originalIndex})">
 
                     <div class="sticky-left-col pin-tool-item">
                         <div class="sketch-btn sketch-num pin-drag-handle" title="Drag to reorder" style="background:#1e293b; color:white;">#${displayNumCounter}</div>
@@ -1937,12 +2089,31 @@ function refreshAnnotations() {
 // ==========================================================================
 // SECTION 8: DRAWING & SVG SYSTEM
 // ==========================================================================
+function toggleEraserMode() {
+    if(!isEditing) return;
+    isEraserMode = !isEraserMode;
+    $('#eraser-btn').toggleClass('draw-active', isEraserMode);
+
+    if (isEraserMode) {
+        isDrawMode = false;
+        $('#draw-btn').removeClass('draw-active');
+        $('#canvas').addClass('drawing-active');
+        $('.canvas-box, .pin').css('pointer-events', 'none'); 
+        showToast("🧹 Eraser active: Swipe over pen strokes to delete them.");
+    } else {
+        $('#canvas').removeClass('drawing-active');
+        $('.canvas-box, .pin').css('pointer-events', 'auto');
+    }
+}
+
 function toggleDrawMode() {
     if(!isEditing) return;
     isDrawMode = !isDrawMode;
     $('#draw-btn').toggleClass('draw-active', isDrawMode);
 
     if (isDrawMode) {
+        isEraserMode = false;
+        $('#eraser-btn').removeClass('draw-active');
         $('#canvas').addClass('drawing-active');
         $('.canvas-box, .pin').css('pointer-events', 'none'); 
     } else {
@@ -1979,7 +2150,9 @@ function toggleEdit() {
         isPlacingSticky = false;
         $('#canvas').removeClass('text-placement-active');
         isDrawMode = false;
+        isEraserMode = false;
         $('#draw-btn').removeClass('draw-active');
+        $('#eraser-btn').removeClass('draw-active');
         $('#canvas').removeClass('drawing-active');
         $('.canvas-box, .pin').css('pointer-events', 'auto');
     }
@@ -1987,10 +2160,19 @@ function toggleEdit() {
     $('.content-area').attr('contenteditable', isEditing); 
     $('.nav-text').attr('contenteditable', isEditing); 
 
-    refreshAnnotations();
     updateContextMenu();
 
     if(isEditing) {
+
+        interact('.canvas-box').on('tap', function (event) {
+            if (!isEditing) return;
+            let $box = $(event.currentTarget);
+            if(!event.shiftKey) { $('.canvas-box').removeClass('selected-box'); }
+            $box.addClass('selected-box');
+            updateContextMenu();
+            event.preventDefault();
+        });
+
         interact('.canvas-box').resizable({ 
             edges: { right: true, bottom: true }, margin: 15,
             listeners: { 
@@ -2003,8 +2185,23 @@ function toggleEdit() {
                     let currentW = parseFloat(target.style.width) || target.offsetWidth;
                     let currentH = parseFloat(target.style.height) || target.offsetHeight;
 
-                    target.style.width = (currentW + (event.deltaRect.width / currentZoom)) + 'px'; 
-                    target.style.height = (currentH + (event.deltaRect.height / currentZoom)) + 'px';
+                    let newW = currentW + (event.deltaRect.width / currentZoom);
+                    let newH = currentH + (event.deltaRect.height / currentZoom);
+
+                    target.style.width = newW + 'px'; 
+
+                    let audioPlayer = target.querySelector('.custom-audio-player');
+                    if (audioPlayer) {
+                        if (newW < 120) { 
+                            audioPlayer.classList.add('compact-mode');
+                            target.style.height = newW + 'px'; 
+                        } else {
+                            audioPlayer.classList.remove('compact-mode');
+                            target.style.height = 'auto';
+                        }
+                    } else {
+                        target.style.height = newH + 'px';
+                    }
 
                     x += (event.deltaRect.left / currentZoom); 
                     y += (event.deltaRect.top / currentZoom);
@@ -2013,24 +2210,11 @@ function toggleEdit() {
                     target.setAttribute('data-x', x); 
                     target.setAttribute('data-y', y);
 
-                    if ($(target).find('.custom-audio-player').length > 0) {
-                        if (currentW < 280) {
-                            $(target).find('.custom-audio-player').addClass('mid-player');
-                        } else {
-                            $(target).find('.custom-audio-player').removeClass('mid-player');
-                        }
-                        if (currentW < 160) {
-                            $(target).find('.custom-audio-player').addClass('mini-player');
-                        } else {
-                            $(target).find('.custom-audio-player').removeClass('mini-player');
-                        }
-                    }
-
                     updateContextMenu();
                 }
             }
         }).draggable({ 
-            modifiers: [ interact.modifiers.restrictRect({ restriction: '#canvas', endOnly: false }) ],
+            modifiers: [],
             ignoreFrom: '.audio-play-btn, .audio-track, .audio-skip-btn, .audio-speed-btn, .is-editing-text, .content-area, td, th, .pin, .pin-rotation-ring, .pin-rotate-dot, .del-btn',
             listeners: { 
                 start: saveHistory, 
@@ -2041,12 +2225,29 @@ function toggleEdit() {
                     event.target.setAttribute('data-x', x); 
                     event.target.setAttribute('data-y', y);
                     updateContextMenu();
-                }, end: refreshAnnotations 
+                } 
             }
         });
 
+        // Rectangle Resizing
+        interact('.pin[data-shape="rectangle"]').resizable({
+            edges: { right: true, bottom: true },
+            margin: 15,
+            listeners: {
+                start: saveHistory,
+                move(event) {
+                    let target = event.target;
+                    let currentW = parseFloat(target.style.width) || target.offsetWidth;
+                    let currentH = parseFloat(target.style.height) || target.offsetHeight;
+
+                    target.style.width = (currentW + (event.deltaRect.width / currentZoom)) + 'px';
+                    target.style.height = (currentH + (event.deltaRect.height / currentZoom)) + 'px';
+                }
+            }
+        });
+
+        // Global Pin Dragging FIX: Removed the buggy rectangle class so all pins can drag again
         interact('.pin').draggable({ 
-            modifiers: [ interact.modifiers.restrictRect({ restriction: 'parent', endOnly: false }) ],
             ignoreFrom: '.pin-rotate-dot', 
             listeners: { 
                 start: saveHistory, 
@@ -2060,136 +2261,134 @@ function toggleEdit() {
                 end: function(event) {
                     let $pin = $(event.target);
                     if ($pin.parent().hasClass('canvas-box')) {
-                        let pinRect = $pin[0].getBoundingClientRect();
-                        let boxRect = $pin.parent()[0].getBoundingClientRect();
+                        let currentLeft = parseFloat($pin[0].style.left) || 0;
+                        let currentTop = parseFloat($pin[0].style.top) || 0;
+                        let dx = parseFloat($pin.attr('data-x')) || 0;
+                        let dy = parseFloat($pin.attr('data-y')) || 0;
 
-                        let relLeft, relTop;
-                        if ($pin.attr('data-type') === 'pin') {
-                            let pinCenterX = pinRect.left + (pinRect.width / 2);
-                            let pinCenterY = pinRect.top + (pinRect.height / 2);
-                            relLeft = pinCenterX - boxRect.left;
-                            relTop = pinCenterY - boxRect.top;
-                        } else {
-                            relLeft = pinRect.left - boxRect.left;
-                            relTop = pinRect.top - boxRect.top;
-                        }
+                        let boxW = $pin.parent().width();
+                        let boxH = $pin.parent().height();
 
-                        let percLeft = (relLeft / boxRect.width) * 100;
-                        let percTop = (relTop / boxRect.height) * 100;
+                        let pxLeft = $pin[0].style.left.includes('%') ? (currentLeft / 100) * boxW : currentLeft;
+                        let pxTop = $pin[0].style.top.includes('%') ? (currentTop / 100) * boxH : currentTop;
 
-                        $pin.css({ transform: 'translate(0px, 0px)', left: percLeft + '%', top: percTop + '%' });
+                        let newPxLeft = pxLeft + dx;
+                        let newPxTop = pxTop + dy;
+
+                        $pin.css({
+                            left: ((newPxLeft / boxW) * 100).toFixed(4) + '%',
+                            top: ((newPxTop / boxH) * 100).toFixed(4) + '%',
+                            transform: 'translate(0px, 0px)'
+                        });
                         $pin.attr('data-x', 0).attr('data-y', 0);
                     }
-                    refreshAnnotations(); 
+                    refreshAnnotations();
                 }
             }
         });
+
     } else { 
         interact('.canvas-box').unset(); 
         interact('.pin').unset(); 
+        interact('.pin[data-shape="rectangle"]').unset();
         $('.canvas-box').removeClass('selected-box'); 
         updateContextMenu();
     }
 }
 
-function syncListSizes() {
-    $('.content-area li').each(function() {
-        let $font = $(this).find('font').first();
-        if ($font.length && $font.attr('size')) {
-            let sz = $font.attr('size');
-            let pxMap = {'1':'12px','2':'14px','3':'16px','4':'18px','5':'24px','6':'32px','7':'48px'};
-            if(pxMap[sz]) $(this).css('font-size', pxMap[sz]);
-        } else {
-            let $span = $(this).find('span').first();
-            if ($span.length && $span.css('font-size')) {
-                $(this).css('font-size', $span.css('font-size'));
-            }
-        }
-    });
-}
-
 // ==========================================================================
 // SECTION 10: INITIALIZATION & GLOBAL EVENTS
 // ==========================================================================
+function processCustomPaste(pastedText) {
+    try {
+        let parsed = JSON.parse(pastedText);
+        if (parsed.noteDumpClipboard && parsed.items) {
+            saveHistory();
+            $('.canvas-box').removeClass('selected-box');
+            $('.pin').removeClass('is-selected');
+
+            let highestZ = getHighestZ();
+            let highestOrder = -1;
+            $(`#p-${current} .pin`).each(function() {
+                let o = parseInt($(this).attr('data-order')) || 0;
+                if (o > highestOrder) highestOrder = o;
+            });
+
+            parsed.items.forEach((item, idx) => {
+                let $newBox = $(item.html);
+                $newBox.attr('data-x', 0);
+                $newBox.attr('data-y', 0);
+                $newBox.css({ top: item.absY + 'px', left: item.absX + 'px', transform: 'translate(0px, 0px)', zIndex: highestZ + idx });
+                $newBox.removeAttr('id');
+                $newBox.find('[id]').removeAttr('id');
+
+                if (item.isPin) {
+                    highestOrder++;
+                    $newBox.attr('data-order', highestOrder);
+                    $newBox.removeClass('pin-text-visible pin-hover-visible');
+                    $newBox.addClass('is-selected');
+                    $(`#p-${current}`).append($newBox);
+                } else {
+                    $newBox.addClass('selected-box');
+                    $(`#p-${current}`).append($newBox);
+                }
+            });
+            if (parsed.items.some(i => i.isPin)) refreshAnnotations();
+            updateContextMenu();
+            showToast("📥 Items Pasted!");
+        }
+    } catch(err) { console.error("Clipboard parsing error:", err); }
+}
+
 $(document).ready(async function() {
     await restoreFromBrowser(); 
-    lastSavedState = cleanCanvasForSave(); 
+    lastSavedState = getPageHTML(); 
 
-    $(document).on('keydown', '.sketch-textarea', function(e) {
-        if (e.key === 'Enter') {
-            let ta = this;
-            let start = ta.selectionStart;
-            let val = ta.value;
-
-            let lineStart = val.lastIndexOf('\n', start - 1) + 1;
-            let currentLine = val.substring(lineStart, start);
-
-            let numMatch = currentLine.match(/^(\s*)(\d+)\.\s(.*)$/);
-            let bulletMatch = currentLine.match(/^(\s*)(•\s)(.*)$/);
-
-            if (numMatch) {
-                e.preventDefault();
-                let spaces = numMatch[1];
-                let currentNum = parseInt(numMatch[2]);
-                let textAfter = numMatch[3];
-
-                if (textAfter.trim() === '') {
-                    ta.value = val.substring(0, lineStart) + val.substring(start);
-                    ta.selectionStart = ta.selectionEnd = lineStart;
-                } else {
-                    let nextPrefix = '\n' + spaces + (currentNum + 1) + '. ';
-                    ta.value = val.substring(0, start) + nextPrefix + val.substring(ta.selectionEnd);
-                    ta.selectionStart = ta.selectionEnd = start + nextPrefix.length;
-                }
-                $(ta).trigger('input');
-            } else if (bulletMatch) {
-                e.preventDefault();
-                let spaces = bulletMatch[1];
-                let textAfter = bulletMatch[3];
-
-                if (textAfter.trim() === '') {
-                    ta.value = val.substring(0, lineStart) + val.substring(start);
-                    ta.selectionStart = ta.selectionEnd = lineStart;
-                } else {
-                    let nextPrefix = '\n' + spaces + '• ';
-                    ta.value = val.substring(0, start) + nextPrefix + val.substring(ta.selectionEnd);
-                    ta.selectionStart = ta.selectionEnd = start + nextPrefix.length;
-                }
-                $(ta).trigger('input');
-            }
-        }
+    $(document).on('mousedown', '.ctx-btn, select, .color-swatch, .action-btn', function(e) {
+        if(!$(this).is('select') && !$(this).is('input')) e.preventDefault(); 
     });
 
-    setInterval(() => {
-        $('audio').each(function() {
-            if (!this.paused) {
-                let duration = this.duration || 1;
-                let pct = (this.currentTime / duration) * 100;
-                if(isNaN(pct) || !isFinite(pct)) pct = 0;
-                $(this).siblings('.audio-track').find('.audio-progress').css('width', pct + '%');
-
-                let timeText = formatTime(this.currentTime) + (this.duration ? ' / ' + formatTime(this.duration) : '');
-                $(this).siblings('.audio-time').text(timeText);
-            }
-        });
-    }, 250);
-
-    setInterval(autoSaveToBrowser, 30000); 
-
-    interact('.draggable-nav').draggable({
-        listeners: {
-            move(event) {
-                let target = event.target;
-                let x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
-                let y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
-                target.style.transform = `translate(${x}px, ${y}px)`;
-                target.setAttribute('data-x', x);
-                target.setAttribute('data-y', y);
-            }
-        }
+    $(document).on('click', '.ctx-btn[data-cmd]', function(e) {
+        e.preventDefault();
+        document.execCommand($(this).attr('data-cmd'), false, null);
+        saveHistory();
     });
 
-    interact('#menu-drag-handle').draggable({
+    $(document).on('change', 'select[data-cmd="fontName"]', function() {
+        document.execCommand('fontName', false, $(this).val());
+        saveHistory();
+    });
+
+    $(document).on('change', 'select[data-cmd="fontSize"]', function() {
+        applyFontSize($(this).val());
+    });
+
+    $(document).on('change', 'select[data-cmd="lineHeight"]', function() {
+        applyLineHeight($(this).val());
+    });
+
+    $(document).on('click', '[title="Move Up"], .fa-angle-double-up', function(e) { e.preventDefault(); changeLayer(1); });
+    $(document).on('click', '[title="Move Down"], .fa-angle-double-down', function(e) { e.preventDefault(); changeLayer(-1); });
+
+    $(document).on('input', '#transparency-slider', function() { liveUpdateOpacity($(this).val()); });
+    $(document).on('change', '#transparency-slider', function() { commitOpacity(); });
+
+    $(document).on('click', '.menu-table-tools button, .menu-table-tools .ctx-btn', function(e) {
+        e.preventDefault();
+        let txt = $(this).text().replace(/\s+/g, '').toUpperCase();
+        let html = $(this).html();
+
+        if (txt.includes('ROW') && !txt.includes('+') && !txt.includes('-')) selectTableRow();
+        else if (txt.includes('COL') && !txt.includes('+') && !txt.includes('-')) selectTableCol();
+        else if (txt.includes('=+R') || txt === '+R' || html.includes('fa-plus')) addTableRow();
+        else if (txt.includes('||+C') || txt === '+C') addTableCol();
+        else if (txt.includes('-R') || html.includes('fa-trash')) delTableRow();
+        else if (txt.includes('-C')) delTableCol();
+        else if (txt === '=' || html.includes('fa-equals')) equalizeTable();
+        else if (html.includes('fa-compress')) mergeTableCells();
+    });
+
+    interact('.fa-arrows-alt, .drag-handle-btn, .menu-text-tools button:first-child').draggable({
         listeners: {
             start(event) { saveHistory(); },
             move(event) {
@@ -2209,150 +2408,159 @@ $(document).ready(async function() {
         }
     });
 
-    $(document).on('mouseenter', '.pin', function() {
-        let idx = $(this).attr('data-list-idx');
-        let $card = $(`#anno-card-${idx}`);
-        $('.sketch-pin-card, .custom-sticky-card, .custom-image-pin-layout').removeClass('highlight-card');
-
-        if ($card.length) {
-            $card.addClass('highlight-card');
-        }
-
-        let viewportWidth = $('#canvas-viewport').width();
-        let pinRect = this.getBoundingClientRect();
-        let viewportRect = document.getElementById('canvas-viewport').getBoundingClientRect();
-        let pinXFromViewport = pinRect.left - viewportRect.left;
-
-        if (pinXFromViewport + 220 > viewportWidth) {
-            $(this).addClass('pin-text-left');
-        } else {
-            $(this).removeClass('pin-text-left');
-        }
-        $(this).addClass('pin-hover-visible');
-    });
-
-    $(document).on('mouseleave', '.pin', function() {
-        $('.sketch-pin-card, .custom-sticky-card, .custom-image-pin-layout').removeClass('highlight-card');
-        $(this).removeClass('pin-hover-visible pin-text-left');
-    });
-
-    if (window.innerWidth <= 768) { 
-        if (window.innerWidth <= 840) setZoom(window.innerWidth / 840);
-        if (!$('body').hasClass('notebook-mode')) toggleNotebookView(); 
-    }
-
-    $(window).on('resize', function() { 
-        if (window.innerWidth <= 840) setZoom(window.innerWidth / 840); 
-    });
-
-    $(window).on('blur', function() { customClipboard = []; });
-
-    $('#search-input, #ns-search-input').on('input', function() { 
-        let val = $(this).val();
-        if(this.id === 'search-input') $('#ns-search-input').val(val);
-        else $('#search-input').val(val);
-        performSearch(val); 
-    });
-
-    $('#search-input, #ns-search-input').on('keydown', function(e) {
-        if (e.key === 'Enter') { e.preventDefault(); goToNextMatch(); }
-    });
-
-    $('.nav-link').each(function() {
-        let id = $(this).attr('id').replace('link-', '');
-        if ($(this).find('.delete-page-btn').length === 0) {
-            $(this).append(`<i class="fas fa-times delete-page-btn" onclick="deletePage('${id}', event)" title="Delete Page"></i>`);
-        }
-    });
-
-    let navList = document.getElementById('nav-list-container');
-    if (navList) {
-        new Sortable(navList, {
-            animation: 150, 
-            handle: '.drag-handle',
-            fallbackOnBody: true,
-            swapThreshold: 0.65,
-            onEnd: function (evt) {
-                saveHistory(); 
-                let newOrder = [];
-                $('#nav-list-container .nav-link').each(function() { newOrder.push($(this).attr('id').replace('link-', '')); });
-                newOrder.forEach(id => { $('#canvas').append($(`#p-${id}`)); });
-                autoSaveToBrowser(); 
-            }
-        });
-    }
-
-    let colorHtml = "";
-    COLORS.forEach(c => { colorHtml += `<div class="color-swatch" style="background:${c};" data-color="${c}" onmousedown="event.preventDefault();"></div>`; });
-    $('#text-color-grid, #bg-color-grid').html(colorHtml);
-
-    $(document).on('click', '#text-color-grid .color-swatch', function(e) { 
-        e.preventDefault();
-        restoreSelection();
-        document.execCommand('styleWithCSS', false, true);
-        document.execCommand('foreColor', false, $(this).attr('data-color'));
-        saveHistory();
-    });
-
-    $(document).on('click', '#bg-color-grid .color-swatch', function(e) { 
-        e.preventDefault();
-        let hex = $(this).attr('data-color');
-        let r = parseInt(hex.slice(1, 3), 16);
-        let g = parseInt(hex.slice(3, 5), 16);
-        let b = parseInt(hex.slice(5, 7), 16);
-
-        let currentOp = $('#transparency-slider').val() || 1;
-        if (currentOp == 0) { currentOp = 1; $('#transparency-slider').val(1); }
-
-        saveHistory();
-        let $cells = $('.selected-cell');
-        if ($cells.length > 0) {
-            $cells.attr('data-bg-rgb', `${r},${g},${b}`);
-            $cells.css('background-color', `rgba(${r},${g},${b},${currentOp})`);
-        } else {
-            let $box = $('.selected-box');
-            let $audio = $box.find('.custom-audio-player');
-            if ($audio.length > 0) {
-                $audio.find('.audio-play-btn, .audio-progress').css('background-color', `rgba(${r},${g},${b},${currentOp})`);
-                $box.attr('data-bg-rgb', `${r},${g},${b}`); 
-            } else {
-                $box.attr('data-bg-rgb', `${r},${g},${b}`);
-                changeBoxStyle('background-color', `rgba(${r},${g},${b},${currentOp})`);
-            }
-        }
-    });
-
-    $(document).on('input', '.content-area', syncListSizes);
-
-    $(document).on('input', '.content-area, .sketch-textarea', function() {
-        clearTimeout(typingTimer);
-        typingTimer = setTimeout(function() {
+    // Handle Eraser swiping
+    $(document).on('mousemove touchmove', '.drawn-path', function(e) {
+        if (isEraserMode && (e.buttons === 1 || e.type === 'touchmove')) {
             saveHistory();
-        }, TYPING_DELAY);
+            $(this).remove();
+        }
     });
 
-    $(document).on('focusin', '.content-area', function() {
-        $(this).addClass('is-editing-text');
-        if (!lastSavedState) lastSavedState = cleanCanvasForSave();
+    $(document).on('mousedown touchstart', '.drawn-path', function(e) {
+        if (isEraserMode) {
+            saveHistory();
+            $(this).remove();
+            e.preventDefault();
+        }
     });
 
-    $(document).on('focusout', '.content-area', function() {
-        $(this).removeClass('is-editing-text');
-        clearTimeout(typingTimer); 
-        saveHistory(); 
+    $(document).on('mousedown touchstart', function(e) {
+        let isTouch = e.type.startsWith('touch');
+        let clientX = isTouch ? e.originalEvent.touches[0].clientX : e.clientX;
+        let clientY = isTouch ? e.originalEvent.touches[0].clientY : e.clientY;
+
+        if (isPlacingSticky) {
+            let $page = $(e.target).closest('.page');
+            if ($page.length === 0) $page = $(`#p-${current}`);
+
+            let rect = $page[0].getBoundingClientRect();
+            let x = (clientX - rect.left) / currentZoom;
+            let y = (clientY - rect.top) / currentZoom;
+
+            isPlacingSticky = false;
+            $('#canvas').removeClass('text-placement-active');
+
+            if (window.innerWidth <= 768 || (document.querySelector('meta[name="viewport"]') && document.querySelector('meta[name="viewport"]').content.includes('1200'))) {
+                setTimeout(() => togglePanel('sticky'), 300);
+            }
+
+            saveHistory();
+            let highestOrder = -1;
+            $(`#p-${current} .pin`).each(function() {
+                let o = parseInt($(this).attr('data-order')) || 0;
+                if (o > highestOrder) highestOrder = o;
+            });
+            $page.append(`
+                <div class="pin" data-type="sticky" data-shape="square" data-note="New Sticky Note" data-angle="0" data-order="${highestOrder + 1}" style="top:${y}px;left:${x}px; margin-top:-12px; margin-left:-12px; transform: translate(0px, 0px); opacity:1; --pin-color: #fde047;">
+                    <div class="pin-rotator-group" style="transform: rotate(0deg);">
+                        <div class="pin-visual"></div>
+                    </div>
+                </div>
+            `);
+
+            refreshAnnotations(); 
+            if(!$('#sticky-panel').hasClass('open') && window.innerWidth > 768) togglePanel('sticky');
+
+            e.preventDefault();
+            return;
+        }
+
+        if (isPlacingText) {
+            let $page = $(e.target).closest('.page');
+            if ($page.length === 0) $page = $(`#p-${current}`);
+
+            let rect = $page[0].getBoundingClientRect();
+            let x = (clientX - rect.left) / currentZoom;
+            let y = (clientY - rect.top) / currentZoom;
+
+            isPlacingText = false;
+            $('#canvas').removeClass('text-placement-active');
+
+            if ((window.innerWidth <= 768 || (document.querySelector('meta[name="viewport"]') && document.querySelector('meta[name="viewport"]').content.includes('1200'))) && isEditing) {
+                $('#canvas-global-tools').css('display', 'flex'); 
+            }
+
+            saveHistory();
+            $('.canvas-box').removeClass('selected-box');
+            $page.append(`<div class="canvas-box selected-box" style="top:${y}px;left:${x}px;width:200px; height:auto; z-index:${getHighestZ()}; background:transparent; transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><div class="content-area" contenteditable="true" style="width:100%; height:100%; box-sizing:border-box; word-break:break-word; white-space:pre-wrap; outline:none;">New Text</div></div>`);
+            updateContextMenu();
+            e.preventDefault();
+            return;
+        }
+
+        if (!isEditing) return;
+
+        if ($(e.target).closest('.canvas-box').length > 0) {
+            let $box = $(e.target).closest('.canvas-box');
+            if ($(e.target).closest('table').length === 0) {
+                $('.canvas-box table td, .canvas-box table th').removeClass('selected-cell');
+            }
+
+            if(!e.shiftKey && !$box.hasClass('selected-box')) { $('.canvas-box').removeClass('selected-box'); }
+            $box.addClass('selected-box');
+            updateContextMenu();
+
+            if ($(e.target).closest('.content-area, .audio-play-btn, .audio-track, .pin-rotate-dot').length > 0) { return; }
+            if(!$(e.target).is(':focus')) { e.preventDefault(); }
+            return;
+        }
+
+        if ($(e.target).is('#canvas, .page, .page-grid-overlay')) {
+            $('.canvas-box').removeClass('selected-box');
+            $('.canvas-box table td, .canvas-box table th').removeClass('selected-cell');
+            updateContextMenu();
+        }
+
+        if (isDrawMode && !isEraserMode) {
+            if ($(e.target).closest('.tool-group, #nav, .floating-panel').length > 0) return;
+
+            isDrawing = true;
+            let rect = $(`#p-${current}`)[0].getBoundingClientRect();
+            let x = (clientX - rect.left) / currentZoom;
+            let y = (clientY - rect.top) / currentZoom;
+
+            pathString = `M ${x} ${y}`;
+            let color = $('#draw-color').val() || '#ef4444';
+            let size = $('#draw-size').val() || 3;
+
+            let svg = getPageSvg();
+            let path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', pathString);
+            path.setAttribute('stroke', color);
+            path.setAttribute('stroke-width', size);
+            path.setAttribute('fill', 'none');
+            path.setAttribute('stroke-linecap', 'round');
+            path.setAttribute('stroke-linejoin', 'round');
+            path.setAttribute('class', 'drawn-path');
+            path.style.pointerEvents = "auto"; 
+
+            svg.appendChild(path);
+            currentSvgPath = path;
+
+            e.preventDefault(); 
+        }
     });
 
-    $(document).on('click', '.pin', function(e) {
-        if (isPlacingSticky) return;
-        e.stopPropagation();
-        let isVisible = $(this).hasClass('pin-text-visible');
-        $('.pin').removeClass('pin-text-visible pin-text-left pin-hover-visible');
-        if (!isVisible) { $(this).addClass('pin-text-visible'); }
+    $(document).on('mousemove touchmove', function(e) {
+        if (!isDrawing || !currentSvgPath) return;
+        let isTouch = e.type.startsWith('touch');
+        let clientX = isTouch ? e.originalEvent.touches[0].clientX : e.clientX;
+        let clientY = isTouch ? e.originalEvent.touches[0].clientY : e.clientY;
+
+        let rect = $(`#p-${current}`)[0].getBoundingClientRect();
+        let x = (clientX - rect.left) / currentZoom;
+        let y = (clientY - rect.top) / currentZoom;
+
+        pathString += ` L ${x} ${y}`;
+        currentSvgPath.setAttribute('d', pathString);
     });
 
-    $(document).on('click', function(e) {
-        if (isPlacingSticky) return;
-        $('.pin').removeClass('pin-text-visible pin-text-left pin-hover-visible');
+    $(document).on('mouseup touchend', function(e) {
+        if (isDrawing) {
+            isDrawing = false;
+            currentSvgPath = null;
+            saveHistory();
+        }
     });
 
     $(window).on('keydown', function(e) {
@@ -2374,45 +2582,85 @@ $(document).ready(async function() {
             } else if (!isTyping) {
                 e.preventDefault(); 
                 $(`#p-${current} .canvas-box`).addClass('selected-box'); 
+                $(`#p-${current} .pin`).addClass('is-selected');
                 updateContextMenu(); 
                 return;
             }
         }
 
         if (e.ctrlKey && e.key.toLowerCase() === 's') { e.preventDefault(); showExportModal(); return; }
+
         if (e.ctrlKey && e.key.toLowerCase() === 'f') {
             e.preventDefault();
-            if (window.innerWidth <= 768) { toggleNav(); }
-            $('#search-input').focus(); return;
+            if ($('#nav').hasClass('closed')) toggleNav();
+            $('#sidebar-search').slideDown(200);
+            $('#search-input').focus(); 
+            return;
         }
-        if (e.ctrlKey && e.key.toLowerCase() === 'z' && !isTyping) { e.preventDefault(); undo(); return; }
+
+        if (e.ctrlKey && e.key.toLowerCase() === 'd') {
+            e.preventDefault();
+            $('body').toggleClass('dark');
+            return;
+        }
+
+        if (e.ctrlKey && e.key.toLowerCase() === 'z') { 
+            if (isTyping) {
+                setTimeout(saveHistory, 100); 
+                return;
+            } else {
+                e.preventDefault(); undo(); return; 
+            }
+        }
+
         if (!isTyping && e.which == 37) { prevPage(); e.preventDefault(); }
         if (!isTyping && e.which == 39) { nextPage(); e.preventDefault(); }
 
         if (isEditing) {
             if (e.ctrlKey && e.key.toLowerCase() === 'c' && !isTyping) { 
                 customClipboard = []; 
-                $('.selected-box').each(function() { customClipboard.push($(this)[0].outerHTML); }); 
-            }
-            if (e.ctrlKey && e.key.toLowerCase() === 'v' && !isTyping) {
+                $('.selected-box, .pin.is-selected').each(function() { 
+                    let $el = $(this);
+                    let x = parseFloat($el.css('left')) || 0;
+                    let y = parseFloat($el.css('top')) || 0;
+                    let tx = parseFloat($el.attr('data-x')) || 0;
+                    let ty = parseFloat($el.attr('data-y')) || 0;
+
+                    customClipboard.push({
+                        html: $el[0].outerHTML,
+                        isPin: $el.hasClass('pin'),
+                        absX: x + tx,
+                        absY: y + ty
+                    }); 
+                });
+
                 if(customClipboard.length > 0) {
-                    e.preventDefault(); saveHistory(); $('.canvas-box').removeClass('selected-box'); 
-
-                    let coords = getPasteCoords();
-
-                    customClipboard.forEach((htmlStr, idx) => {
-                        let $newBox = $(htmlStr);
-                        $newBox.attr('data-x', 0);
-                        $newBox.attr('data-y', 0);
-
-                        let placeX = coords.x + (idx * 20);
-                        let placeY = coords.y + (idx * 20);
-
-                        $newBox.css({ top: placeY + 'px', left: placeX + 'px', transform: 'translate(0px, 0px)' });
-                        $newBox.addClass('selected-box'); $(`#p-${current}`).append($newBox);
-                    });
-                    updateContextMenu();
+                    let clipData = JSON.stringify({ noteDumpClipboard: true, items: customClipboard });
+                    if (navigator.clipboard && window.isSecureContext) {
+                        navigator.clipboard.writeText(clipData);
+                    } else {
+                        let tempInput = document.createElement("textarea");
+                        tempInput.value = clipData;
+                        document.body.appendChild(tempInput);
+                        tempInput.select();
+                        document.execCommand("copy");
+                        document.body.removeChild(tempInput);
+                    }
+                    showToast("📋 Copied " + customClipboard.length + " item(s)");
                 }
+            }
+
+            if (e.ctrlKey && e.key.toLowerCase() === 'v' && !isTyping) {
+                if (navigator.clipboard && navigator.clipboard.readText) {
+                    navigator.clipboard.readText().then(text => {
+                        if (text && text.includes('"noteDumpClipboard":true')) {
+                            processCustomPaste(text);
+                        }
+                    }).catch(err => {
+                        // Suppress error
+                    });
+                }
+                return;
             }
         }
     });
@@ -2421,6 +2669,14 @@ $(document).ready(async function() {
         if (!isEditing) return;
         let isTyping = $(e.target).is('textarea, [contenteditable="true"]:focus, input:focus');
         if (isTyping) return; 
+
+        // Universal Paste Handler
+        let pastedText = (e.originalEvent || e).clipboardData.getData('text/plain');
+        if (pastedText && pastedText.includes('"noteDumpClipboard":true')) {
+            e.preventDefault();
+            processCustomPaste(pastedText);
+            return;
+        }
 
         let items = (e.originalEvent || e).clipboardData.items;
         let pastedImage = false;
@@ -2459,18 +2715,15 @@ $(document).ready(async function() {
             }
         }
 
-        if (!pastedImage) {
-            let pastedText = (e.originalEvent || e).clipboardData.getData('text/plain');
-            if (pastedText && pastedText.trim() !== "") {
-                e.preventDefault(); saveHistory(); $('.canvas-box').removeClass('selected-box');
-                let safeText = $('<div>').text(pastedText).html().replace(/\n/g, '<br>');
-                $(`#p-${current}`).append(`<div class="canvas-box selected-box" style="top:${coords.y}px;left:${coords.x}px;width:300px;max-width:calc(800px - ${coords.x}px);z-index:${getHighestZ()};background-color:transparent;transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><div class="content-area" contenteditable="true" style="width: 100%; height: 100%; box-sizing: border-box; word-break: break-word; white-space: pre-wrap; overflow-wrap: break-word;">${safeText}</div></div>`);
-                updateContextMenu();
-            }
+        if (!pastedImage && pastedText && pastedText.trim() !== "") {
+            e.preventDefault(); saveHistory(); $('.canvas-box').removeClass('selected-box');
+            let safeText = $('<div>').text(pastedText).html().replace(/\n/g, '<br>');
+            $(`#p-${current}`).append(`<div class="canvas-box selected-box" style="top:${coords.y}px;left:${coords.x}px;width:300px;max-width:calc(800px - ${coords.x}px);z-index:${getHighestZ()};background-color:transparent;transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><div class="content-area" contenteditable="true" style="width: 100%; height: 100%; box-sizing: border-box; word-break: break-word; white-space: pre-wrap; overflow-wrap: break-word;">${safeText}</div></div>`);
+            updateContextMenu();
         }
     });
 
-    $(document).on('mousedown', '.canvas-box table td, .canvas-box table th', function(e) {
+    $(document).on('mousedown touchstart', '.canvas-box table td, .canvas-box table th', function(e) {
         if(!isEditing) return;
         e.stopPropagation(); 
         isDraggingTable = true;
@@ -2497,176 +2750,81 @@ $(document).ready(async function() {
         $(this).addClass('selected-cell');
     });
 
-    $(document).on('mouseup', function() {
+    $(document).on('mouseup touchend', function() {
         isDraggingTable = false;
     });
 
-    $(document).on('mousedown', function(e) {
-        if (isPlacingSticky) {
-            let $page = $(e.target).closest('.page');
-            if ($page.length === 0) $page = $(`#p-${current}`);
+    let colorHtml = "";
+    COLORS.forEach(c => { colorHtml += `<div class="color-swatch" style="background:${c};" data-color="${c}" onmousedown="event.preventDefault();"></div>`; });
 
-            let rect = $page[0].getBoundingClientRect();
-            let x = (e.clientX - rect.left) / currentZoom;
-            let y = (e.clientY - rect.top) / currentZoom;
+    $('#text-color-grid, #bg-color-grid').html(colorHtml);
+    $('.menu-text-tools > div').each(function() {
+        if ($(this).text().includes('Color')) $(this).next('div').html(colorHtml);
+    });
+    $('.menu-bg-tools > div').each(function() {
+        if ($(this).text().includes('Color')) $(this).next('div').html(colorHtml);
+    });
 
-            isPlacingSticky = false;
-            $('#canvas').removeClass('text-placement-active');
+    $(document).on('click', '.menu-text-tools .color-swatch', function(e) { 
+        e.preventDefault();
+        let hex = $(this).attr('data-color');
 
+        let $box = $('.selected-box');
+        let $audio = $box.find('.custom-audio-player');
+
+        if ($audio.length > 0) {
+            let r = parseInt(hex.slice(1, 3), 16);
+            let g = parseInt(hex.slice(3, 5), 16);
+            let b = parseInt(hex.slice(5, 7), 16);
+            let currentOp = $('#transparency-slider').val() || 1;
+            $audio.css('background-color', `rgba(${r},${g},${b},${currentOp})`);
+            $box.attr('data-player-bg', `${r},${g},${b}`);
             saveHistory();
-            let highestOrder = -1;
-            $(`#p-${current} .pin`).each(function() {
-                let o = parseInt($(this).attr('data-order')) || 0;
-                if (o > highestOrder) highestOrder = o;
-            });
-            $page.append(`
-                <div class="pin" data-type="sticky" data-shape="square" data-note="Sticky Note" data-angle="0" data-order="${highestOrder + 1}" style="top:${y}px;left:${x}px; margin-top:-12px; margin-left:-12px; transform: translate(0px, 0px); opacity:1; --pin-color: #fde047;">
-                    <div class="pin-rotator-group" style="transform: rotate(0deg);">
-                        <div class="pin-visual"></div>
-                    </div>
-                </div>
-            `);
-            refreshAnnotations();
-            if(!$('#sticky-panel').hasClass('open')) togglePanel('sticky');
-            e.preventDefault();
             return;
         }
 
-        if (isPlacingText) {
-            let $page = $(e.target).closest('.page');
-            if ($page.length === 0) $page = $(`#p-${current}`);
+        restoreSelection();
+        document.execCommand('styleWithCSS', false, true);
+        document.execCommand('foreColor', false, hex);
+        saveHistory();
+    });
 
-            let rect = $page[0].getBoundingClientRect();
-            let x = (e.clientX - rect.left) / currentZoom;
-            let y = (e.clientY - rect.top) / currentZoom;
+    $(document).on('click', '.menu-bg-tools .color-swatch', function(e) { 
+        e.preventDefault();
+        let hex = $(this).attr('data-color');
+        let r = parseInt(hex.slice(1, 3), 16);
+        let g = parseInt(hex.slice(3, 5), 16);
+        let b = parseInt(hex.slice(5, 7), 16);
 
-            isPlacingText = false;
-            $('#canvas').removeClass('text-placement-active');
+        let currentOp = $('#transparency-slider').val() || 1;
+        if (currentOp == 0) { currentOp = 1; $('#transparency-slider').val(1); }
 
-            saveHistory();
-            $('.canvas-box').removeClass('selected-box');
-            $page.append(`<div class="canvas-box selected-box" style="top:${y}px;left:${x}px;width:200px; height:auto; z-index:${getHighestZ()}; background:transparent; transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><div class="content-area" contenteditable="true" style="width:100%; height:100%; box-sizing:border-box; word-break:break-word; white-space:pre-wrap; outline:none;">New Text</div></div>`);
-            updateContextMenu();
-
-            e.preventDefault();
-            return;
-        }
-
-        if (!isEditing) return;
-
-        if ($(e.target).closest('.canvas-box').length > 0) {
-            let $box = $(e.target).closest('.canvas-box');
-            if ($(e.target).closest('table').length === 0) {
-                $('.canvas-box table td, .canvas-box table th').removeClass('selected-cell');
+        saveHistory();
+        let $cells = $('.selected-cell');
+        if ($cells.length > 0) {
+            $cells.attr('data-bg-rgb', `${r},${g},${b}`);
+            $cells.css('background-color', `rgba(${r},${g},${b},${currentOp})`);
+        } else {
+            let $box = $('.selected-box');
+            let $audio = $box.find('.custom-audio-player');
+            if ($audio.length > 0) {
+                $audio.find('.audio-play-btn, .audio-progress').css('background-color', `rgba(${r},${g},${b},${currentOp})`);
+                $box.attr('data-bg-rgb', `${r},${g},${b}`); 
+            } else {
+                $box.attr('data-bg-rgb', `${r},${g},${b}`);
+                changeBoxStyle('background-color', `rgba(${r},${g},${b},${currentOp})`);
             }
-
-            if(!e.shiftKey && !$box.hasClass('selected-box')) { $('.canvas-box').removeClass('selected-box'); }
-            $box.addClass('selected-box');
-
-            if ($box.find('.pin').length > 0) {
-                switchTabToBox($box);
-            }
-
-            let $ca = $box.find('.content-area');
-            if ($ca.length > 0) {
-                let computedSize = window.getComputedStyle($ca[0]).fontSize;
-                if (computedSize) {
-                    let pxVal = Math.round(parseFloat(computedSize));
-                    let select = document.getElementById('font-size-select');
-                    if (select) {
-                        let optionExists = Array.from(select.options).some(opt => opt.value == pxVal);
-                        if (!optionExists) {
-                            $(select).find('.dynamic-opt').remove();
-                            $(select).append(`<option value="${pxVal}" class="dynamic-opt">${pxVal}</option>`);
-                        }
-                        select.value = pxVal;
-                    }
-                }
-            }
-
-            updateContextMenu();
-            if ($(e.target).closest('.content-area, .audio-play-btn, .audio-track, .audio-skip-btn, .audio-speed-btn, .pin-rotate-dot, .pin-rotation-ring').length > 0) { return; }
-            if(!$(e.target).is(':focus')) { e.preventDefault(); }
-            return;
-        }
-
-        if ($(e.target).is('#canvas, .page, .page-grid-overlay')) {
-            $('.canvas-box').removeClass('selected-box');
-            $('.canvas-box table td, .canvas-box table th').removeClass('selected-cell');
-            updateContextMenu();
-        }
-
-        if (isDrawMode) {
-            if ($(e.target).closest('.tool-group, #nav, .floating-panel').length > 0) return;
-
-            isDrawing = true;
-            let rect = $(`#p-${current}`)[0].getBoundingClientRect();
-            let x = (e.clientX - rect.left) / currentZoom;
-            let y = (e.clientY - rect.top) / currentZoom;
-
-            pathString = `M ${x} ${y}`;
-
-            let color = $('#draw-color').val() || '#ef4444';
-            let size = $('#draw-size').val() || 3;
-
-            let svg = getPageSvg();
-            let path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            path.setAttribute('d', pathString);
-            path.setAttribute('stroke', color);
-            path.setAttribute('stroke-width', size);
-            path.setAttribute('fill', 'none');
-            path.setAttribute('stroke-linecap', 'round');
-            path.setAttribute('stroke-linejoin', 'round');
-            path.setAttribute('class', 'drawn-path');
-            path.style.pointerEvents = "auto"; 
-
-            svg.appendChild(path);
-            currentSvgPath = path;
-
-            e.preventDefault(); 
-        }
-    });
-
-    $('.canvas-box').each(function() {
-        if ($(this).find('.del-btn').length === 0) {
-            $(this).prepend('<div class="del-btn" onclick="saveHistory(); $(this).parent().remove(); updateContextMenu();">X</div>');
-        }
-    });
-
-    $(document).on('mousemove', function(e) {
-        if (!isDrawing || !currentSvgPath) return;
-        let rect = $(`#p-${current}`)[0].getBoundingClientRect();
-        let x = (e.clientX - rect.left) / currentZoom;
-        let y = (e.clientY - rect.top) / currentZoom;
-
-        pathString += ` L ${x} ${y}`;
-        currentSvgPath.setAttribute('d', pathString);
-    });
-
-    $(document).on('mouseup', function(e) {
-        if (isDrawing) {
-            isDrawing = false;
-            currentSvgPath = null;
-            saveHistory();
-        }
-    });
-
-    $(document).on('dblclick', '.drawn-path', function(e) {
-        if(isEditing && isDrawMode) {
-            $(this).remove();
-            saveHistory();
         }
     });
 
     document.addEventListener('wheel', function(e) {
         if (e.ctrlKey || e.metaKey) {
             e.preventDefault(); 
-
             let cvp = document.getElementById('canvas-viewport');
             if(!cvp) return;
 
-            let zoomDelta = e.deltaY * -0.005; 
-            let newZoom = currentZoom * (1 + zoomDelta); 
+            let zoomMultiplier = Math.exp(e.deltaY * -0.005);
+            let newZoom = currentZoom * zoomMultiplier; 
             if(newZoom < 0.2) newZoom = 0.2;
             if(newZoom > 5) newZoom = 5;
 
@@ -2684,39 +2842,73 @@ $(document).ready(async function() {
         }
     }, { passive: false });
 
-    let cvp = document.getElementById('canvas-viewport');
-    if (cvp) {
+    document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
+    document.addEventListener('gesturechange', function (e) {
+        e.preventDefault();
+        let cvp = document.getElementById('canvas-viewport');
+        if(!cvp) return;
+
+        let newZoom = currentZoom * e.scale;
+        if(newZoom < 0.2) newZoom = 0.2;
+        if(newZoom > 5) newZoom = 5;
+
+        let rect = cvp.getBoundingClientRect();
+        let pointerX = e.clientX - rect.left;
+        let pointerY = e.clientY - rect.top;
+
+        let targetCanvasX = (pointerX + cvp.scrollLeft) / currentZoom;
+        let targetCanvasY = (pointerY + cvp.scrollTop) / currentZoom;
+
+        setZoom(newZoom);
+
+        cvp.scrollLeft = (targetCanvasX * newZoom) - pointerX;
+        cvp.scrollTop = (targetCanvasY * newZoom) - pointerY;
+    });
+    document.addEventListener('gestureend', function (e) { e.preventDefault(); });
+
+    let cvp2 = document.getElementById('canvas-viewport');
+    if (cvp2) {
         let isPinching = false; let initialDistance = null; let initialZoom = 1;
         let pinchScreenX = 0; let pinchScreenY = 0; let targetCanvasX = 0; let targetCanvasY = 0;
 
-        cvp.addEventListener('touchstart', function(e) {
+        cvp2.addEventListener('touchstart', function(e) {
             if (e.touches.length === 2) {
                 isPinching = true;
                 initialDistance = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
                 initialZoom = currentZoom;
-                pinchScreenX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-                pinchScreenY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-                let rect = cvp.getBoundingClientRect();
-                targetCanvasX = (pinchScreenX + cvp.scrollLeft - rect.left) / initialZoom;
-                targetCanvasY = (pinchScreenY + cvp.scrollTop - rect.top) / initialZoom;
-            }
-        }, {passive: false});
 
-        cvp.addEventListener('touchmove', function(e) {
+                let rect = cvp2.getBoundingClientRect();
+                pinchScreenX = ((e.touches[0].clientX + e.touches[1].clientX) / 2) - rect.left;
+                pinchScreenY = ((e.touches[0].clientY + e.touches[1].clientY) / 2) - rect.top;
+
+                targetCanvasX = (pinchScreenX + cvp2.scrollLeft) / initialZoom;
+                targetCanvasY = (pinchScreenY + cvp2.scrollTop) / initialZoom;
+            }
+        }, {passive: false, capture: true});
+
+        cvp2.addEventListener('touchmove', function(e) {
             if (e.touches.length === 2 && isPinching) {
                 e.preventDefault(); 
+                e.stopPropagation(); 
+
                 let currentDistance = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
                 let newZoom = initialZoom * (currentDistance / initialDistance);
                 if(newZoom < 0.2) newZoom = 0.2;
                 if(newZoom > 5) newZoom = 5;
                 setZoom(newZoom);
-                let rect = cvp.getBoundingClientRect();
-                cvp.scrollLeft = (targetCanvasX * newZoom) - pinchScreenX + rect.left;
-                cvp.scrollTop = (targetCanvasY * newZoom) - pinchScreenY + rect.top;
-            }
-        }, {passive: false});
 
-        cvp.addEventListener('touchend', function(e) { if (e.touches.length < 2) isPinching = false; });
+                let rect = cvp2.getBoundingClientRect();
+                let currentPinchX = ((e.touches[0].clientX + e.touches[1].clientX) / 2) - rect.left;
+                let currentPinchY = ((e.touches[0].clientY + e.touches[1].clientY) / 2) - rect.top;
+
+                cvp2.scrollLeft = (targetCanvasX * newZoom) - currentPinchX;
+                cvp2.scrollTop = (targetCanvasY * newZoom) - currentPinchY;
+            }
+        }, {passive: false, capture: true});
+
+        cvp2.addEventListener('touchend', function(e) { 
+            if (e.touches.length < 2) isPinching = false; 
+        }, {passive: false, capture: true});
     }
 
     goTo("0");
