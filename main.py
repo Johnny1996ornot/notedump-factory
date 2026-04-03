@@ -21,7 +21,7 @@ st.markdown("""
 <style>
 .stApp { background-color: #000000; }
 
-/* Unlock Streamlit Columns */
+/* Unlock Streamlit Columns so elements can span across them */
 [data-testid="stColumn"], [data-testid="column"] { overflow: visible !important; }
 
 /* Nav & Header */
@@ -51,9 +51,8 @@ st.markdown("""
 .support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 20px !important; }
 
 /* =========================================
-   1. FORCE LEFT BOX (UPLOADER) TO EXACTLY 200PX
+   FORCE LEFT BOX (UPLOADER) TO EXACTLY 200PX
    ========================================= */
-[data-testid="stFileUploader"] > label { display: block !important; color: transparent !important; height: 0px !important; margin:0 !important;}
 [data-testid="stFileUploader"] { width: 100% !important; margin: 0 !important; padding: 0 !important; }
 
 [data-testid="stFileUploadDropzone"] { 
@@ -72,15 +71,8 @@ st.markdown("""
 }
 
 /* Ensure text inside the dropzone stays visible */
-[data-testid="stFileUploadDropzone"] span { 
-    visibility: visible !important; 
-    display: block !important; 
-    font-size: 16px !important; 
-    font-weight: bold !important; 
+[data-testid="stFileUploadDropzone"] * { 
     color:#e2e8f0 !important; 
-}
-[data-testid="stFileUploadDropzone"] small { 
-    color: #64748b !important; 
 }
 [data-testid="stFileUploadDropzone"] button { 
     background-color: #4f46e5 !important; color: #ffffff !important; border: none !important; 
@@ -89,58 +81,7 @@ st.markdown("""
 }
 
 /* =========================================
-   2. CUSTOM BLANK NOTEBOOK LAYOUT (BULLETPROOF TARGETING)
-   ========================================= */
-/* Using :last-child bypasses Streamlit's invisible spacer injection */
-div[data-testid="stColumn"]:last-child [data-testid="stDownloadButton"] button,
-div[data-testid="column"]:last-child [data-testid="stDownloadButton"] button,
-div[data-testid="stColumn"]:nth-of-type(2) [data-testid="stDownloadButton"] button,
-div[data-testid="column"]:nth-of-type(2) [data-testid="stDownloadButton"] button {
-    height: 200px !important; 
-    min-height: 200px !important; 
-    max-height: 200px !important;
-    width: 100% !important; 
-    margin: 0 !important;
-    background-color: #0f172a !important; 
-    border: 1px solid #1e293b !important; 
-    border-radius: 12px !important;
-    display: flex !important; 
-    flex-direction: row !important; 
-    justify-content: center !important; 
-    align-items: center !important;
-    transition: 0.2s; 
-    padding: 0 !important;
-}
-
-div[data-testid="stColumn"]:last-child [data-testid="stDownloadButton"] button:hover,
-div[data-testid="column"]:last-child [data-testid="stDownloadButton"] button:hover { 
-    border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; 
-}
-
-/* Hide Streamlit's default text wrappers */
-div[data-testid="stColumn"]:last-child [data-testid="stDownloadButton"] button div,
-div[data-testid="column"]:last-child [data-testid="stDownloadButton"] button div,
-div[data-testid="stColumn"]:last-child [data-testid="stDownloadButton"] button p,
-div[data-testid="column"]:last-child [data-testid="stDownloadButton"] button p {
-    display: none !important;
-}
-
-/* Inject Giant Icon on the Left */
-div[data-testid="stColumn"]:last-child [data-testid="stDownloadButton"] button::before,
-div[data-testid="column"]:last-child [data-testid="stDownloadButton"] button::before {
-    content: "📓"; font-size: 70px !important; margin-right: 15px !important; line-height: 1 !important; display: block !important;
-}
-
-/* Inject Stacked Text on the Right */
-div[data-testid="stColumn"]:last-child [data-testid="stDownloadButton"] button::after,
-div[data-testid="column"]:last-child [data-testid="stDownloadButton"] button::after {
-    content: "Create\\A Blank\\A Notebook"; white-space: pre !important; 
-    font-size: 28px !important; font-weight: 800 !important; color: #f8fafc !important; 
-    line-height: 1.1 !important; text-align: left !important; letter-spacing: -1px !important; display: block !important;
-}
-
-/* =========================================
-   3. FORCE UPLOADED FILE BAR TO SPAN
+   FORCE UPLOADED FILE BAR & FINAL BUTTON TO SPAN
    ========================================= */
 [data-testid="stUploadedFile"], 
 div[data-testid*="UploadedFile"] { 
@@ -230,16 +171,28 @@ st.markdown('<div style="margin-bottom: 10px;"></div>', unsafe_allow_html=True)
 col1, col2 = st.columns(2, gap="medium")
 
 with col2:
-    st.download_button(
-        label="Create Blank Notebook", 
-        data=st.session_state.blank_html.encode('utf-8'), 
-        file_name="NoteDump_Blank.html", 
-        mime="text/html",
-        use_container_width=True
-    )
+    # BULLETPROOF FIX: We bypass Streamlit's native button entirely to prevent DOM stretching.
+    # We use a raw HTML anchor tag with explicit, un-overridable 200px inline CSS.
+    b64_blank = base64.b64encode(st.session_state.blank_html.encode('utf-8')).decode()
+    
+    html_button = f"""
+    <div style="height: 200px; width: 100%; display: flex; align-items: center; justify-content: center; box-sizing: border-box;">
+        <a href="data:text/html;charset=utf-8;base64,{b64_blank}" download="NoteDump_Blank.html" 
+           style="display: flex; flex-direction: row; justify-content: center; align-items: center; 
+                  background-color: #0f172a; border: 1px solid #1e293b; border-radius: 12px; 
+                  height: 100%; width: 100%; text-decoration: none; transition: all 0.2s ease-in-out; 
+                  box-sizing: border-box; cursor: pointer;">
+            <span style="font-size: 70px; margin-right: 15px; line-height: 1;">📓</span>
+            <div style="font-size: 28px; font-weight: 800; color: #f8fafc; line-height: 1.1; text-align: left; letter-spacing: -1px;">
+                Create<br>A Blank<br>Notebook
+            </div>
+        </a>
+    </div>
+    """
+    st.markdown(html_button, unsafe_allow_html=True)
 
 with col1:
-    # Using label_visibility="collapsed" safely hides the label without breaking Streamlit DOM
+    # Safe visibility flag that prevents wiping out the "Drag and drop" text
     up = st.file_uploader("Upload a document", label_visibility="collapsed", type=["pptx", "ppt", "pdf"])
 
     # ==========================================================================
