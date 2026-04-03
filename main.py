@@ -51,14 +51,16 @@ st.markdown("""
 .support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 20px !important; }
 
 /* =========================================
-   1. FORCE LEFT BOX (UPLOADER) TO 200PX
+   1. FORCE LEFT BOX (UPLOADER) TO EXACTLY 220PX
    ========================================= */
 [data-testid="stFileUploader"] > label { display: none !important; }
 [data-testid="stFileUploader"] { width: 100% !important; margin: 0 !important; padding: 0 !important; }
 
 [data-testid="stFileUploadDropzone"] { 
-    height: 200px !important; 
-    min-height: 200px !important; 
+    height: 220px !important; 
+    min-height: 220px !important; 
+    max-height: 220px !important; 
+    box-sizing: border-box !important;
     background-color: #0f172a !important; 
     border: 1px dashed #334155 !important;
     border-radius: 12px !important; 
@@ -80,11 +82,15 @@ st.markdown("""
 }
 
 /* =========================================
-   2. CUSTOM INJECTED BLANK NOTEBOOK LAYOUT
+   2. CUSTOM INJECTED BLANK NOTEBOOK LAYOUT (EXACTLY 220PX)
    ========================================= */
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button,
 [data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button {
-    height: 200px !important; min-height: 200px !important; width: 100% !important; margin: 0 !important;
+    height: 220px !important; 
+    min-height: 220px !important; 
+    max-height: 220px !important;
+    box-sizing: border-box !important;
+    width: 100% !important; margin: 0 !important;
     background-color: #0f172a !important; border: 1px solid #1e293b !important; border-radius: 12px !important;
     display: flex !important; flex-direction: row !important; /* Puts items side-by-side */
     justify-content: center !important; align-items: center !important;
