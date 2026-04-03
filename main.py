@@ -21,11 +21,8 @@ st.markdown("""
 <style>
 .stApp { background-color: #000000; }
 
-/* 1. MAKE IT SHORTER (LESS WIDE) AND CENTERED */
-.main .block-container { 
-    max-width: 480px !important; 
-    padding-top: 3rem; 
-}
+/* Unlock Streamlit Columns so elements can span across them */
+[data-testid="stColumn"], [data-testid="column"] { overflow: visible !important; }
 
 /* Nav & Header */
 .top-nav { display: flex; justify-content: flex-end; align-items: center; padding: 10px 20px; position: absolute; top: 0; right: 0; width: 100%; z-index: 999; gap: 12px; }
@@ -34,104 +31,178 @@ st.markdown("""
 .coffee-btn { color: #0ea5e9; text-decoration: none; font-weight: bold; font-size: 12px; border: 1px solid #0ea5e9; padding: 4px 10px; border-radius: 20px; transition: 0.2s; white-space: nowrap; }
 .coffee-btn:hover { background: rgba(14, 165, 233, 0.15); color: #fff; }
 
-.hero { text-align: center; color: white; padding: 10px 0; margin: 0 auto 20px auto; }
+.modal-window { position: fixed; background-color: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px); top: 0; right: 0; bottom: 0; left: 0; z-index: 99999; visibility: hidden; opacity: 0; transition: all 0.3s; display: flex; justify-content: center; align-items: center; }
+.modal-window:target { visibility: visible; opacity: 1; }
+.modal-content { background: #0f172a; width: 90%; max-width: 650px; padding: 30px; border-radius: 16px; border: 1px solid #334155; color: #f1f5f9; position: relative; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
+.modal-close { position: absolute; top: 20px; right: 25px; color: #64748b; text-decoration: none; font-size: 28px; font-weight: bold; transition: 0.2s; }
+.modal-close:hover { color: #ef4444; }
+
+/* Modal Content Styling */
+.modal-content h2 { margin-top: 0; color: #4f46e5; font-size: 24px; border-bottom: 1px solid #1e293b; padding-bottom: 10px;}
+.modal-content h4 { color: #0ea5e9; margin-top: 20px; margin-bottom: 10px; font-size: 18px;}
+.modal-content li { margin-bottom: 10px; line-height: 1.5; font-size: 15px; color: #cbd5e1;}
+.pro-tag { color: #10b981; font-weight: bold; } 
+
+.hero { text-align: center; color: white; padding: 10px 0; max-width: 500px; margin: 0 auto; }
 .logo-container { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 0px;}
 .logo-text { font-size: 55px; font-weight: 800; margin: 0; color: #f8fafc;}
 .logo-icon { font-size: 48px; margin: 0;}
-.tagline { font-size: 16px; color: #94a3b8; margin-top: -8px !important; margin-bottom: 8px !important; font-weight: normal; }
+.tagline { font-size: 18px; color: #94a3b8; margin-top: -8px !important; margin-bottom: 8px !important; font-weight: normal; }
 .support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 20px !important; }
 
 /* =========================================
-   2. TOP BOX: CREATE BLANK NOTEBOOK (FATTER & BIGGER TEXT)
+   1. FORCE LEFT BOX (UPLOADER) TO 200PX
    ========================================= */
-.blank-notebook-target [data-testid="stDownloadButton"] button {
-    height: 140px !important; 
-    width: 100% !important; 
-    margin: 0 !important;
-    background-color: #0f172a !important; 
-    border: 2px solid #1e293b !important; 
-    border-radius: 16px !important;
-    display: flex !important; 
-    flex-direction: column !important;
-    justify-content: center !important; 
-    align-items: center !important;
-    transition: 0.2s; 
-}
-.blank-notebook-target [data-testid="stDownloadButton"] button:hover { 
-    border-color: #0ea5e9 !important; 
-    background: rgba(14, 165, 233, 0.1) !important; 
-}
+[data-testid="stFileUploader"] > label { display: none !important; }
+[data-testid="stFileUploader"] { width: 100% !important; margin: 0 !important; padding: 0 !important; }
 
-/* Hide default streamilt text */
-.blank-notebook-target [data-testid="stDownloadButton"] button p {
-    display: none !important;
-}
-
-/* Inject Icon & Massive Text safely */
-.blank-notebook-target [data-testid="stDownloadButton"] button::before {
-    content: "📓 Create Blank Notebook"; 
-    font-size: 32px !important; 
-    font-weight: 900 !important; 
-    color: #f8fafc !important; 
-    display: block !important;
-    text-align: center !important;
-}
-
-/* =========================================
-   3. MIDDLE BOX: THE NATIVE UPLOADER (FATTER)
-   ========================================= */
 [data-testid="stFileUploadDropzone"] { 
     height: 200px !important; 
+    min-height: 200px !important; 
     background-color: #0f172a !important; 
-    border: 2px dashed #334155 !important;
-    border-radius: 16px !important; 
+    border: 1px dashed #334155 !important;
+    border-radius: 12px !important; 
     display: flex !important; 
     flex-direction: column !important; 
     justify-content: center !important; 
     align-items: center !important; 
+    padding: 20px !important;
+    text-align: center !important; 
 }
-
-[data-testid="stFileUploadDropzone"] button {
-    background-color: #4f46e5 !important; 
-    color: #ffffff !important; 
-    border-radius: 6px !important; 
-    font-weight: bold !important;
-    font-size: 16px !important;
-    padding: 10px 24px !important;
+[data-testid="stFileUploadDropzone"] > div,
+[data-testid="stFileUploadDropzone"] > div > div { 
+    display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; text-align: center !important; width: 100% !important; 
 }
-
-[data-testid="stUploadedFile"], 
-.stUploadedFile { 
-    background-color: #0f172a !important; 
-    border: 1px solid #334155 !important; 
-    border-radius: 12px !important; 
-    padding: 15px 20px !important; 
-    margin-top: 15px !important;
+[data-testid="stFileUploadDropzone"] span { font-size: 16px !important; font-weight: bold !important; color:#e2e8f0 !important; line-height: 1.2 !important; text-align: center !important; margin: 0 auto !important;}
+[data-testid="stFileUploadDropzone"] small { font-size: 13px !important; color: #64748b !important; text-align: center !important; margin: 0 auto !important;}
+[data-testid="stFileUploadDropzone"] button { 
+    background-color: #4f46e5 !important; color: #ffffff !important; border: none !important; padding: 10px 24px !important; border-radius: 6px !important; font-weight: bold !important; margin-top: 15px !important; font-size: 15px !important; margin-left: auto !important; margin-right: auto !important; 
 }
 
 /* =========================================
-   4. BOTTOM BOX: FINAL DOWNLOAD BUTTON (FATTER)
+   2. CUSTOM INJECTED BLANK NOTEBOOK LAYOUT
+   ========================================= */
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button,
+[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button {
+    height: 200px !important; min-height: 200px !important; width: 100% !important; margin: 0 !important;
+    background-color: #0f172a !important; border: 1px solid #1e293b !important; border-radius: 12px !important;
+    display: flex !important; flex-direction: row !important; /* Puts items side-by-side */
+    justify-content: center !important; align-items: center !important;
+    transition: 0.2s; padding: 0 !important;
+}
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button:hover,
+[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button:hover { 
+    border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; 
+}
+
+/* Completely hide Streamlit's default text wrappers */
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button div,
+[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button div,
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button p,
+[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button p,
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button span,
+[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button span {
+    display: none !important;
+}
+
+/* Inject Giant Icon on the Left */
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::before,
+[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button::before {
+    content: "📓";
+    font-size: 70px !important; /* Massive Logo */
+    margin-right: 15px !important; 
+    line-height: 1 !important;
+    display: block !important;
+}
+
+/* Inject Stacked Text on the Right */
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::after,
+[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button::after {
+    content: "Create\\A Blank\\A Notebook"; /* The \\A creates the hard line breaks */
+    white-space: pre !important; /* Forces the line breaks to render */
+    font-size: 28px !important; 
+    font-weight: 800 !important; 
+    color: #f8fafc !important; 
+    line-height: 1.1 !important;
+    text-align: left !important; /* Aligns text cleanly next to icon */
+    letter-spacing: -1px !important;
+    display: block !important;
+}
+
+/* =========================================
+   3. FORCE UPLOADED FILE BAR TO SPAN & PROTECT X
+   ========================================= */
+[data-testid="stUploadedFile"], 
+div[data-testid*="UploadedFile"],
+div[data-testid*="FileUploaderFile"],
+.stUploadedFile { 
+    background-color: #0f172a !important; border: 1px solid #334155 !important; border-radius: 12px !important; 
+    padding: 15px 20px !important; margin-top: 20px !important;
+    position: relative !important; display: block !important;
+}
+[data-testid="stUploadedFile"] > div:first-child,
+div[data-testid*="UploadedFile"] > div:first-child { 
+    padding-right: 60px !important; width: 100% !important; box-sizing: border-box !important;
+}
+[data-testid="stUploadedFile"] button,
+div[data-testid*="UploadedFile"] button { 
+    position: absolute !important; right: 15px !important; top: 50% !important; transform: translateY(-50%) !important;
+    margin: 0 !important; width: 35px !important; height: 35px !important; 
+    background: #4f46e5 !important; border-radius: 8px !important; color: white !important; border: none !important;
+}
+
+/* =========================================
+   4. FINAL DOWNLOAD BUTTON FORMATTING
    ========================================= */
 .final-download-target [data-testid="stDownloadButton"] button {
-    width: 100% !important; 
-    height: 90px !important; 
-    margin-top: 15px !important;
-    background: #1e293b !important; 
-    color: #0ea5e9 !important; 
-    border: 2px solid #0ea5e9 !important; 
-    border-radius: 12px !important;
-    font-size: 22px !important; 
-    font-weight: 900 !important; 
-    transition: 0.2s;
+    width: 100% !important; height: auto !important; padding: 18px !important; margin-top: 10px !important;
+    background: #1e293b !important; color: #0ea5e9 !important; border: 1px solid #0ea5e9 !important; border-radius: 8px !important;
+    font-size: 18px !important; font-weight: bold !important; transition: 0.2s;
 }
-.final-download-target [data-testid="stDownloadButton"] button:hover { 
-    background: #0ea5e9 !important; 
-    color: white !important; 
+.final-download-target [data-testid="stDownloadButton"] button:hover { background: #0ea5e9 !important; color: white !important; }
+
+/* Desktop Spanning Hack */
+@media (min-width: 769px) {
+    [data-testid="stUploadedFile"], 
+    div[data-testid*="UploadedFile"],
+    .final-download-target [data-testid="stDownloadButton"] button { 
+        width: calc(200% + 1rem) !important; 
+    }
 }
+@media (max-width: 768px) {
+    .top-nav { position: relative; justify-content: center; padding-top: 20px; }
+}
+
+[data-testid="block-container"] { max-width: 800px; padding-top: 3rem; }
 </style>
 
 <div class="top-nav">
 <a href="https://buymeacoffee.com/jpramirez" target="_blank" class="coffee-btn">☕ Buy me a coffee</a>
+<a href="#guide-modal" class="guide-btn" title="App Guide & Features">?</a>
+</div>
+
+<div id="guide-modal" class="modal-window">
+<div class="modal-content">
+<a href="#" class="modal-close" title="Close">&times;</a>
+<h2>📝 Welcome to NoteDump</h2>
+<p>Turning your documents into an interactive notebook.</p>
+
+<h4>✨ NoteDump Features & Guide</h4>
+<ul>
+<li>Providing an HTML based editor that allows for creating seamless interactive notebooks.</li>
+<li>Add pins to images to correctly identify them.</li>
+<li>Add audio or links that will allow a better review.</li>
+<li>Create reviewers with more freedom and specialized tools.</li>
+</ul>
+
+<h4>🚀 Why Use NoteDump?</h4>
+<ul>
+<li><span class="pro-tag">100% Offline Capable:</span> Once downloaded, your interactive notebook is a single HTML file that works perfectly without an internet connection.</li>
+<li><span class="pro-tag">Ultimate Privacy:</span> No accounts, no cloud syncing, no subscriptions. Your notes and files stay locally on your device.</li>
+<li><span class="pro-tag">Limitless Annotation:</span> Draw freely, drop sticky notes, create custom tables, and pin interactive markers directly onto your lecture slides.</li>
+<li><span class="pro-tag">Universal Compatibility:</span> Works natively on any modern device (desktop, tablet, or phone) using just a standard web browser.</li>
+</ul>
+</div>
 </div>
 
 <div class="hero">
@@ -145,8 +216,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================================================
-# SECTION 2: PRE-GENERATE BLANK NOTEBOOK
+# SECTION 2: PRE-GENERATE BLANK NOTEBOOK (CACHED TO PREVENT DOUBLE-CLICK BUG)
 # ==========================================================================
+# We store the generated HTML in session state so clicking the download button
+# doesn't trigger a re-render with a new ID, which breaks the download link.
 if "blank_html" not in st.session_state:
     blank_nav = '<div class="nav-link active-nav" id="link-0" onclick="goTo(\'0\')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text">Page 1</span></div>'
     blank_slides = '<div id="p-0" class="page active" data-page-width="816" data-page-height="1054" style="width:816px; height:1054px;"></div>'
@@ -159,38 +232,36 @@ if "blank_html" not in st.session_state:
         .replace("{{STORAGE_ID}}", unique_blank_id)
 
 # ==========================================================================
-# SECTION 3: THE VERTICAL STACK
+# SECTION 3: THE 2-COLUMN LAYOUT
 # ==========================================================================
+st.markdown('<div style="margin-bottom: 10px;"></div>', unsafe_allow_html=True)
+col1, col2 = st.columns(2, gap="medium")
 
-# --- TOP: Create Blank Notebook ---
-st.markdown('<div class="blank-notebook-target">', unsafe_allow_html=True)
-st.download_button(
-    label="Create Blank Notebook", 
-    data=st.session_state.blank_html.encode('utf-8'), 
-    file_name="NoteDump_Blank.html", 
-    mime="text/html",
-    use_container_width=True
-)
-st.markdown('</div>', unsafe_allow_html=True)
+with col2:
+    st.download_button(
+        label="Create Blank Notebook", 
+        data=st.session_state.blank_html.encode('utf-8'), 
+        file_name="NoteDump_Blank.html", 
+        mime="text/html",
+        use_container_width=True
+    )
 
-st.markdown("<br>", unsafe_allow_html=True)
+with col1:
+    up = st.file_uploader("Upload a document", label_visibility="hidden", type=["pptx", "ppt", "pdf"])
 
-# --- MIDDLE: The Native Uploader ---
-up = st.file_uploader("Or drag and drop a document to convert", type=["pptx", "ppt", "pdf"])
+    # ==========================================================================
+    # SECTION 4: FILE PARSING & PROCESSING (CACHED FOR SPEED & STABILITY)
+    # ==========================================================================
+    if up:
+        # Create a unique key for the specific file uploaded
+        file_key = f"{up.name}_{up.size}"
 
-# ==========================================================================
-# SECTION 4: FILE PARSING & PROCESSING (WITH VISUAL FEEDBACK)
-# ==========================================================================
-if up:
-    file_key = f"{up.name}_{up.size}"
+        # Only re-parse the document if it's a completely new file
+        if st.session_state.get("current_file_key") != file_key:
+            st.session_state.current_file_key = file_key
+            st.session_state.final_html = None
+            st.session_state.error_msg = None
 
-    if st.session_state.get("current_file_key") != file_key:
-        st.session_state.current_file_key = file_key
-        st.session_state.final_html = None
-        st.session_state.error_msg = None
-
-        # THIS IS THE PROGRESS/LOADING BAR SO YOU KNOW IT'S WORKING
-        with st.spinner('⏳ Converting your document into a notebook...'):
             try:
                 nav, slides = "", ""
                 file_name = up.name.lower()
@@ -373,16 +444,17 @@ if up:
                 else:
                     st.session_state.error_msg = f"Error Processing File: {e}"
 
-    # --- BOTTOM: The Output Area ---
-    if st.session_state.get("error_msg"):
-        st.error(st.session_state.error_msg)
-    elif st.session_state.get("final_html"):
-        st.markdown('<div class="final-download-target">', unsafe_allow_html=True)
-        st.download_button(
-            label="📥 Download Interactive Notebook", 
-            data=st.session_state.final_html.encode('utf-8'), 
-            file_name=f"NoteDump_{up.name}.html", 
-            mime="text/html",
-            use_container_width=True
-        )
-        st.markdown('</div>', unsafe_allow_html=True)
+        # OUTPUT STAGE: Render error or the cached download button
+        if st.session_state.get("error_msg"):
+            st.error(st.session_state.error_msg)
+        elif st.session_state.get("final_html"):
+            with col1:
+                st.markdown('<div class="final-download-target">', unsafe_allow_html=True)
+                st.download_button(
+                    label="📥 Download Interactive Notebook", a
+                    data=st.session_state.final_html.encode('utf-8'), 
+                    file_name=f"NoteDump_{up.name}.html", 
+                    mime="text/html",
+                    use_container_width=True
+                )
+                st.markdown('</div>', unsafe_allow_html=True)
