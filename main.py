@@ -37,7 +37,6 @@ st.markdown("""
 .modal-close { position: absolute; top: 20px; right: 25px; color: #64748b; text-decoration: none; font-size: 28px; font-weight: bold; transition: 0.2s; }
 .modal-close:hover { color: #ef4444; }
 
-/* Modal Content Styling */
 .modal-content h2 { margin-top: 0; color: #4f46e5; font-size: 24px; border-bottom: 1px solid #1e293b; padding-bottom: 10px;}
 .modal-content h4 { color: #0ea5e9; margin-top: 20px; margin-bottom: 10px; font-size: 18px;}
 .modal-content li { margin-bottom: 10px; line-height: 1.5; font-size: 15px; color: #cbd5e1;}
@@ -51,14 +50,18 @@ st.markdown("""
 .support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 20px !important; }
 
 /* =========================================
-   FORCE LEFT BOX (UPLOADER) TO EXACTLY 200PX
+   1. FORCE LEFT BOX (UPLOADER) TO 220PX
    ========================================= */
-[data-testid="stFileUploader"] { width: 100% !important; margin: 0 !important; padding: 0 !important; }
+/* Ensure the parent doesn't squish the dropzone */
+[data-testid="stFileUploader"] { 
+    width: 100% !important; margin: 0 !important; padding: 0 !important; 
+}
 
+/* Style the Dropzone to perfectly match your Replit design */
 [data-testid="stFileUploadDropzone"] { 
-    height: 200px !important; 
-    min-height: 200px !important; 
-    max-height: 200px !important;
+    height: 220px !important; 
+    min-height: 220px !important; 
+    max-height: 220px !important;
     background-color: #0f172a !important; 
     border: 1px dashed #334155 !important;
     border-radius: 12px !important; 
@@ -68,23 +71,22 @@ st.markdown("""
     align-items: center !important; 
     padding: 20px !important;
     text-align: center !important; 
+    box-sizing: border-box !important;
 }
 
-/* Ensure text inside the dropzone stays visible */
-[data-testid="stFileUploadDropzone"] * { 
-    color:#e2e8f0 !important; 
-}
+/* Force text visibility inside the dropzone */
+[data-testid="stFileUploadDropzone"] * { color: #e2e8f0 !important; font-family: sans-serif !important; }
+[data-testid="stFileUploadDropzone"] span { font-size: 16px !important; font-weight: bold !important; display: block !important;}
+[data-testid="stFileUploadDropzone"] small { font-size: 13px !important; color: #94a3b8 !important; display: block !important; margin-bottom: 10px !important;}
 [data-testid="stFileUploadDropzone"] button { 
     background-color: #4f46e5 !important; color: #ffffff !important; border: none !important; 
     padding: 10px 24px !important; border-radius: 6px !important; font-weight: bold !important; 
-    margin-top: 15px !important; font-size: 15px !important; 
 }
 
 /* =========================================
-   FORCE UPLOADED FILE BAR & FINAL BUTTON TO SPAN
+   2. SPANNING FOR FILE BAR & DOWNLOAD BUTTON
    ========================================= */
-[data-testid="stUploadedFile"], 
-div[data-testid*="UploadedFile"] { 
+[data-testid="stUploadedFile"], div[data-testid*="UploadedFile"] { 
     background-color: #0f172a !important; border: 1px solid #334155 !important; border-radius: 12px !important; 
     padding: 15px 20px !important; margin-top: 20px !important; position: relative !important; display: block !important;
 }
@@ -96,18 +98,14 @@ div[data-testid*="UploadedFile"] {
 }
 .final-download-target [data-testid="stDownloadButton"] button:hover { background: #0ea5e9 !important; color: white !important; }
 
-/* Desktop Spanning Hack */
 @media (min-width: 769px) {
-    [data-testid="stUploadedFile"], 
-    div[data-testid*="UploadedFile"],
-    .final-download-target [data-testid="stDownloadButton"] button { 
+    [data-testid="stUploadedFile"], div[data-testid*="UploadedFile"], .final-download-target [data-testid="stDownloadButton"] button { 
         width: calc(200% + 1rem) !important; 
     }
 }
 @media (max-width: 768px) {
     .top-nav { position: relative; justify-content: center; padding-top: 20px; }
 }
-
 [data-testid="block-container"] { max-width: 800px; padding-top: 3rem; }
 </style>
 
@@ -121,7 +119,6 @@ div[data-testid*="UploadedFile"] {
 <a href="#" class="modal-close" title="Close">&times;</a>
 <h2>📝 Welcome to NoteDump</h2>
 <p>Turning your documents into an interactive notebook.</p>
-
 <h4>✨ NoteDump Features & Guide</h4>
 <ul>
 <li>Providing an HTML based editor that allows for creating seamless interactive notebooks.</li>
@@ -129,7 +126,6 @@ div[data-testid*="UploadedFile"] {
 <li>Add audio or links that will allow a better review.</li>
 <li>Create reviewers with more freedom and specialized tools.</li>
 </ul>
-
 <h4>🚀 Why Use NoteDump?</h4>
 <ul>
 <li><span class="pro-tag">100% Offline Capable:</span> Once downloaded, your interactive notebook is a single HTML file that works perfectly without an internet connection.</li>
@@ -171,29 +167,31 @@ st.markdown('<div style="margin-bottom: 10px;"></div>', unsafe_allow_html=True)
 col1, col2 = st.columns(2, gap="medium")
 
 with col2:
-    # BULLETPROOF FIX: We bypass Streamlit's native button entirely to prevent DOM stretching.
-    # We use a raw HTML anchor tag with explicit, un-overridable 200px inline CSS.
+    # 1. Invisible spacer to align the top of this box perfectly with the "Upload a document" label on the left
+    st.markdown('<div style="font-size: 14px; margin-bottom: 8px; color: transparent;">Spacer</div>', unsafe_allow_html=True)
+    
+    # 2. Raw HTML Button locked to 220px to match the uploader perfectly. 
     b64_blank = base64.b64encode(st.session_state.blank_html.encode('utf-8')).decode()
     
-    html_button = f"""
-    <div style="height: 200px; width: 100%; display: flex; align-items: center; justify-content: center; box-sizing: border-box;">
-        <a href="data:text/html;charset=utf-8;base64,{b64_blank}" download="NoteDump_Blank.html" 
-           style="display: flex; flex-direction: row; justify-content: center; align-items: center; 
-                  background-color: #0f172a; border: 1px solid #1e293b; border-radius: 12px; 
-                  height: 100%; width: 100%; text-decoration: none; transition: all 0.2s ease-in-out; 
-                  box-sizing: border-box; cursor: pointer;">
-            <span style="font-size: 70px; margin-right: 15px; line-height: 1;">📓</span>
-            <div style="font-size: 28px; font-weight: 800; color: #f8fafc; line-height: 1.1; text-align: left; letter-spacing: -1px;">
-                Create<br>A Blank<br>Notebook
-            </div>
-        </a>
-    </div>
+    custom_btn_html = f"""
+    <a href="data:text/html;charset=utf-8;base64,{b64_blank}" download="NoteDump_Blank.html" 
+       style="display: flex; flex-direction: row; justify-content: center; align-items: center; 
+              background-color: #0f172a; border: 1px solid #1e293b; border-radius: 12px; 
+              height: 220px; width: 100%; text-decoration: none; transition: all 0.2s ease-in-out; 
+              box-sizing: border-box; cursor: pointer;"
+       onmouseover="this.style.borderColor='#0ea5e9'; this.style.backgroundColor='rgba(14, 165, 233, 0.1)';"
+       onmouseout="this.style.borderColor='#1e293b'; this.style.backgroundColor='#0f172a';">
+        <span style="font-size: 70px; margin-right: 15px; line-height: 1;">📓</span>
+        <div style="font-size: 28px; font-weight: 800; color: #f8fafc; line-height: 1.1; text-align: left; letter-spacing: -1px;">
+            Create<br>A Blank<br>Notebook
+        </div>
+    </a>
     """
-    st.markdown(html_button, unsafe_allow_html=True)
+    st.markdown(custom_btn_html, unsafe_allow_html=True)
 
 with col1:
-    # Safe visibility flag that prevents wiping out the "Drag and drop" text
-    up = st.file_uploader("Upload a document", label_visibility="collapsed", type=["pptx", "ppt", "pdf"])
+    # The native file uploader. We DO NOT hide the label, so "Upload a document" stays visible.
+    up = st.file_uploader("Upload a document", type=["pptx", "ppt", "pdf"])
 
     # ==========================================================================
     # SECTION 4: FILE PARSING & PROCESSING
