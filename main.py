@@ -51,52 +51,94 @@ st.markdown("""
 .support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 20px !important; }
 
 /* =========================================
-   1. BULLETPROOF CUSTOM WRAPPERS
+   1. FORCE LEFT BOX (UPLOADER) TO 200PX
    ========================================= */
-.box-left { height: 230px !important; display: block !important; width: 100% !important; margin-top: 5px; }
-.box-right { height: 230px !important; display: block !important; width: 100% !important; margin-top: 5px; }
+[data-testid="stFileUploader"] > label { display: none !important; }
 
-/* =========================================
-   2. LEFT BOX (UPLOADER)
-   ========================================= */
-.box-left [data-testid="stFileUploadDropzone"] {
-    height: 230px !important; min-height: 230px !important; max-height: 230px !important;
-    box-sizing: border-box !important; background-color: #0f172a !important;
-    border: 1px dashed #334155 !important; border-radius: 12px !important;
-    display: flex !important; flex-direction: column !important;
-    justify-content: center !important; align-items: center !important;
-    padding: 20px !important; text-align: center !important; margin: 0 !important;
+/* FIX: Force parent wrappers to align at the exact same top edge */
+[data-testid="stFileUploader"],
+[data-testid="stColumn"]:nth-child(2) div[data-testid="stDownloadButton"],
+[data-testid="column"]:nth-child(2) div[data-testid="stDownloadButton"] {
+    width: 100% !important; margin-top: 0 !important; padding-top: 0 !important;
 }
-.box-left [data-testid="stFileUploadDropzone"] > div { display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; width: 100% !important; }
-.box-left [data-testid="stFileUploadDropzone"] span { font-size: 16px !important; font-weight: bold !important; color:#e2e8f0 !important; }
-.box-left [data-testid="stFileUploadDropzone"] small { font-size: 12px !important; color: #64748b !important; }
-.box-left [data-testid="stFileUploadDropzone"] button { background-color: #4f46e5 !important; color: #ffffff !important; border: none !important; padding: 10px 24px !important; border-radius: 6px !important; font-weight: bold !important; margin-top: 15px !important; font-size: 15px !important; }
-.box-left [data-testid="stFileUploader"] label { display: none !important; }
-.box-left [data-testid="stFileUploader"] { margin: 0 !important; padding: 0 !important; }
+
+[data-testid="stFileUploadDropzone"] { 
+    height: 200px !important; 
+    min-height: 200px !important; 
+    box-sizing: border-box !important; /* FIX: Prevents borders from changing height */
+    background-color: #0f172a !important; 
+    border: 1px dashed #334155 !important;
+    border-radius: 12px !important; 
+    display: flex !important; 
+    flex-direction: column !important; 
+    justify-content: center !important; 
+    align-items: center !important; 
+    padding: 20px !important;
+    text-align: center !important; 
+}
+[data-testid="stFileUploadDropzone"] > div,
+[data-testid="stFileUploadDropzone"] > div > div { 
+    display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; text-align: center !important; width: 100% !important; 
+}
+[data-testid="stFileUploadDropzone"] span { font-size: 16px !important; font-weight: bold !important; color:#e2e8f0 !important; line-height: 1.2 !important; text-align: center !important; margin: 0 auto !important;}
+[data-testid="stFileUploadDropzone"] small { font-size: 13px !important; color: #64748b !important; text-align: center !important; margin: 0 auto !important;}
+[data-testid="stFileUploadDropzone"] button { 
+    background-color: #4f46e5 !important; color: #ffffff !important; border: none !important; padding: 10px 24px !important; border-radius: 6px !important; font-weight: bold !important; margin-top: 15px !important; font-size: 15px !important; margin-left: auto !important; margin-right: auto !important; 
+}
 
 /* =========================================
-   3. RIGHT BOX (DOWNLOAD BUTTON)
+   2. CUSTOM INJECTED BLANK NOTEBOOK LAYOUT
    ========================================= */
-.box-right [data-testid="stDownloadButton"] { height: 230px !important; margin: 0 !important; padding: 0 !important; display: block !important; }
-.box-right [data-testid="stDownloadButton"] button {
-    height: 230px !important; min-height: 230px !important; max-height: 230px !important;
-    width: 100% !important; box-sizing: border-box !important; margin: 0 !important;
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button,
+[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button {
+    height: 200px !important; min-height: 200px !important; width: 100% !important; margin: 0 !important;
+    box-sizing: border-box !important; /* FIX: Prevents borders from changing height */
     background-color: #0f172a !important; border: 1px solid #1e293b !important; border-radius: 12px !important;
-    display: flex !important; flex-direction: row !important;
+    display: flex !important; flex-direction: row !important; /* Puts items side-by-side */
     justify-content: center !important; align-items: center !important;
     transition: 0.2s; padding: 0 !important;
 }
-.box-right [data-testid="stDownloadButton"] button:hover { border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; }
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button:hover,
+[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button:hover { 
+    border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; 
+}
 
-/* Hide default streamit text and inject our custom icon/text */
-.box-right [data-testid="stDownloadButton"] button p,
-.box-right [data-testid="stDownloadButton"] button span,
-.box-right [data-testid="stDownloadButton"] button div { display: none !important; }
-.box-right [data-testid="stDownloadButton"] button::before { content: "📓"; font-size: 70px !important; margin-right: 15px !important; display: block !important; }
-.box-right [data-testid="stDownloadButton"] button::after { content: "Create\\A Blank\\A Notebook"; white-space: pre !important; font-size: 28px !important; font-weight: 800 !important; color: #f8fafc !important; line-height: 1.1 !important; text-align: left !important; letter-spacing: -1px !important; display: block !important; }
+/* Completely hide Streamlit's default text wrappers */
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button div,
+[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button div,
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button p,
+[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button p,
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button span,
+[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button span {
+    display: none !important;
+}
+
+/* Inject Giant Icon on the Left */
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::before,
+[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button::before {
+    content: "📓";
+    font-size: 70px !important; /* Massive Logo */
+    margin-right: 15px !important; 
+    line-height: 1 !important;
+    display: block !important;
+}
+
+/* Inject Stacked Text on the Right */
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::after,
+[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button::after {
+    content: "Create\\A Blank\\A Notebook"; /* The \\A creates the hard line breaks */
+    white-space: pre !important; /* Forces the line breaks to render */
+    font-size: 28px !important; 
+    font-weight: 800 !important; 
+    color: #f8fafc !important; 
+    line-height: 1.1 !important;
+    text-align: left !important; /* Aligns text cleanly next to icon */
+    letter-spacing: -1px !important;
+    display: block !important;
+}
 
 /* =========================================
-   4. FILE UPLOADED BAR (Appears below)
+   3. FORCE UPLOADED FILE BAR TO SPAN & PROTECT X
    ========================================= */
 [data-testid="stUploadedFile"], 
 div[data-testid*="UploadedFile"],
@@ -118,32 +160,27 @@ div[data-testid*="UploadedFile"] button {
 }
 
 /* =========================================
-   5. FINAL COMPLETED DOWNLOAD BUTTON
+   4. FINAL DOWNLOAD BUTTON FORMATTING
    ========================================= */
-.final-download-btn-container [data-testid="stDownloadButton"] {
-    height: auto !important;
-    display: block !important;
-    margin-top: 10px !important;
-}   
-.final-download-btn-container [data-testid="stDownloadButton"] button {
-    width: 100% !important; height: auto !important; padding: 18px !important; margin-top: 0 !important;
+.final-download-target [data-testid="stDownloadButton"] button {
+    width: 100% !important; height: auto !important; padding: 18px !important; margin-top: 10px !important;
     background: #1e293b !important; color: #0ea5e9 !important; border: 1px solid #0ea5e9 !important; border-radius: 8px !important;
     font-size: 18px !important; font-weight: bold !important; transition: 0.2s;
-    display: block !important;
 }
-.final-download-btn-container [data-testid="stDownloadButton"] button:hover { background: #0ea5e9 !important; color: white !important; }
+.final-download-target [data-testid="stDownloadButton"] button:hover { background: #0ea5e9 !important; color: white !important; }
 
 /* Desktop Spanning Hack */
 @media (min-width: 769px) {
     [data-testid="stUploadedFile"], 
     div[data-testid*="UploadedFile"],
-    .final-download-btn-container [data-testid="stDownloadButton"] button { 
+    .final-download-target [data-testid="stDownloadButton"] button { 
         width: calc(200% + 1rem) !important; 
     }
 }
 @media (max-width: 768px) {
     .top-nav { position: relative; justify-content: center; padding-top: 20px; }
 }
+
 [data-testid="block-container"] { max-width: 800px; padding-top: 3rem; }
 </style>
 
@@ -189,6 +226,8 @@ div[data-testid*="UploadedFile"] button {
 # ==========================================================================
 # SECTION 2: PRE-GENERATE BLANK NOTEBOOK (CACHED TO PREVENT DOUBLE-CLICK BUG)
 # ==========================================================================
+# We store the generated HTML in session state so clicking the download button
+# doesn't trigger a re-render with a new ID, which breaks the download link.
 if "blank_html" not in st.session_state:
     blank_nav = '<div class="nav-link active-nav" id="link-0" onclick="goTo(\'0\')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text">Page 1</span></div>'
     blank_slides = '<div id="p-0" class="page active" data-page-width="816" data-page-height="1054" style="width:816px; height:1054px;"></div>'
@@ -207,8 +246,6 @@ st.markdown('<div style="margin-bottom: 10px;"></div>', unsafe_allow_html=True)
 col1, col2 = st.columns(2, gap="medium")
 
 with col2:
-    # Wrap in our custom un-breakable div
-    st.markdown('<div class="box-right">', unsafe_allow_html=True)
     st.download_button(
         label="Create Blank Notebook", 
         data=st.session_state.blank_html.encode('utf-8'), 
@@ -216,20 +253,19 @@ with col2:
         mime="text/html",
         use_container_width=True
     )
-    st.markdown('</div>', unsafe_allow_html=True)
 
 with col1:
-    # Wrap in our custom un-breakable div
-    st.markdown('<div class="box-left">', unsafe_allow_html=True)
+    # FIX: "collapsed" removes the invisible 30px gap that pushes this box down
     up = st.file_uploader("Upload a document", label_visibility="collapsed", type=["pptx", "ppt", "pdf"])
-    st.markdown('</div>', unsafe_allow_html=True)
 
     # ==========================================================================
     # SECTION 4: FILE PARSING & PROCESSING (CACHED FOR SPEED & STABILITY)
     # ==========================================================================
     if up:
+        # Create a unique key for the specific file uploaded
         file_key = f"{up.name}_{up.size}"
 
+        # Only re-parse the document if it's a completely new file
         if st.session_state.get("current_file_key") != file_key:
             st.session_state.current_file_key = file_key
             st.session_state.final_html = None
@@ -422,7 +458,7 @@ with col1:
             st.error(st.session_state.error_msg)
         elif st.session_state.get("final_html"):
             with col1:
-                st.markdown('<div class="final-download-btn-container">', unsafe_allow_html=True)
+                st.markdown('<div class="final-download-target">', unsafe_allow_html=True)
                 st.download_button(
                     label="📥 Download Interactive Notebook", 
                     data=st.session_state.final_html.encode('utf-8'), 
