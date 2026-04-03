@@ -51,20 +51,29 @@ st.markdown("""
 .support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 20px !important; }
 
 /* =========================================
-   1. FORCE LEFT BOX (UPLOADER) TO 220PX & HIDE LABEL
+   1. FORCE LEFT BOX (UPLOADER) TO 220PX
    ========================================= */
-/* THIS IS STEP 2: ASSASSINATE THE LABEL */
-[data-testid="stFileUploader"] > label { 
+/* Aggressively hide any ghost labels Streamlit tries to generate */
+[data-testid="stFileUploader"] > label,
+[data-testid="stFileUploader"] div[data-testid="stWidgetLabel"] { 
     display: none !important; 
 }
 
+/* Force the wrapper margins to exactly match the right box */
 [data-testid="stFileUploader"] { 
-    width: 100% !important; margin: 0 !important; padding: 0 !important; 
+    width: 100% !important; 
+    margin: 0 !important; 
+    padding: 0 !important; 
+    height: 220px !important;
+    box-sizing: border-box !important;
 }
 
-[data-testid="stFileUploadDropzone"] { 
+/* Bulletproof selector: Targets the dropzone OR whatever inner section Streamlit uses */
+[data-testid="stFileUploadDropzone"],
+[data-testid="stFileUploader"] > section { 
     height: 220px !important; 
     min-height: 220px !important; 
+    max-height: 220px !important;
     background-color: #0f172a !important; 
     border: 1px dashed #334155 !important;
     border-radius: 12px !important; 
@@ -74,25 +83,33 @@ st.markdown("""
     align-items: center !important; 
     padding: 20px !important;
     text-align: center !important; 
+    width: 100% !important;
     box-sizing: border-box !important;
 }
+
+/* Force the inner text and buttons to stack neatly */
 [data-testid="stFileUploadDropzone"] > div,
-[data-testid="stFileUploadDropzone"] > div > div { 
+[data-testid="stFileUploadDropzone"] > div > div,
+[data-testid="stFileUploader"] > section > div { 
     display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; text-align: center !important; width: 100% !important; 
 }
-[data-testid="stFileUploadDropzone"] span { font-size: 16px !important; font-weight: bold !important; color:#e2e8f0 !important; line-height: 1.2 !important; text-align: center !important; margin: 0 auto !important;}
-[data-testid="stFileUploadDropzone"] small { font-size: 13px !important; color: #64748b !important; text-align: center !important; margin: 0 auto !important;}
-[data-testid="stFileUploadDropzone"] button { 
+[data-testid="stFileUploadDropzone"] span,
+[data-testid="stFileUploader"] > section span { font-size: 16px !important; font-weight: bold !important; color:#e2e8f0 !important; line-height: 1.2 !important; text-align: center !important; margin: 0 auto !important;}
+[data-testid="stFileUploadDropzone"] small,
+[data-testid="stFileUploader"] > section small { font-size: 13px !important; color: #64748b !important; text-align: center !important; margin: 0 auto !important;}
+[data-testid="stFileUploadDropzone"] button,
+[data-testid="stFileUploader"] > section button { 
     background-color: #4f46e5 !important; color: #ffffff !important; border: none !important; padding: 10px 24px !important; border-radius: 6px !important; font-weight: bold !important; margin-top: 15px !important; font-size: 15px !important; margin-left: auto !important; margin-right: auto !important; 
 }
 
 /* =========================================
-   2. CUSTOM INJECTED BLANK NOTEBOOK LAYOUT
+   2. RIGHT BOX: CREATE BLANK NOTEBOOK
    ========================================= */
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button,
 [data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button {
     height: 220px !important; 
     min-height: 220px !important; 
+    max-height: 220px !important;
     width: 100% !important; 
     margin: 0 !important;
     background-color: #0f172a !important; border: 1px solid #1e293b !important; border-radius: 12px !important;
@@ -256,8 +273,9 @@ with col2:
     )
 
 with col1:
-    # THIS IS STEP 1: FORCE FULL MODE (NO "label_visibility" TRICKS)
-    up = st.file_uploader("Upload a document", type=["pptx", "ppt", "pdf"])
+    # We use label_visibility="hidden" here. It hides the text natively so Streamlit doesn't 
+    # panic about column width, preserving your dropzone structure so the CSS can actually stretch it.
+    up = st.file_uploader("Upload a document", label_visibility="hidden", type=["pptx", "ppt", "pdf"])
 
     # ==========================================================================
     # SECTION 4: FILE PARSING & PROCESSING
