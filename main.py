@@ -255,6 +255,7 @@ st.markdown('<div style="margin-bottom: 10px;"></div>', unsafe_allow_html=True)
 col1, col2 = st.columns([1,1], gap="medium")
 
 with col2:
+    st.markdown('<div class="box-wrapper">', unsafe_allow_html=True)
     st.download_button(
         label="Create Blank Notebook", 
         data=st.session_state.blank_html.encode('utf-8'), 
@@ -262,6 +263,7 @@ with col2:
         mime="text/html",
         use_container_width=True
     )
+    st.markdown('</div>', unsafe_allow_html=True)
 
 with col1:
     up = st.file_uploader("Upload a document", label_visibility="hidden", type=["pptx", "ppt", "pdf"])
