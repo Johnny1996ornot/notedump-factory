@@ -23,7 +23,10 @@ st.markdown("""
 
 /* Unlock Streamlit Columns so elements can span across them */
 [data-testid="stColumn"], [data-testid="column"] { overflow: visible !important; }
-
+/* FIX: make both columns same height */
+[data-testid="stHorizontalBlock"] {
+    align-items: stretch !important;
+}
 /* Nav & Header */
 .top-nav { display: flex; justify-content: flex-end; align-items: center; padding: 10px 20px; position: absolute; top: 0; right: 0; width: 100%; z-index: 999; gap: 12px; }
 .guide-btn { color: #94a3b8; text-decoration: none; font-size: 16px; font-weight: bold; font-family: sans-serif; border: 1px solid #475569; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: #1e293b; transition: 0.2s; }
@@ -55,7 +58,10 @@ st.markdown("""
    ========================================= */
 [data-testid="stFileUploader"] > label { display: none !important; }
 [data-testid="stFileUploader"] { width: 100% !important; margin: 0 !important; padding: 0 !important; }
-
+/* FIX: remove extra text making box taller */
+[data-testid="stFileUploader"] small {
+    display: none !important;
+}
 [data-testid="stFileUploadDropzone"] { 
     height: 200px !important; 
     min-height: 200px !important; 
