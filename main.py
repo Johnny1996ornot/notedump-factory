@@ -451,7 +451,7 @@ with col1:
             with col1:
                 st.markdown('<div class="final-download-target">', unsafe_allow_html=True)
                 st.download_button(
-                    label="📥 Download Interactive Notebook", a
+                    label="📥 Download Interactive Notebook",
                     data=st.session_state.final_html.encode('utf-8'), 
                     file_name=f"NoteDump_{up.name}.html", 
                     mime="text/html",
