@@ -51,30 +51,20 @@ st.markdown("""
 .support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 20px !important; }
 
 /* =========================================
-   1. KILL STREAMLIT'S INVISIBLE WRAPPER MARGINS
+   1. FORCE LEFT BOX (UPLOADER) TO 220PX & HIDE LABEL
    ========================================= */
-[data-testid="stFileUploader"],
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"],
-[data-testid="stColumn"]:nth-child(2) div.stDownloadButton {
-    margin: 0 !important;
-    padding: 0 !important;
-    height: 220px !important; 
-    box-sizing: border-box !important;
-}
-
+/* THIS IS STEP 2: ASSASSINATE THE LABEL */
 [data-testid="stFileUploader"] > label { 
     display: none !important; 
 }
 
-/* =========================================
-   2. FORCE THE VISIBLE BOXES TO EXACTLY 220PX
-   ========================================= */
-/* LEFT: Uploader Dropzone */
+[data-testid="stFileUploader"] { 
+    width: 100% !important; margin: 0 !important; padding: 0 !important; 
+}
+
 [data-testid="stFileUploadDropzone"] { 
     height: 220px !important; 
     min-height: 220px !important; 
-    max-height: 220px !important;
-    box-sizing: border-box !important; 
     background-color: #0f172a !important; 
     border: 1px dashed #334155 !important;
     border-radius: 12px !important; 
@@ -84,8 +74,7 @@ st.markdown("""
     align-items: center !important; 
     padding: 20px !important;
     text-align: center !important; 
-    margin: 0 !important;
-    overflow: hidden !important;
+    box-sizing: border-box !important;
 }
 [data-testid="stFileUploadDropzone"] > div,
 [data-testid="stFileUploadDropzone"] > div > div { 
@@ -97,39 +86,39 @@ st.markdown("""
     background-color: #4f46e5 !important; color: #ffffff !important; border: none !important; padding: 10px 24px !important; border-radius: 6px !important; font-weight: bold !important; margin-top: 15px !important; font-size: 15px !important; margin-left: auto !important; margin-right: auto !important; 
 }
 
-/* RIGHT: Download Button */
+/* =========================================
+   2. CUSTOM INJECTED BLANK NOTEBOOK LAYOUT
+   ========================================= */
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button,
-[data-testid="stColumn"]:nth-child(2) div.stDownloadButton button {
+[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button {
     height: 220px !important; 
     min-height: 220px !important; 
-    max-height: 220px !important;
     width: 100% !important; 
     margin: 0 !important;
-    box-sizing: border-box !important;
     background-color: #0f172a !important; border: 1px solid #1e293b !important; border-radius: 12px !important;
-    display: flex !important; flex-direction: row !important; 
+    display: flex !important; flex-direction: row !important;
     justify-content: center !important; align-items: center !important;
     transition: 0.2s; padding: 0 !important;
-    overflow: hidden !important;
+    box-sizing: border-box !important;
 }
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button:hover,
-[data-testid="stColumn"]:nth-child(2) div.stDownloadButton button:hover { 
+[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button:hover { 
     border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; 
 }
 
 /* Completely hide Streamlit's default text wrappers */
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button div,
-[data-testid="stColumn"]:nth-child(2) div.stDownloadButton button div,
+[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button div,
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button p,
-[data-testid="stColumn"]:nth-child(2) div.stDownloadButton button p,
+[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button p,
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button span,
-[data-testid="stColumn"]:nth-child(2) div.stDownloadButton button span {
+[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button span {
     display: none !important;
 }
 
 /* Inject Giant Icon on the Left */
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::before,
-[data-testid="stColumn"]:nth-child(2) div.stDownloadButton button::before {
+[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button::before {
     content: "📓";
     font-size: 70px !important; 
     margin-right: 15px !important; 
@@ -139,7 +128,7 @@ st.markdown("""
 
 /* Inject Stacked Text on the Right */
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::after,
-[data-testid="stColumn"]:nth-child(2) div.stDownloadButton button::after {
+[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button::after {
     content: "Create\\A Blank\\A Notebook"; 
     white-space: pre !important; 
     font-size: 28px !important; 
@@ -176,33 +165,18 @@ div[data-testid*="UploadedFile"] button {
 /* =========================================
    4. FINAL DOWNLOAD BUTTON FORMATTING
    ========================================= */
-.final-download-target [data-testid="stDownloadButton"] button,
-.final-download-target div.stDownloadButton button {
-    width: 100% !important; 
-    height: auto !important; 
-    min-height: unset !important;
-    max-height: unset !important;
-    padding: 18px !important; 
-    margin-top: 10px !important;
-    background: #1e293b !important; 
-    color: #0ea5e9 !important; 
-    border: 1px solid #0ea5e9 !important; 
-    border-radius: 8px !important;
-    font-size: 18px !important; 
-    font-weight: bold !important; 
-    transition: 0.2s;
+.final-download-target [data-testid="stDownloadButton"] button {
+    width: 100% !important; height: auto !important; padding: 18px !important; margin-top: 10px !important;
+    background: #1e293b !important; color: #0ea5e9 !important; border: 1px solid #0ea5e9 !important; border-radius: 8px !important;
+    font-size: 18px !important; font-weight: bold !important; transition: 0.2s;
 }
-.final-download-target [data-testid="stDownloadButton"] button:hover,
-.final-download-target div.stDownloadButton button:hover { 
-    background: #0ea5e9 !important; color: white !important; 
-}
+.final-download-target [data-testid="stDownloadButton"] button:hover { background: #0ea5e9 !important; color: white !important; }
 
 /* Desktop Spanning Hack */
 @media (min-width: 769px) {
     [data-testid="stUploadedFile"], 
     div[data-testid*="UploadedFile"],
-    .final-download-target [data-testid="stDownloadButton"] button,
-    .final-download-target div.stDownloadButton button { 
+    .final-download-target [data-testid="stDownloadButton"] button { 
         width: calc(200% + 1rem) !important; 
     }
 }
@@ -255,8 +229,6 @@ div[data-testid*="UploadedFile"] button {
 # ==========================================================================
 # SECTION 2: PRE-GENERATE BLANK NOTEBOOK (CACHED TO PREVENT DOUBLE-CLICK BUG)
 # ==========================================================================
-# We store the generated HTML in session state so clicking the download button
-# doesn't trigger a re-render with a new ID, which breaks the download link.
 if "blank_html" not in st.session_state:
     blank_nav = '<div class="nav-link active-nav" id="link-0" onclick="goTo(\'0\')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text">Page 1</span></div>'
     blank_slides = '<div id="p-0" class="page active" data-page-width="816" data-page-height="1054" style="width:816px; height:1054px;"></div>'
@@ -284,19 +256,15 @@ with col2:
     )
 
 with col1:
-    # MAGIC FIX: By passing a real string and entirely removing `label_visibility="collapsed"`, 
-    # Streamlit is forced to render the full 220px box, cloud logo, and "Browse files" button natively. 
-    # Your CSS at the top safely hides the "Upload a document" label above it.
+    # THIS IS STEP 1: FORCE FULL MODE (NO "label_visibility" TRICKS)
     up = st.file_uploader("Upload a document", type=["pptx", "ppt", "pdf"])
 
     # ==========================================================================
-    # SECTION 4: FILE PARSING & PROCESSING (CACHED FOR SPEED & STABILITY)
+    # SECTION 4: FILE PARSING & PROCESSING
     # ==========================================================================
     if up:
-        # Create a unique key for the specific file uploaded
         file_key = f"{up.name}_{up.size}"
 
-        # Only re-parse the document if it's a completely new file
         if st.session_state.get("current_file_key") != file_key:
             st.session_state.current_file_key = file_key
             st.session_state.final_html = None
