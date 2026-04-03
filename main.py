@@ -12,7 +12,7 @@ try:
 except ImportError:
     import fitz
 
-st.set_page_config(page_title="NoteDump", layout="centered", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="NoteDump", layout="wide", initial_sidebar_state="collapsed")
 
 # ==========================================================================
 # SECTION 1: UI STYLING & MODAL CONTENT
@@ -20,6 +20,12 @@ st.set_page_config(page_title="NoteDump", layout="centered", initial_sidebar_sta
 st.markdown("""
 <style>
 .stApp { background-color: #000000; }
+
+.main .block-container { 
+    max-width: 850px !important; 
+    margin: 0 auto !important; 
+    padding-top: 3rem; 
+}
 
 /* Unlock Streamlit Columns so elements can span across them */
 [data-testid="stColumn"], [data-testid="column"] { overflow: visible !important; }
@@ -44,42 +50,20 @@ st.markdown("""
 .tagline { font-size: 18px; color: #94a3b8; margin-top: -8px !important; margin-bottom: 8px !important; font-weight: normal; }
 .support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 20px !important; }
 
-/* =========================================
-   1. NATIVE UPLOADER (LEFT BOX)
-   ========================================= */
-/* Hide the top label so the box shifts up and naturally aligns with the right side */
-[data-testid="stFileUploader"] [data-testid="stWidgetLabel"] {
-    display: none !important;
-}
-
-/* Force the natively rendered dropzone to exactly 220px */
-[data-testid="stFileUploadDropzone"] { 
-    height: 220px !important; 
-    min-height: 220px !important;
-    background-color: #0f172a !important; 
-    border: 1px dashed #334155 !important;
-    border-radius: 12px !important; 
-    display: flex !important; 
-    flex-direction: column !important; 
-    justify-content: center !important; 
-    align-items: center !important; 
-}
-
-/* Clean up the native button */
-[data-testid="stFileUploadDropzone"] button {
-    background-color: #4f46e5 !important; 
-    color: #ffffff !important; 
-    border-radius: 6px !important; 
-    font-weight: bold !important;
-}
 
 /* =========================================
-   2. CREATE BLANK NOTEBOOK (RIGHT BOX)
+   1. CREATE BLANK NOTEBOOK (RIGHT BOX)
    ========================================= */
+
+/* Push the right button down by exactly 28px so it aligns perfectly with the left box's text label */
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] {
+    margin-top: 28px !important;
+}
+
+/* Match the natural ~160px height of Streamlit's native dropzone */
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button,
 [data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button {
-    height: 220px !important; 
-    min-height: 220px !important; 
+    height: 160px !important; 
     width: 100% !important; 
     margin: 0 !important;
     background-color: #0f172a !important; border: 1px solid #1e293b !important; border-radius: 12px !important;
@@ -94,25 +78,30 @@ st.markdown("""
 
 /* Completely hide Streamlit's default text wrappers */
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button div,
+[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button div,
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button p,
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button span {
+[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button p,
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button span,
+[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button span {
     display: none !important;
 }
 
-/* Inject Giant Icon on the Left */
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::before {
+/* Inject Icon on the Left */
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::before,
+[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button::before {
     content: "📓";
-    font-size: 70px !important; 
+    font-size: 55px !important; 
     margin-right: 15px !important; 
     line-height: 1 !important;
     display: block !important;
 }
 
 /* Inject Stacked Text on the Right */
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::after {
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::after,
+[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button::after {
     content: "Create\\A Blank\\A Notebook"; 
     white-space: pre !important; 
-    font-size: 28px !important; 
+    font-size: 22px !important; 
     font-weight: 800 !important; 
     color: #f8fafc !important; 
     line-height: 1.1 !important;
@@ -121,11 +110,13 @@ st.markdown("""
     display: block !important;
 }
 
+
 /* =========================================
-   3. FORCE UPLOADED FILE BAR TO SPAN & PROTECT X
+   2. FORCE UPLOADED FILE BAR TO SPAN & PROTECT X
    ========================================= */
 [data-testid="stUploadedFile"], 
 div[data-testid*="UploadedFile"],
+div[data-testid*="FileUploaderFile"],
 .stUploadedFile { 
     background-color: #0f172a !important; border: 1px solid #334155 !important; border-radius: 12px !important; 
     padding: 15px 20px !important; margin-top: 20px !important;
@@ -143,7 +134,7 @@ div[data-testid*="UploadedFile"] button {
 }
 
 /* =========================================
-   4. FINAL DOWNLOAD BUTTON FORMATTING
+   3. FINAL DOWNLOAD BUTTON FORMATTING
    ========================================= */
 .final-download-target [data-testid="stDownloadButton"] button {
     width: 100% !important; height: auto !important; padding: 18px !important; margin-top: 10px !important;
@@ -163,8 +154,6 @@ div[data-testid*="UploadedFile"] button {
 @media (max-width: 768px) {
     .top-nav { position: relative; justify-content: center; padding-top: 20px; }
 }
-
-[data-testid="block-container"] { max-width: 800px; padding-top: 3rem; }
 </style>
 
 <div class="top-nav">
@@ -207,7 +196,7 @@ div[data-testid*="UploadedFile"] button {
 """, unsafe_allow_html=True)
 
 # ==========================================================================
-# SECTION 2: PRE-GENERATE BLANK NOTEBOOK (CACHED TO PREVENT DOUBLE-CLICK BUG)
+# SECTION 2: PRE-GENERATE BLANK NOTEBOOK 
 # ==========================================================================
 if "blank_html" not in st.session_state:
     blank_nav = '<div class="nav-link active-nav" id="link-0" onclick="goTo(\'0\')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text">Page 1</span></div>'
@@ -236,12 +225,9 @@ with col2:
     )
 
 with col1:
-    # MAGIC FIX: By forcing accept_multiple_files=True, Streamlit is physically incapable of 
-    # using the broken compact mode, guaranteeing the giant cloud dropzone appears natively.
-    uploaded_files = st.file_uploader("Upload a document", type=["pptx", "ppt", "pdf"], accept_multiple_files=True)
-    
-    # We grab the first file they upload so our background processing works exactly the same
-    up = uploaded_files[0] if uploaded_files else None
+    # ZERO HACKS. ZERO CSS TRICKS. 
+    # Just the pure, native Streamlit command. It will draw the big cloud now.
+    up = st.file_uploader("Upload a document", type=["pptx", "ppt", "pdf"])
 
     # ==========================================================================
     # SECTION 4: FILE PARSING & PROCESSING
