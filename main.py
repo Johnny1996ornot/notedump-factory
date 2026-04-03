@@ -31,18 +31,16 @@ st.markdown("""
 .coffee-btn { color: #0ea5e9; text-decoration: none; font-weight: bold; font-size: 12px; border: 1px solid #0ea5e9; padding: 4px 10px; border-radius: 20px; transition: 0.2s; white-space: nowrap; }
 .coffee-btn:hover { background: rgba(14, 165, 233, 0.15); color: #fff; }
 
+/* Hero & Modals */
 .modal-window { position: fixed; background-color: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px); top: 0; right: 0; bottom: 0; left: 0; z-index: 99999; visibility: hidden; opacity: 0; transition: all 0.3s; display: flex; justify-content: center; align-items: center; }
 .modal-window:target { visibility: visible; opacity: 1; }
 .modal-content { background: #0f172a; width: 90%; max-width: 650px; padding: 30px; border-radius: 16px; border: 1px solid #334155; color: #f1f5f9; position: relative; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
 .modal-close { position: absolute; top: 20px; right: 25px; color: #64748b; text-decoration: none; font-size: 28px; font-weight: bold; transition: 0.2s; }
 .modal-close:hover { color: #ef4444; }
-
-/* Modal Content Styling */
 .modal-content h2 { margin-top: 0; color: #4f46e5; font-size: 24px; border-bottom: 1px solid #1e293b; padding-bottom: 10px;}
 .modal-content h4 { color: #0ea5e9; margin-top: 20px; margin-bottom: 10px; font-size: 18px;}
 .modal-content li { margin-bottom: 10px; line-height: 1.5; font-size: 15px; color: #cbd5e1;}
 .pro-tag { color: #10b981; font-weight: bold; } 
-
 .hero { text-align: center; color: white; padding: 10px 0; max-width: 500px; margin: 0 auto; }
 .logo-container { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 0px;}
 .logo-text { font-size: 55px; font-weight: 800; margin: 0; color: #f8fafc;}
@@ -50,21 +48,28 @@ st.markdown("""
 .tagline { font-size: 18px; color: #94a3b8; margin-top: -8px !important; margin-bottom: 8px !important; font-weight: normal; }
 .support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 20px !important; }
 
+
 /* =========================================
-   1. FORCE LEFT BOX (UPLOADER) TO 220PX & REBUILD IT
+   1. NATIVE UPLOADER (LEFT BOX) FIX
    ========================================= */
-/* Step A: Kill the Top Label */
-[data-testid="stFileUploader"] > label,
-[data-testid="stFileUploader"] div[data-testid="stWidgetLabel"] { 
-    display: none !important; 
+
+/* The Sniper: Find the exact wrapper Streamlit uses for the label text and delete it */
+[data-testid="stFileUploader"] [data-testid="stWidgetLabel"] {
+    display: none !important;
+    height: 0px !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
-/* Step B: Secure the Wrapper */
+/* Ensure the outer container has no extra padding */
 [data-testid="stFileUploader"] { 
-    width: 100% !important; margin: 0 !important; padding: 0 !important; box-sizing: border-box !important;
+    width: 100% !important; 
+    margin: 0 !important; 
+    padding: 0 !important; 
+    box-sizing: border-box !important;
 }
 
-/* Step C: Stretch the Tiny Dropzone to 220px */
+/* Force the Native Dropzone to be exactly 220px tall, matching the right side */
 [data-testid="stFileUploadDropzone"] { 
     height: 220px !important; 
     min-height: 220px !important; 
@@ -80,47 +85,11 @@ st.markdown("""
     box-sizing: border-box !important;
 }
 
-/* Step D: Murder Streamlit's compact text ("No file selected") */
-[data-testid="stFileUploadDropzone"] > div > span,
-[data-testid="stFileUploadDropzone"] > div > small,
-[data-testid="stFileUploadDropzone"] > span,
-[data-testid="stFileUploadDropzone"] > small,
-[data-testid="stFileUploadDropzone"] [data-testid="stMarkdownContainer"] {
-    display: none !important;
-}
-
-/* Step E: Inject our own massive Cloud and Text manually */
-[data-testid="stFileUploadDropzone"]::before {
-    content: "☁️\\A Drag and drop file here\\A Limit 200MB per file";
-    white-space: pre-wrap !important;
-    text-align: center !important;
-    font-size: 16px !important;
-    font-weight: bold !important;
-    color: #e2e8f0 !important;
-    line-height: 1.6 !important;
-    margin-bottom: 15px !important;
-    display: block !important;
-}
-
-/* Step F: Style the "Browse files" button */
-[data-testid="stFileUploadDropzone"] button { 
-    background-color: #4f46e5 !important; 
-    color: #ffffff !important; 
-    border: none !important; 
-    padding: 10px 24px !important; 
-    border-radius: 6px !important; 
-    font-weight: bold !important; 
-    font-size: 15px !important; 
-    margin: 0 auto !important; 
-    display: block !important;
-    z-index: 10 !important;
-}
 
 /* =========================================
-   2. RIGHT BOX: CREATE BLANK NOTEBOOK
+   2. CREATE BLANK NOTEBOOK (RIGHT BOX)
    ========================================= */
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button {
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button {
     height: 220px !important; 
     min-height: 220px !important; 
     max-height: 220px !important;
@@ -132,24 +101,19 @@ st.markdown("""
     transition: 0.2s; padding: 0 !important;
     box-sizing: border-box !important;
 }
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button:hover,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button:hover { 
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button:hover { 
     border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; 
 }
 
 /* Completely hide Streamlit's default text wrappers */
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button div,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button div,
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button p,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button p,
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button span,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button span {
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button span {
     display: none !important;
 }
 
 /* Inject Giant Icon on the Left */
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::before,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button::before {
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::before {
     content: "📓";
     font-size: 70px !important; 
     margin-right: 15px !important; 
@@ -158,8 +122,7 @@ st.markdown("""
 }
 
 /* Inject Stacked Text on the Right */
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::after,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button::after {
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::after {
     content: "Create\\A Blank\\A Notebook"; 
     white-space: pre !important; 
     font-size: 28px !important; 
@@ -170,6 +133,7 @@ st.markdown("""
     letter-spacing: -1px !important;
     display: block !important;
 }
+
 
 /* =========================================
    3. FORCE UPLOADED FILE BAR TO SPAN & PROTECT X
@@ -287,9 +251,9 @@ with col2:
     )
 
 with col1:
-    # We no longer care what Streamlit does to the UI internally, 
-    # because our CSS rebuilds the big box perfectly over top of it.
-    up = st.file_uploader("Upload a document", type=["pptx", "ppt", "pdf"])
+    # Here is the magic. We provide a real label so Streamlit renders the native
+    # drag-and-drop cloud HTML. Our CSS sniper up above automatically makes the text invisible.
+    up = st.file_uploader("Upload", type=["pptx", "ppt", "pdf"])
 
     # ==========================================================================
     # SECTION 4: FILE PARSING & PROCESSING
