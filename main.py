@@ -51,39 +51,23 @@ st.markdown("""
 .support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 20px !important; }
 
 /* =========================================
-   1. FORCE PARENT CONTAINERS TO EXACTLY 250PX
+   1. KILL ALL STREAMLIT GHOST PADDING
    ========================================= */
-/* Left Column Container (Uploader) */
-[data-testid="stColumn"]:nth-child(1) [data-testid="stFileUploader"] {
-    height: 250px !important;
-    display: flex !important;
-    flex-direction: column !important;
-    margin: 0 !important;
-    padding: 0 !important;
-}
-
-/* Right Column Container (Button) */
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] {
-    height: 250px !important;
-    display: flex !important;
-    flex-direction: column !important;
-    margin: 0 !important;
+[data-testid="stFileUploader"], 
+[data-testid="stColumn"]:nth-child(2) div[data-testid="stDownloadButton"] {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
     padding: 0 !important;
 }
 
 /* =========================================
-   2. FORCE INNER ELEMENTS TO STRETCH (FLEX-GROW)
+   2. FORCE EXACTLY 220PX HEIGHTS
    ========================================= */
-/* Hide the hidden labels that add ghost height to the uploader */
-[data-testid="stFileUploader"] label, 
-[data-testid="stFileUploader"] small { 
-    display: none !important; 
-}
-
-/* The Uploader Dropzone */
+/* Left: Uploader Dropzone */
 [data-testid="stFileUploadDropzone"] { 
-    flex-grow: 1 !important; 
-    height: 100% !important; 
+    height: 220px !important; 
+    min-height: 220px !important; 
+    max-height: 220px !important; 
     box-sizing: border-box !important;
     background-color: #0f172a !important; 
     border: 1px dashed #334155 !important;
@@ -94,36 +78,44 @@ st.markdown("""
     align-items: center !important; 
     padding: 20px !important;
     text-align: center !important; 
+    margin: 0 !important;
+}
+[data-testid="stFileUploadDropzone"] > div,
+[data-testid="stFileUploadDropzone"] > div > div { 
+    display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; text-align: center !important; width: 100% !important; 
 }
 [data-testid="stFileUploadDropzone"] span { font-size: 16px !important; font-weight: bold !important; color:#e2e8f0 !important; line-height: 1.2 !important;}
+[data-testid="stFileUploadDropzone"] small { font-size: 13px !important; color: #64748b !important; text-align: center !important; margin: 0 auto !important;}
 [data-testid="stFileUploadDropzone"] button { 
-    background-color: #4f46e5 !important; color: #ffffff !important; border: none !important; padding: 10px 24px !important; border-radius: 6px !important; font-weight: bold !important; margin-top: 15px !important; font-size: 15px !important;
+    background-color: #4f46e5 !important; color: #ffffff !important; border: none !important; padding: 10px 24px !important; border-radius: 6px !important; font-weight: bold !important; margin-top: 15px !important; font-size: 15px !important; margin-left: auto !important; margin-right: auto !important; 
 }
 
-/* The Blank Notebook Button */
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button {
-    flex-grow: 1 !important; 
-    height: 100% !important; 
-    width: 100% !important; 
+/* Right: Blank Notebook Button */
+[data-testid="stColumn"]:nth-child(2) div[data-testid="stDownloadButton"] button {
+    height: 220px !important; 
+    min-height: 220px !important; 
+    max-height: 220px !important;
     box-sizing: border-box !important;
+    width: 100% !important; 
+    margin: 0 !important;
     background-color: #0f172a !important; border: 1px solid #1e293b !important; border-radius: 12px !important;
     display: flex !important; flex-direction: row !important;
     justify-content: center !important; align-items: center !important;
-    transition: 0.2s; padding: 0 !important; margin: 0 !important;
+    transition: 0.2s; padding: 0 !important;
 }
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button:hover { 
+[data-testid="stColumn"]:nth-child(2) div[data-testid="stDownloadButton"] button:hover { 
     border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; 
 }
 
 /* Completely hide Streamlit's default text wrappers on the right button */
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button div,
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button p,
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button span {
+[data-testid="stColumn"]:nth-child(2) div[data-testid="stDownloadButton"] button div,
+[data-testid="stColumn"]:nth-child(2) div[data-testid="stDownloadButton"] button p,
+[data-testid="stColumn"]:nth-child(2) div[data-testid="stDownloadButton"] button span {
     display: none !important;
 }
 
 /* Inject Giant Icon on the Left */
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::before {
+[data-testid="stColumn"]:nth-child(2) div[data-testid="stDownloadButton"] button::before {
     content: "📓";
     font-size: 70px !important; 
     margin-right: 15px !important; 
@@ -132,7 +124,7 @@ st.markdown("""
 }
 
 /* Inject Stacked Text on the Right */
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::after {
+[data-testid="stColumn"]:nth-child(2) div[data-testid="stDownloadButton"] button::after {
     content: "Create\\A Blank\\A Notebook"; 
     white-space: pre !important; 
     font-size: 28px !important; 
@@ -172,9 +164,10 @@ div[data-testid*="UploadedFile"] button {
 [data-testid="stColumn"]:nth-child(1) .final-download-btn-container [data-testid="stDownloadButton"] {
     height: auto !important;
     display: block !important;
+    margin-top: 10px !important;
 }   
 [data-testid="stColumn"]:nth-child(1) .final-download-btn-container [data-testid="stDownloadButton"] button {
-    width: 100% !important; height: auto !important; padding: 18px !important; margin-top: 10px !important;
+    width: 100% !important; height: auto !important; padding: 18px !important; margin-top: 0 !important;
     background: #1e293b !important; color: #0ea5e9 !important; border: 1px solid #0ea5e9 !important; border-radius: 8px !important;
     font-size: 18px !important; font-weight: bold !important; transition: 0.2s;
     display: block !important;
@@ -238,8 +231,6 @@ div[data-testid*="UploadedFile"] button {
 # ==========================================================================
 # SECTION 2: PRE-GENERATE BLANK NOTEBOOK (CACHED TO PREVENT DOUBLE-CLICK BUG)
 # ==========================================================================
-# We store the generated HTML in session state so clicking the download button
-# doesn't trigger a re-render with a new ID, which breaks the download link.
 if "blank_html" not in st.session_state:
     blank_nav = '<div class="nav-link active-nav" id="link-0" onclick="goTo(\'0\')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text">Page 1</span></div>'
     blank_slides = '<div id="p-0" class="page active" data-page-width="816" data-page-height="1054" style="width:816px; height:1054px;"></div>'
@@ -267,16 +258,15 @@ with col2:
     )
 
 with col1:
-    up = st.file_uploader("Upload a document", label_visibility="hidden", type=["pptx", "ppt", "pdf"])
+    # THE CRITICAL FIX: label_visibility="collapsed" deletes the ghost gap
+    up = st.file_uploader("Upload a document", label_visibility="collapsed", type=["pptx", "ppt", "pdf"])
 
     # ==========================================================================
     # SECTION 4: FILE PARSING & PROCESSING (CACHED FOR SPEED & STABILITY)
     # ==========================================================================
     if up:
-        # Create a unique key for the specific file uploaded
         file_key = f"{up.name}_{up.size}"
 
-        # Only re-parse the document if it's a completely new file
         if st.session_state.get("current_file_key") != file_key:
             st.session_state.current_file_key = file_key
             st.session_state.final_html = None
