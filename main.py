@@ -51,19 +51,21 @@ st.markdown("""
 .support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 20px !important; }
 
 /* =========================================
-   1. FORCE LEFT BOX (UPLOADER) TO 220PX
+   1. FORCE LEFT BOX (UPLOADER) TO 220PX & REBUILD IT
    ========================================= */
-/* Let the outer wrapper size naturally so it doesn't crush the label */
-[data-testid="stFileUploader"] { 
-    width: 100% !important; 
-    margin: 0 !important; 
-    padding: 0 !important; 
-    box-sizing: border-box !important;
+/* Step A: Kill the Top Label */
+[data-testid="stFileUploader"] > label,
+[data-testid="stFileUploader"] div[data-testid="stWidgetLabel"] { 
+    display: none !important; 
 }
 
-/* Force ONLY the dropzone itself to be exactly 220px */
-[data-testid="stFileUploadDropzone"],
-[data-testid="stFileUploader"] > section { 
+/* Step B: Secure the Wrapper */
+[data-testid="stFileUploader"] { 
+    width: 100% !important; margin: 0 !important; padding: 0 !important; box-sizing: border-box !important;
+}
+
+/* Step C: Stretch the Tiny Dropzone to 220px */
+[data-testid="stFileUploadDropzone"] { 
     height: 220px !important; 
     min-height: 220px !important; 
     max-height: 220px !important;
@@ -75,33 +77,48 @@ st.markdown("""
     justify-content: center !important; 
     align-items: center !important; 
     padding: 20px !important;
-    text-align: center !important; 
-    width: 100% !important;
     box-sizing: border-box !important;
 }
 
-/* Ensure inner text and "Browse files" button stack neatly */
-[data-testid="stFileUploadDropzone"] > div,
-[data-testid="stFileUploader"] > section > div { 
-    display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; text-align: center !important; width: 100% !important; 
+/* Step D: Murder Streamlit's compact text ("No file selected") */
+[data-testid="stFileUploadDropzone"] > div > span,
+[data-testid="stFileUploadDropzone"] > div > small,
+[data-testid="stFileUploadDropzone"] > span,
+[data-testid="stFileUploadDropzone"] > small,
+[data-testid="stFileUploadDropzone"] [data-testid="stMarkdownContainer"] {
+    display: none !important;
 }
-[data-testid="stFileUploadDropzone"] span,
-[data-testid="stFileUploader"] > section span { font-size: 16px !important; font-weight: bold !important; color:#e2e8f0 !important; line-height: 1.2 !important; text-align: center !important; margin: 0 auto !important;}
-[data-testid="stFileUploadDropzone"] small,
-[data-testid="stFileUploader"] > section small { font-size: 13px !important; color: #64748b !important; text-align: center !important; margin: 0 auto !important;}
-[data-testid="stFileUploadDropzone"] button,
-[data-testid="stFileUploader"] > section button { 
-    background-color: #4f46e5 !important; color: #ffffff !important; border: none !important; padding: 10px 24px !important; border-radius: 6px !important; font-weight: bold !important; margin-top: 15px !important; font-size: 15px !important; margin-left: auto !important; margin-right: auto !important; 
+
+/* Step E: Inject our own massive Cloud and Text manually */
+[data-testid="stFileUploadDropzone"]::before {
+    content: "☁️\\A Drag and drop file here\\A Limit 200MB per file";
+    white-space: pre-wrap !important;
+    text-align: center !important;
+    font-size: 16px !important;
+    font-weight: bold !important;
+    color: #e2e8f0 !important;
+    line-height: 1.6 !important;
+    margin-bottom: 15px !important;
+    display: block !important;
+}
+
+/* Step F: Style the "Browse files" button */
+[data-testid="stFileUploadDropzone"] button { 
+    background-color: #4f46e5 !important; 
+    color: #ffffff !important; 
+    border: none !important; 
+    padding: 10px 24px !important; 
+    border-radius: 6px !important; 
+    font-weight: bold !important; 
+    font-size: 15px !important; 
+    margin: 0 auto !important; 
+    display: block !important;
+    z-index: 10 !important;
 }
 
 /* =========================================
    2. RIGHT BOX: CREATE BLANK NOTEBOOK
    ========================================= */
-/* PUSH RIGHT BOX DOWN: This aligns it perfectly with the dropzone on the left by compensating for the label's height */
-[data-testid="stColumn"]:nth-child(2) div[data-testid="stDownloadButton"] {
-    margin-top: 28px !important;
-}
-
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button,
 [data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button {
     height: 220px !important; 
@@ -270,8 +287,8 @@ with col2:
     )
 
 with col1:
-    # MAGIC FIX: By letting Streamlit naturally render the label, it unlocks the full 
-    # widget with the cloud logo and "Browse files" button! 
+    # We no longer care what Streamlit does to the UI internally, 
+    # because our CSS rebuilds the big box perfectly over top of it.
     up = st.file_uploader("Upload a document", type=["pptx", "ppt", "pdf"])
 
     # ==========================================================================
