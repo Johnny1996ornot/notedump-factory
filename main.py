@@ -12,7 +12,8 @@ try:
 except ImportError:
     import fitz
 
-st.set_page_config(page_title="NoteDump", layout="centered", initial_sidebar_state="collapsed")
+# THE FIX IS HERE: Change layout to "wide" to break the 350px panic threshold
+st.set_page_config(page_title="NoteDump", layout="wide", initial_sidebar_state="collapsed")
 
 # ==========================================================================
 # SECTION 1: UI STYLING & MODAL CONTENT
@@ -20,6 +21,13 @@ st.set_page_config(page_title="NoteDump", layout="centered", initial_sidebar_sta
 st.markdown("""
 <style>
 .stApp { background-color: #000000; }
+
+/* THE FIX IS HERE: Re-center the app and lock it at 850px to ensure columns are wide enough */
+.main .block-container { 
+    max-width: 850px !important; 
+    margin: 0 auto !important; 
+    padding-top: 3rem; 
+}
 
 /* Unlock Streamlit Columns so elements can span across them */
 [data-testid="stColumn"], [data-testid="column"] { overflow: visible !important; }
@@ -46,23 +54,17 @@ st.markdown("""
 
 
 /* =========================================
-   1. NATIVE UPLOADER (LEFT BOX) ALIGNMENT
+   1. NATIVE UPLOADER (LEFT BOX) 
    ========================================= */
 
-/* SAFELY KILL THE LABEL: This finds the exact div wrapper holding the label and deletes it from the flow, aligning the boxes perfectly */
-[data-testid="stFileUploader"] > div:has([data-testid="stWidgetLabel"]),
-[data-testid="stFileUploader"] > label {
+/* Safely assassinate the "Upload a document" label without triggering compact mode */
+[data-testid="stFileUploader"] [data-testid="stWidgetLabel"] {
     display: none !important;
-    height: 0px !important;
-    margin: 0px !important;
-    padding: 0px !important;
 }
 
-/* STRETCH THE NATIVE DROPZONE: We do not touch the outer wrapper, only the inner dropzone, avoiding the Resize Observer panic */
+/* Force the Native Dropzone to exactly 220px to match the right side */
 [data-testid="stFileUploadDropzone"] { 
     height: 220px !important; 
-    min-height: 220px !important; 
-    max-height: 220px !important;
     background-color: #0f172a !important; 
     border: 1px dashed #334155 !important;
     border-radius: 12px !important; 
@@ -70,15 +72,6 @@ st.markdown("""
     flex-direction: column !important; 
     justify-content: center !important; 
     align-items: center !important; 
-    padding: 20px !important;
-}
-
-/* Customize the native button styling to look cleaner */
-[data-testid="stFileUploadDropzone"] button {
-    background-color: #4f46e5 !important; 
-    color: #ffffff !important; 
-    border-radius: 6px !important; 
-    font-weight: bold !important;
 }
 
 
@@ -88,15 +81,12 @@ st.markdown("""
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button,
 [data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button {
     height: 220px !important; 
-    min-height: 220px !important; 
-    max-height: 220px !important;
     width: 100% !important; 
     margin: 0 !important;
     background-color: #0f172a !important; border: 1px solid #1e293b !important; border-radius: 12px !important;
     display: flex !important; flex-direction: row !important;
     justify-content: center !important; align-items: center !important;
     transition: 0.2s; padding: 0 !important;
-    box-sizing: border-box !important;
 }
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button:hover,
 [data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button:hover { 
@@ -181,8 +171,6 @@ div[data-testid*="UploadedFile"] button {
 @media (max-width: 768px) {
     .top-nav { position: relative; justify-content: center; padding-top: 20px; }
 }
-
-[data-testid="block-container"] { max-width: 800px; padding-top: 3rem; }
 </style>
 
 <div class="top-nav">
@@ -254,8 +242,7 @@ with col2:
     )
 
 with col1:
-    # We supply a real string so Streamlit natively generates the full drag-and-drop cloud HTML. 
-    # The new robust CSS ':has()' selector above ensures the text is assassinated.
+    # No tricky CSS visibility flags. Just the pure label so Streamlit feels safe rendering the cloud.
     up = st.file_uploader("Upload a document", type=["pptx", "ppt", "pdf"])
 
     # ==========================================================================
