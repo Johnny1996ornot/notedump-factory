@@ -6,7 +6,7 @@ import time
 from io import BytesIO
 from template import get_template
 
-# Bypassing potential package naming conflicts
+# Bypassing the Replit Auto-Installer Bug
 try:
     import pymupdf as fitz
 except ImportError:
@@ -62,11 +62,14 @@ st.markdown("""
     box-sizing: border-box !important;
 }
 
+[data-testid="stFileUploader"] > label { 
+    display: none !important; 
+}
+
 /* =========================================
    2. FORCE THE VISIBLE BOXES TO EXACTLY 220PX
    ========================================= */
-
-/* LEFT BOX: STRETCHING THE UPLOADER DROPZONE BACK TO FULL SIZE */
+/* LEFT: Uploader Dropzone */
 [data-testid="stFileUploadDropzone"] { 
     height: 220px !important; 
     min-height: 220px !important; 
@@ -84,19 +87,17 @@ st.markdown("""
     margin: 0 !important;
     overflow: hidden !important;
 }
-
-/* FORCING THE UPLOADER TEXT TO REAPPEAR */
 [data-testid="stFileUploadDropzone"] > div,
 [data-testid="stFileUploadDropzone"] > div > div { 
     display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; text-align: center !important; width: 100% !important; 
 }
-[data-testid="stFileUploadDropzone"] span { font-size: 16px !important; font-weight: bold !important; color:#e2e8f0 !important; line-height: 1.2 !important; text-align: center !important; margin: 0 auto !important; display: block !important; visibility: visible !important;}
-[data-testid="stFileUploadDropzone"] small { font-size: 13px !important; color: #64748b !important; text-align: center !important; margin: 0 auto !important; display: block !important; visibility: visible !important;}
+[data-testid="stFileUploadDropzone"] span { font-size: 16px !important; font-weight: bold !important; color:#e2e8f0 !important; line-height: 1.2 !important; text-align: center !important; margin: 0 auto !important;}
+[data-testid="stFileUploadDropzone"] small { font-size: 13px !important; color: #64748b !important; text-align: center !important; margin: 0 auto !important;}
 [data-testid="stFileUploadDropzone"] button { 
     background-color: #4f46e5 !important; color: #ffffff !important; border: none !important; padding: 10px 24px !important; border-radius: 6px !important; font-weight: bold !important; margin-top: 15px !important; font-size: 15px !important; margin-left: auto !important; margin-right: auto !important; 
 }
 
-/* RIGHT BOX: CREATE BLANK NOTEBOOK */
+/* RIGHT: Download Button */
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button,
 [data-testid="stColumn"]:nth-child(2) div.stDownloadButton button {
     height: 220px !important; 
@@ -210,11 +211,6 @@ div[data-testid*="UploadedFile"] button {
 }
 
 [data-testid="block-container"] { max-width: 800px; padding-top: 3rem; }
-
-/* Hide the invisible spacer label we used in python */
-[data-testid="stFileUploader"] > label {
-    display: none !important;
-}
 </style>
 
 <div class="top-nav">
@@ -259,6 +255,8 @@ div[data-testid*="UploadedFile"] button {
 # ==========================================================================
 # SECTION 2: PRE-GENERATE BLANK NOTEBOOK (CACHED TO PREVENT DOUBLE-CLICK BUG)
 # ==========================================================================
+# We store the generated HTML in session state so clicking the download button
+# doesn't trigger a re-render with a new ID, which breaks the download link.
 if "blank_html" not in st.session_state:
     blank_nav = '<div class="nav-link active-nav" id="link-0" onclick="goTo(\'0\')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text">Page 1</span></div>'
     blank_slides = '<div id="p-0" class="page active" data-page-width="816" data-page-height="1054" style="width:816px; height:1054px;"></div>'
@@ -286,16 +284,19 @@ with col2:
     )
 
 with col1:
-    # MAGIC FIX: By passing a blank space (" ") instead of label_visibility="collapsed", 
-    # Streamlit is forced to render the full 220px Drag-and-Drop zone with text!
-    up = st.file_uploader(" ", type=["pptx", "ppt", "pdf"])
+    # MAGIC FIX: By passing a real string and entirely removing `label_visibility="collapsed"`, 
+    # Streamlit is forced to render the full 220px box, cloud logo, and "Browse files" button natively. 
+    # Your CSS at the top safely hides the "Upload a document" label above it.
+    up = st.file_uploader("Upload a document", type=["pptx", "ppt", "pdf"])
 
     # ==========================================================================
-    # SECTION 4: FILE PARSING & PROCESSING
+    # SECTION 4: FILE PARSING & PROCESSING (CACHED FOR SPEED & STABILITY)
     # ==========================================================================
     if up:
+        # Create a unique key for the specific file uploaded
         file_key = f"{up.name}_{up.size}"
 
+        # Only re-parse the document if it's a completely new file
         if st.session_state.get("current_file_key") != file_key:
             st.session_state.current_file_key = file_key
             st.session_state.final_html = None
