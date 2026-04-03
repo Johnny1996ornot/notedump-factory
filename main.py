@@ -20,7 +20,24 @@ st.set_page_config(page_title="NoteDump", layout="centered", initial_sidebar_sta
 st.markdown("""
 <style>
 .stApp { background-color: #000000; }
-
+/* MASTER BOX — forces BOTH to be identical */
+.box-wrapper {
+    height: 200px;
+    width: 100%;
+    display: flex;
+    align-items: stretch;
+}
+/* Remove hidden padding/margin from uploader */
+[data-testid="stFileUploader"] > div {
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+/* Make inner elements fill wrapper */
+.box-wrapper > div {
+    width: 100% !important;
+    height: 100% !important;
+}
 /* Unlock Streamlit Columns so elements can span across them */
 [data-testid="stColumn"], [data-testid="column"] { overflow: visible !important; }
 /* FIX: make both columns same height */
@@ -266,8 +283,9 @@ with col2:
     st.markdown('</div>', unsafe_allow_html=True)
 
 with col1:
+    st.markdown('<div class="box-wrapper">', unsafe_allow_html=True)
     up = st.file_uploader("Upload a document", label_visibility="hidden", type=["pptx", "ppt", "pdf"])
-
+    st.markdown('</div>', unsafe_allow_html=True)
     # ==========================================================================
     # SECTION 4: FILE PARSING & PROCESSING (CACHED FOR SPEED & STABILITY)
     # ==========================================================================
