@@ -37,6 +37,7 @@ st.markdown("""
 .modal-close { position: absolute; top: 20px; right: 25px; color: #64748b; text-decoration: none; font-size: 28px; font-weight: bold; transition: 0.2s; }
 .modal-close:hover { color: #ef4444; }
 
+/* Modal Content Styling */
 .modal-content h2 { margin-top: 0; color: #4f46e5; font-size: 24px; border-bottom: 1px solid #1e293b; padding-bottom: 10px;}
 .modal-content h4 { color: #0ea5e9; margin-top: 20px; margin-bottom: 10px; font-size: 18px;}
 .modal-content li { margin-bottom: 10px; line-height: 1.5; font-size: 15px; color: #cbd5e1;}
@@ -50,18 +51,26 @@ st.markdown("""
 .support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 20px !important; }
 
 /* =========================================
-   1. FORCE LEFT BOX (UPLOADER) TO 220PX
+   1. YOUR WORKING CSS: KILL STREAMLIT'S INVISIBLE WRAPPER MARGINS
    ========================================= */
-/* Ensure the parent doesn't squish the dropzone */
-[data-testid="stFileUploader"] { 
-    width: 100% !important; margin: 0 !important; padding: 0 !important; 
+[data-testid="stFileUploader"],
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"],
+[data-testid="stColumn"]:nth-child(2) div.stDownloadButton {
+    margin: 0 !important;
+    padding: 0 !important;
+    height: 220px !important; 
+    box-sizing: border-box !important;
 }
 
-/* Style the Dropzone to perfectly match your Replit design */
+/* =========================================
+   2. YOUR WORKING CSS: FORCE THE VISIBLE BOXES TO EXACTLY 220PX
+   ========================================= */
+/* LEFT: Uploader Dropzone */
 [data-testid="stFileUploadDropzone"] { 
     height: 220px !important; 
     min-height: 220px !important; 
     max-height: 220px !important;
+    box-sizing: border-box !important; 
     background-color: #0f172a !important; 
     border: 1px dashed #334155 !important;
     border-radius: 12px !important; 
@@ -71,41 +80,132 @@ st.markdown("""
     align-items: center !important; 
     padding: 20px !important;
     text-align: center !important; 
-    box-sizing: border-box !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+}
+[data-testid="stFileUploadDropzone"] > div,
+[data-testid="stFileUploadDropzone"] > div > div { 
+    display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; text-align: center !important; width: 100% !important; 
+}
+[data-testid="stFileUploadDropzone"] span { font-size: 16px !important; font-weight: bold !important; color:#e2e8f0 !important; line-height: 1.2 !important; text-align: center !important; margin: 0 auto !important;}
+[data-testid="stFileUploadDropzone"] small { font-size: 13px !important; color: #64748b !important; text-align: center !important; margin: 0 auto !important;}
+[data-testid="stFileUploadDropzone"] button { 
+    background-color: #4f46e5 !important; color: #ffffff !important; border: none !important; padding: 10px 24px !important; border-radius: 6px !important; font-weight: bold !important; margin-top: 15px !important; font-size: 15px !important; margin-left: auto !important; margin-right: auto !important; 
 }
 
-/* Force text visibility inside the dropzone */
-[data-testid="stFileUploadDropzone"] * { color: #e2e8f0 !important; font-family: sans-serif !important; }
-[data-testid="stFileUploadDropzone"] span { font-size: 16px !important; font-weight: bold !important; display: block !important;}
-[data-testid="stFileUploadDropzone"] small { font-size: 13px !important; color: #94a3b8 !important; display: block !important; margin-bottom: 10px !important;}
-[data-testid="stFileUploadDropzone"] button { 
-    background-color: #4f46e5 !important; color: #ffffff !important; border: none !important; 
-    padding: 10px 24px !important; border-radius: 6px !important; font-weight: bold !important; 
+/* RIGHT: Download Button */
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button,
+[data-testid="stColumn"]:nth-child(2) div.stDownloadButton button {
+    height: 220px !important; 
+    min-height: 220px !important; 
+    max-height: 220px !important;
+    width: 100% !important; 
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    background-color: #0f172a !important; border: 1px solid #1e293b !important; border-radius: 12px !important;
+    display: flex !important; flex-direction: row !important; 
+    justify-content: center !important; align-items: center !important;
+    transition: 0.2s; padding: 0 !important;
+    overflow: hidden !important;
+}
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button:hover,
+[data-testid="stColumn"]:nth-child(2) div.stDownloadButton button:hover { 
+    border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; 
+}
+
+/* Completely hide Streamlit's default text wrappers */
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button div,
+[data-testid="stColumn"]:nth-child(2) div.stDownloadButton button div,
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button p,
+[data-testid="stColumn"]:nth-child(2) div.stDownloadButton button p,
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button span,
+[data-testid="stColumn"]:nth-child(2) div.stDownloadButton button span {
+    display: none !important;
+}
+
+/* Inject Giant Icon on the Left */
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::before,
+[data-testid="stColumn"]:nth-child(2) div.stDownloadButton button::before {
+    content: "📓";
+    font-size: 70px !important; 
+    margin-right: 15px !important; 
+    line-height: 1 !important;
+    display: block !important;
+}
+
+/* Inject Stacked Text on the Right */
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::after,
+[data-testid="stColumn"]:nth-child(2) div.stDownloadButton button::after {
+    content: "Create\\A Blank\\A Notebook"; 
+    white-space: pre !important; 
+    font-size: 28px !important; 
+    font-weight: 800 !important; 
+    color: #f8fafc !important; 
+    line-height: 1.1 !important;
+    text-align: left !important; 
+    letter-spacing: -1px !important;
+    display: block !important;
 }
 
 /* =========================================
-   2. SPANNING FOR FILE BAR & DOWNLOAD BUTTON
+   3. FORCE UPLOADED FILE BAR TO SPAN & PROTECT X
    ========================================= */
-[data-testid="stUploadedFile"], div[data-testid*="UploadedFile"] { 
+[data-testid="stUploadedFile"], 
+div[data-testid*="UploadedFile"],
+div[data-testid*="FileUploaderFile"],
+.stUploadedFile { 
     background-color: #0f172a !important; border: 1px solid #334155 !important; border-radius: 12px !important; 
-    padding: 15px 20px !important; margin-top: 20px !important; position: relative !important; display: block !important;
+    padding: 15px 20px !important; margin-top: 20px !important;
+    position: relative !important; display: block !important;
+}
+[data-testid="stUploadedFile"] > div:first-child,
+div[data-testid*="UploadedFile"] > div:first-child { 
+    padding-right: 60px !important; width: 100% !important; box-sizing: border-box !important;
+}
+[data-testid="stUploadedFile"] button,
+div[data-testid*="UploadedFile"] button { 
+    position: absolute !important; right: 15px !important; top: 50% !important; transform: translateY(-50%) !important;
+    margin: 0 !important; width: 35px !important; height: 35px !important; 
+    background: #4f46e5 !important; border-radius: 8px !important; color: white !important; border: none !important;
 }
 
-.final-download-target [data-testid="stDownloadButton"] button {
-    width: 100% !important; height: auto !important; padding: 18px !important; margin-top: 10px !important;
-    background: #1e293b !important; color: #0ea5e9 !important; border: 1px solid #0ea5e9 !important; border-radius: 8px !important;
-    font-size: 18px !important; font-weight: bold !important; transition: 0.2s;
+/* =========================================
+   4. FINAL DOWNLOAD BUTTON FORMATTING
+   ========================================= */
+.final-download-target [data-testid="stDownloadButton"] button,
+.final-download-target div.stDownloadButton button {
+    width: 100% !important; 
+    height: auto !important; 
+    min-height: unset !important;
+    max-height: unset !important;
+    padding: 18px !important; 
+    margin-top: 10px !important;
+    background: #1e293b !important; 
+    color: #0ea5e9 !important; 
+    border: 1px solid #0ea5e9 !important; 
+    border-radius: 8px !important;
+    font-size: 18px !important; 
+    font-weight: bold !important; 
+    transition: 0.2s;
 }
-.final-download-target [data-testid="stDownloadButton"] button:hover { background: #0ea5e9 !important; color: white !important; }
+.final-download-target [data-testid="stDownloadButton"] button:hover,
+.final-download-target div.stDownloadButton button:hover { 
+    background: #0ea5e9 !important; color: white !important; 
+}
 
+/* Desktop Spanning Hack */
 @media (min-width: 769px) {
-    [data-testid="stUploadedFile"], div[data-testid*="UploadedFile"], .final-download-target [data-testid="stDownloadButton"] button { 
+    [data-testid="stUploadedFile"], 
+    div[data-testid*="UploadedFile"],
+    .final-download-target [data-testid="stDownloadButton"] button,
+    .final-download-target div.stDownloadButton button { 
         width: calc(200% + 1rem) !important; 
     }
 }
 @media (max-width: 768px) {
     .top-nav { position: relative; justify-content: center; padding-top: 20px; }
 }
+
 [data-testid="block-container"] { max-width: 800px; padding-top: 3rem; }
 </style>
 
@@ -119,6 +219,7 @@ st.markdown("""
 <a href="#" class="modal-close" title="Close">&times;</a>
 <h2>📝 Welcome to NoteDump</h2>
 <p>Turning your documents into an interactive notebook.</p>
+
 <h4>✨ NoteDump Features & Guide</h4>
 <ul>
 <li>Providing an HTML based editor that allows for creating seamless interactive notebooks.</li>
@@ -126,6 +227,7 @@ st.markdown("""
 <li>Add audio or links that will allow a better review.</li>
 <li>Create reviewers with more freedom and specialized tools.</li>
 </ul>
+
 <h4>🚀 Why Use NoteDump?</h4>
 <ul>
 <li><span class="pro-tag">100% Offline Capable:</span> Once downloaded, your interactive notebook is a single HTML file that works perfectly without an internet connection.</li>
@@ -147,7 +249,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================================================
-# SECTION 2: PRE-GENERATE BLANK NOTEBOOK (CACHED)
+# SECTION 2: PRE-GENERATE BLANK NOTEBOOK (CACHED TO PREVENT DOUBLE-CLICK BUG)
 # ==========================================================================
 if "blank_html" not in st.session_state:
     blank_nav = '<div class="nav-link active-nav" id="link-0" onclick="goTo(\'0\')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text">Page 1</span></div>'
@@ -167,31 +269,19 @@ st.markdown('<div style="margin-bottom: 10px;"></div>', unsafe_allow_html=True)
 col1, col2 = st.columns(2, gap="medium")
 
 with col2:
-    # 1. Invisible spacer to align the top of this box perfectly with the "Upload a document" label on the left
-    st.markdown('<div style="font-size: 14px; margin-bottom: 8px; color: transparent;">Spacer</div>', unsafe_allow_html=True)
-    
-    # 2. Raw HTML Button locked to 220px to match the uploader perfectly. 
-    b64_blank = base64.b64encode(st.session_state.blank_html.encode('utf-8')).decode()
-    
-    custom_btn_html = f"""
-    <a href="data:text/html;charset=utf-8;base64,{b64_blank}" download="NoteDump_Blank.html" 
-       style="display: flex; flex-direction: row; justify-content: center; align-items: center; 
-              background-color: #0f172a; border: 1px solid #1e293b; border-radius: 12px; 
-              height: 220px; width: 100%; text-decoration: none; transition: all 0.2s ease-in-out; 
-              box-sizing: border-box; cursor: pointer;"
-       onmouseover="this.style.borderColor='#0ea5e9'; this.style.backgroundColor='rgba(14, 165, 233, 0.1)';"
-       onmouseout="this.style.borderColor='#1e293b'; this.style.backgroundColor='#0f172a';">
-        <span style="font-size: 70px; margin-right: 15px; line-height: 1;">📓</span>
-        <div style="font-size: 28px; font-weight: 800; color: #f8fafc; line-height: 1.1; text-align: left; letter-spacing: -1px;">
-            Create<br>A Blank<br>Notebook
-        </div>
-    </a>
-    """
-    st.markdown(custom_btn_html, unsafe_allow_html=True)
+    # BACK TO YOUR NATIVE STREAMLIT BUTTON
+    st.download_button(
+        label="Create Blank Notebook", 
+        data=st.session_state.blank_html.encode('utf-8'), 
+        file_name="NoteDump_Blank.html", 
+        mime="text/html",
+        use_container_width=True
+    )
 
 with col1:
-    # The native file uploader. We DO NOT hide the label, so "Upload a document" stays visible.
-    up = st.file_uploader("Upload a document", type=["pptx", "ppt", "pdf"])
+    # PASSING AN EMPTY STRING ("") HERE IS THE MAGIC FIX. 
+    # It removes the top label so we don't have to hide it with CSS, which protects your "Drag and drop" text.
+    up = st.file_uploader("", type=["pptx", "ppt", "pdf"])
 
     # ==========================================================================
     # SECTION 4: FILE PARSING & PROCESSING
