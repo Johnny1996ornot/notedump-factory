@@ -1,17 +1,25 @@
-def get_template(total_pages):
-    with open('style.css', 'r') as f:
-        css = f.read()
-    with open('engine.js', 'r') as f:
-        js_engine = f.read()
+import os
 
-    return f"""
+def get_template(total_pages):
+    try:
+        with open("style.css", "r", encoding="utf-8") as f:
+            css_content = f.read()
+    except Exception:
+        css_content = "/* Warning: style.css not found */"
+
+    try:
+        with open("engine.js", "r", encoding="utf-8") as f:
+            js_content = f.read()
+    except Exception:
+        js_content = "/* Warning: engine.js not found */"
+
+    html_template = """
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>NoteDump Lecture</title>
-    <style>{css}</style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
@@ -19,6 +27,164 @@ def get_template(total_pages):
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+
+    <style>
+    __INJECTED_CSS__
+
+    /* ==========================================
+       ALL NEW FIXES (Eraser Glow, Shapes, Borders, Audio)
+       ========================================== */
+    #draw-btn.draw-active, #eraser-btn.draw-active { 
+        color: #ef4444 !important; 
+        background: rgba(239, 68, 68, 0.15) !important;
+        border: 1px solid #ef4444 !important;
+        box-shadow: 0 0 12px 2px rgba(239, 68, 68, 0.7) !important;
+        text-shadow: 0 0 5px rgba(239, 68, 68, 0.5) !important;
+        transition: all 0.2s ease-in-out;
+    }
+    #draw-btn.draw-active i, #eraser-btn.draw-active i { 
+        color: #ef4444 !important; 
+        text-shadow: 0 0 8px rgba(239, 68, 68, 0.9) !important;
+    }
+
+    .pin[data-type="pin"] .pin-visual { 
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background-color: var(--pin-color, #ef4444) !important; border-radius: 50% 50% 50% 0; border: 2px solid #0f172a; 
+        transform: rotate(135deg); 
+        cursor: move; 
+    }
+    .pin[data-type="pin"] .pin-visual::after {
+        content: ''; position: absolute; top: 50%; left: 50%; width: 35%; height: 35%;
+        background-color: white; border-radius: 50%; border: 2px solid #0f172a; transform: translate(-50%, -50%);
+    }
+
+    .pin[data-type="pin"][data-shape="arrow"] .pin-visual { 
+        border-radius: 0 !important; border: none !important; 
+        clip-path: polygon(50% 0%, 15% 100%, 50% 75%, 85% 100%);
+        transform: rotate(0deg); 
+    }
+    .pin[data-type="pin"][data-shape="arrow"] .pin-visual::after { display: none; }
+
+    .pin[data-type="pin"][data-shape="arrow"] {
+        filter: drop-shadow(1px 0px 0px #0f172a) drop-shadow(-1px 0px 0px #0f172a) drop-shadow(0px 1px 0px #0f172a) drop-shadow(0px -1px 0px #0f172a) drop-shadow(2px 4px 4px rgba(0,0,0,0.5)) !important;
+    }
+
+    /* --- RECTANGLE FIXES --- */
+    .pin[data-type="pin"][data-shape="rectangle"] {
+        width: 140px; height: 24px;
+        border-radius: 2px;
+    }
+    .pin[data-type="pin"][data-shape="rectangle"] .pin-rotate-dot { display: none !important; }
+    .pin[data-type="pin"][data-shape="rectangle"] .pin-rotation-ring { display: none !important; }
+
+    .pin[data-type="pin"][data-shape="rectangle"] .pin-visual { 
+        background-color: var(--pin-color, #1e293b) !important; border: 2px solid #0f172a !important; 
+        border-radius: 2px !important; clip-path: none !important; 
+        transform: none !important; width: 100%; height: 100%; cursor: move; opacity: 1 !important;
+    }
+    .pin[data-type="pin"][data-shape="rectangle"] .pin-visual::after { display: none !important; }
+
+    /* CRITICAL FIX: Kill the giant white circle when hovering on panel cards */
+    .pin[data-shape="rectangle"].pin-hover-visible .pin-visual::after,
+    .pin[data-shape="rectangle"].pin-hover-visible .pin-rotate-dot {
+        display: none !important;
+        transform: none !important;
+        opacity: 0 !important;
+    }
+
+    body.edit-active .pin[data-type="pin"][data-shape="rectangle"]::after {
+        content: ''; 
+        position: absolute; 
+        bottom: -5px; 
+        right: -5px;
+        width: 14px; 
+        height: 14px;
+        background: #ffffff;
+        border: 2px solid #0ea5e9;
+        border-radius: 50%;
+        cursor: nwse-resize;
+        z-index: 1000;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        pointer-events: auto !important; 
+    }
+
+    /* Assign a specific class to the handle via javascript to ignore drags */
+    .pin-resize-target {
+        position: absolute; bottom: -8px; right: -8px; width: 20px; height: 20px; z-index: 1001; cursor: nwse-resize;
+    }
+
+    body.edit-active .pin[data-type="pin"][data-shape="rectangle"]:hover::after {
+        background: #e0f2fe; 
+        border-color: #0284c7; 
+    }
+
+    .pin[data-note]:not(:has(.pin-rotate-dot:hover)):hover::before {
+        content: attr(data-note);
+        position: absolute;
+        bottom: 125%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #0f172a;
+        color: white;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 13px;
+        word-break: break-all; 
+        overflow-wrap: anywhere;
+        white-space: pre-wrap;
+        width: max-content;
+        max-width: 250px;
+        z-index: 1000000;
+        pointer-events: none;
+        border: 1px solid #334155;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }
+
+    /* --- AUDIO PLAYER FIXES --- */
+    /* Restyled Skip Button */
+    .audio-skip-btn {
+        background: transparent;
+        color: white;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 14px;
+        padding: 0 10px;
+        opacity: 0.8;
+        transition: opacity 0.2s;
+    }
+    .audio-skip-btn:hover {
+        opacity: 1;
+    }
+
+    .custom-audio-player.compact-mode {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .custom-audio-player.compact-mode .audio-track,
+    .custom-audio-player.compact-mode .audio-time,
+    .custom-audio-player.compact-mode .audio-skip-btn {
+        display: none !important;
+    }
+    .custom-audio-player.compact-mode .audio-play-btn {
+        width: 100% !important;
+        height: 100% !important;
+        margin: 0 !important;
+        border-radius: 50% !important;
+    }
+    .custom-audio-player.compact-mode .audio-play-btn i {
+        font-size: calc(30% + 10px) !important;
+    }
+    </style>
 </head>
 <body>
 
@@ -82,6 +248,41 @@ def get_template(total_pages):
         </div>
     </div>
 
+    <div id="lines-modal-bg" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.8); z-index:999998;">
+        <div class="crop-modal-content" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:320px; height:auto; z-index:999999; text-align:center;">
+            <h3 style="margin-top:0; color:#0f172a;">Notebook Lines</h3>
+            <div style="display:flex; flex-direction:column; gap:15px; margin: 20px 0; text-align:left;">
+
+                <div style="display:flex; align-items:center; justify-content:space-between; background:#f1f5f9; padding:10px; border-radius:6px;">
+                    <div>
+                        <input type="checkbox" id="lines-h-check" style="transform:scale(1.2); margin-right:8px;" checked>
+                        <label style="font-weight:bold; color:#1e293b; font-size:14px;">Horizontal</label>
+                    </div>
+                    <div style="display:flex; align-items:center;">
+                        <input type="number" id="lines-h-cm" value="1.5" step="0.1" style="width:60px; padding:6px; border-radius:4px; border:1px solid #cbd5e1; text-align:center;">
+                        <span style="margin-left:6px; font-size:12px; color:#64748b; font-weight:bold;">cm</span>
+                    </div>
+                </div>
+
+                <div style="display:flex; align-items:center; justify-content:space-between; background:#f1f5f9; padding:10px; border-radius:6px;">
+                    <div>
+                        <input type="checkbox" id="lines-v-check" style="transform:scale(1.2); margin-right:8px;">
+                        <label style="font-weight:bold; color:#1e293b; font-size:14px;">Vertical</label>
+                    </div>
+                    <div style="display:flex; align-items:center;">
+                        <input type="number" id="lines-v-cm" value="1.5" step="0.1" style="width:60px; padding:6px; border-radius:4px; border:1px solid #cbd5e1; text-align:center;">
+                        <span style="margin-left:6px; font-size:12px; color:#64748b; font-weight:bold;">cm</span>
+                    </div>
+                </div>
+
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:10px;">
+                <button onclick="$('#lines-modal-bg').hide()" style="background:#94a3b8; color:white; padding:8px 16px; border:none; border-radius:4px; cursor:pointer;">Cancel</button>
+                <button onclick="applyLinesFromModal()" style="background:#4f46e5; color:white; padding:8px 16px; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">Apply Lines</button>
+            </div>
+        </div>
+    </div>
+
     <div id="nav">
         <div id="nav-toggle" onclick="toggleNav()"><i class="fas fa-caret-left" id="nav-toggle-icon"></i></div>
         <button class="mobile-only-btn" style="width:100%; margin-bottom:10px; justify-content:center; background:#1e293b;" onclick="toggleNav()"><i class="fas fa-times"></i> Close Pages</button>
@@ -93,7 +294,7 @@ def get_template(total_pages):
             <button class="icon-btn" id="edit-btn" onclick="toggleEdit()" title="Toggle Edit Mode"><i class="fas fa-edit"></i></button>
         </div>
 
-        <div id="lecture-title" contenteditable="true" title="Click to rename file">{{{{VISIBLE_TITLE}}}}</div>
+        <div id="lecture-title" contenteditable="true" title="Click to rename file">{{VISIBLE_TITLE}}</div>
 
         <div class="nav-icon-grid" style="margin-bottom: 12px;">
             <button onclick="showExportModal()" class="icon-btn action-btn" title="Export Notebook Options"><i class="fas fa-download"></i></button>
@@ -114,7 +315,7 @@ def get_template(total_pages):
 
         <hr style="border-color: #334155; margin: 10px 0; width: 100%;">
         <div id="nav-list-container">
-            {{{{NAV_LINKS}}}}
+            {{NAV_LINKS}}
         </div>
     </div>
 
@@ -135,20 +336,13 @@ def get_template(total_pages):
                     </div>
 
                     <div style="display: flex; gap: 12px;">
-                        <div class="tool-group" style="flex: 1; justify-content: center;">
-                            <i class="fas fa-border-all" style="color:#475569; font-size:12px; margin-right:6px;"></i>
-                            <span style="font-size:11px; font-weight:bold; margin-right:6px;">Grid:</span>
-                            <select id="grid-select" class="ctx-select" onchange="applyCanvasSettings()" style="min-width: 65px;">
-                                <option value="0">Off</option>
-                                <option value="2">2 Grid</option>
-                                <option value="3">3 Grid</option>
-                                <option value="4">4 Grid</option>
-                                <option value="6">6 Grid</option>
-                                <option value="8">8 Grid</option>
-                            </select>
+                        <div class="tool-group" style="flex: 1; justify-content: center; gap: 8px;">
+                            <input type="checkbox" id="global-lines-check" title="Toggle Lines" onchange="toggleLines()" checked style="transform: scale(1.2); cursor: pointer;">
+                            <button class="ctx-btn" style="border:none; background:transparent;" onclick="showLinesModal()" title="Notebook Guide Lines"><i class="fas fa-bars"></i> Lines</button>
                         </div>
                         <div class="tool-group" style="flex: 2; justify-content: center;">
                             <button class="ctx-btn" id="draw-btn" onclick="toggleDrawMode()"><i class="fas fa-pen-nib"></i> Draw</button>
+                            <button class="ctx-btn" id="eraser-btn" onclick="toggleEraserMode()"><i class="fas fa-eraser"></i> Erase</button>
                             <div class="separator" style="height:18px; margin: 0 6px;"></div>
                             <input type="color" id="draw-color" value="#ef4444" style="width:22px; height:22px; border:none; padding:0; cursor:pointer;">
                             <input type="range" id="draw-size" min="1" max="20" value="3" style="width:60px; height:4px; margin:0 8px; cursor:pointer;">
@@ -187,7 +381,7 @@ def get_template(total_pages):
             <div id="canvas-viewport">
                 <div id="canvas-center-wrapper">
                     <div id="canvas">
-                        {{{{SLIDE_CONTENT}}}}
+                        {{SLIDE_CONTENT}}
 
                         <div id="context-menu" style="display:none; position:absolute; flex-direction:column; gap:4px; padding:8px 10px; border-radius:8px; background:white; border: 1px solid #cbd5e1; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index:10000;">
 
@@ -244,14 +438,14 @@ def get_template(total_pages):
 
                                 <div class="menu-text-tools" style="display:flex; gap:6px; align-items:center;">
                                     <span style="font-size:9px; font-weight:bold; color:#64748b; text-align:right; line-height:1.2; margin-left:4px;">Text<br>Color</span>
-                                    <div class="color-grid" id="text-color-grid" title="Text Color"></div>
+                                    <div class="color-grid" id="text-color-grid" title="Color"></div>
                                 </div>
 
                                 <div class="separator menu-bg-tools" style="height:24px; margin: 0 8px; background:#cbd5e1; width:1px;"></div>
 
                                 <div class="menu-bg-tools" style="display:flex; gap:6px; align-items:center;">
                                     <span style="font-size:9px; font-weight:bold; color:#64748b; text-align:right; line-height:1.2;">Background<br>Color</span>
-                                    <div class="color-grid" id="bg-color-grid" title="Background Color"></div>
+                                    <div class="color-grid" id="bg-color-grid" title="Color"></div>
                                 </div>
 
                                 <div class="separator menu-bg-tools" style="height:24px; margin: 0 8px; background:#cbd5e1; width:1px;"></div>
@@ -310,7 +504,7 @@ def get_template(total_pages):
 
             <div id="pin-panel" class="floating-panel">
                 <div id="pin-panel-header" class="fw-header">
-                    <h3 style="margin:0; font-size:14px; color:var(--text); flex-grow:1;"><i class="fas fa-map-marker-alt"></i> Image Pins</h3>
+                    <h3 style="margin:0; font-size:14px; color:var(--text); flex-grow:1;"><i class="fas fa-shapes"></i> Annotations</h3>
                     <button class="close-panel-btn" onclick="togglePanel('pin')" title="Close Panel"><i class="fas fa-times"></i></button>
                 </div>
                 <div id="pin-panel-tools" class="pin-panel-tools"></div>
@@ -319,11 +513,17 @@ def get_template(total_pages):
 
         </div>
     </div>
+
     <script>
-        let totalPages = {total_pages};
-        const LECTURE_ID = "{{{{STORAGE_ID}}}}";
-        {js_engine}
+        window.totalPages = __TOTAL_PAGES__;
+        window.LECTURE_ID = "{{STORAGE_ID}}";
+        __INJECTED_JS__
     </script>
 </body>
 </html>
 """
+    final_html = html_template.replace("__INJECTED_CSS__", css_content)
+    final_html = final_html.replace("__INJECTED_JS__", js_content)
+    final_html = final_html.replace("__TOTAL_PAGES__", str(total_pages))
+
+    return final_html
