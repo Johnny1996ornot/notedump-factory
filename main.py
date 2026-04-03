@@ -82,31 +82,44 @@ st.markdown("""
 /* =========================================
    2. CUSTOM INJECTED BLANK NOTEBOOK LAYOUT
    ========================================= */
-[data-testid="stDownloadButton"] button {
-    height: 200px !important; min-height: 200px !important; width: 100% !important; margin: 0 !important;
-    background-color: #0f172a !important; border: 1px solid #1e293b !important; border-radius: 12px !important;
-    display: flex !important; flex-direction: row !important; /* Puts items side-by-side */
-    justify-content: center !important; align-items: center !important;
-    transition: 0.2s; padding: 0 !important;
+
+/* FIX: make container same height as uploader */
+[data-testid="stDownloadButton"] {
+    height: 200px !important;
 }
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button:hover,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button:hover { 
-    border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; 
+
+/* FIX: button fills the container */
+[data-testid="stDownloadButton"] button {
+    height: 100% !important; 
+    min-height: 100% !important; 
+    width: 100% !important; 
+    margin: 0 !important;
+    background-color: #0f172a !important; 
+    border: 1px solid #1e293b !important; 
+    border-radius: 12px !important;
+    display: flex !important; 
+    flex-direction: row !important; /* Puts items side-by-side */
+    justify-content: center !important; 
+    align-items: center !important;
+    transition: 0.2s; 
+    padding: 0 !important;
+}
+
+/* FIX: removed nth-child */
+[data-testid="stDownloadButton"] button:hover { 
+    border-color: #0ea5e9 !important; 
+    background: rgba(14, 165, 233, 0.1) !important; 
 }
 
 /* Completely hide Streamlit's default text wrappers */
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button div,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button div,
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button p,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button p,
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button span,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button span {
+[data-testid="stDownloadButton"] button div,
+[data-testid="stDownloadButton"] button p,
+[data-testid="stDownloadButton"] button span {
     display: none !important;
 }
 
 /* Inject Giant Icon on the Left */
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::before,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button::before {
+[data-testid="stDownloadButton"] button::before {
     content: "📓";
     font-size: 70px !important; /* Massive Logo */
     margin-right: 15px !important; 
@@ -115,15 +128,14 @@ st.markdown("""
 }
 
 /* Inject Stacked Text on the Right */
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::after,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button::after {
+[data-testid="stDownloadButton"] button::after {
     content: "Create\\A Blank\\A Notebook"; /* The \\A creates the hard line breaks */
     white-space: pre !important; /* Forces the line breaks to render */
     font-size: 28px !important; 
     font-weight: 800 !important; 
     color: #f8fafc !important; 
     line-height: 1.1 !important;
-    text-align: left !important; /* Aligns text cleanly next to icon */
+    text-align: left !important; 
     letter-spacing: -1px !important;
     display: block !important;
 }
