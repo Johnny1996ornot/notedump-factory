@@ -190,7 +190,7 @@ div[data-testid*="UploadedFile"] button {
     .top-nav { position: relative; justify-content: center; padding-top: 20px; }
 }
 
-[data-testid="block-container"] { max-width: 800px; padding-top: 3rem; }
+[data-testid="block-container"] { max-width: 1000px; padding-top: 3rem; }
 </style>
 
 <div class="top-nav">
