@@ -51,13 +51,12 @@ st.markdown("""
 .support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 20px !important; }
 
 /* =========================================
-   1. FORCE LEFT BOX (UPLOADER) TO 220PX
+   1. FORCE LEFT BOX (UPLOADER) TO 220PX & THEME
    ========================================= */
 [data-testid="stFileUploader"] > label { display: none !important; }
+[data-testid="stFileUploader"] { width: 100% !important; margin: 0 !important; padding: 0 !important; }
 
-/* We target BOTH the old and new Streamlit DOM names here! */
-[data-testid="stFileUploadDropzone"], 
-[data-testid="stFileUploaderDropzone"] { 
+[data-testid="stFileUploadDropzone"] { 
     height: 220px !important; 
     min-height: 220px !important; 
     max-height: 220px !important;
@@ -71,76 +70,68 @@ st.markdown("""
     align-items: center !important; 
     padding: 20px !important;
     text-align: center !important; 
-    margin: 0 !important;
 }
-
 [data-testid="stFileUploadDropzone"] > div,
-[data-testid="stFileUploadDropzone"] > div > div,
-[data-testid="stFileUploaderDropzone"] > div,
-[data-testid="stFileUploaderDropzone"] > div > div { 
+[data-testid="stFileUploadDropzone"] > div > div { 
     display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; text-align: center !important; width: 100% !important; 
 }
-[data-testid="stFileUploadDropzone"] span, 
-[data-testid="stFileUploaderDropzone"] span { font-size: 16px !important; font-weight: bold !important; color:#e2e8f0 !important; line-height: 1.2 !important; text-align: center !important; margin: 0 auto !important;}
-
-[data-testid="stFileUploadDropzone"] small, 
-[data-testid="stFileUploaderDropzone"] small { font-size: 13px !important; color: #64748b !important; text-align: center !important; margin: 0 auto !important;}
-
-[data-testid="stFileUploadDropzone"] button, 
-[data-testid="stFileUploaderDropzone"] button { 
+[data-testid="stFileUploadDropzone"] span { font-size: 16px !important; font-weight: bold !important; color:#e2e8f0 !important; line-height: 1.2 !important; text-align: center !important; margin: 0 auto !important;}
+[data-testid="stFileUploadDropzone"] small { font-size: 13px !important; color: #64748b !important; text-align: center !important; margin: 0 auto !important;}
+[data-testid="stFileUploadDropzone"] button { 
     background-color: #4f46e5 !important; color: #ffffff !important; border: none !important; padding: 10px 24px !important; border-radius: 6px !important; font-weight: bold !important; margin-top: 15px !important; font-size: 15px !important; margin-left: auto !important; margin-right: auto !important; 
 }
 
-/* Align wrapper height */
-[data-testid="stFileUploader"],
-[data-testid="stColumn"]:nth-child(2) div[data-testid="stDownloadButton"],
-[data-testid="column"]:nth-child(2) div[data-testid="stDownloadButton"] {
-    width: 100% !important; margin-top: 0 !important; padding-top: 0 !important; height: 220px !important; box-sizing: border-box !important;
-}
-
 /* =========================================
-   2. CUSTOM INJECTED BLANK NOTEBOOK LAYOUT
+   2. CUSTOM INJECTED BLANK NOTEBOOK LAYOUT (RIGHT BOX)
    ========================================= */
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button {
-    height: 220px !important; min-height: 220px !important; max-height: 220px !important; width: 100% !important; margin: 0 !important;
+/* Target BOTH stColumn (old) and column (new Streamlit Cloud) */
+[data-testid="stColumn"]:nth-of-type(2) button,
+[data-testid="column"]:nth-of-type(2) button {
+    height: 220px !important; 
+    min-height: 220px !important; 
+    max-height: 220px !important;
+    width: 100% !important; margin: 0 !important;
     box-sizing: border-box !important;
-    background-color: #0f172a !important; border: 1px solid #1e293b !important; border-radius: 12px !important;
-    display: flex !important; flex-direction: row !important; 
-    justify-content: center !important; align-items: center !important;
+    background-color: #0f172a !important; 
+    border: 1px solid #1e293b !important; 
+    border-radius: 12px !important;
+    display: flex !important; 
+    flex-direction: row !important; 
+    justify-content: center !important; 
+    align-items: center !important;
     transition: 0.2s; padding: 0 !important;
 }
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button:hover,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button:hover { 
+[data-testid="stColumn"]:nth-of-type(2) button:hover,
+[data-testid="column"]:nth-of-type(2) button:hover { 
     border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; 
 }
 
-/* Completely hide Streamlit's default text wrappers */
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button div,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button div,
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button p,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button p,
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button span,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button span {
+/* Completely hide Streamlit's default text wrappers so we can replace them */
+[data-testid="stColumn"]:nth-of-type(2) button div,
+[data-testid="column"]:nth-of-type(2) button div,
+[data-testid="stColumn"]:nth-of-type(2) button p,
+[data-testid="column"]:nth-of-type(2) button p,
+[data-testid="stColumn"]:nth-of-type(2) button span,
+[data-testid="column"]:nth-of-type(2) button span {
     display: none !important;
 }
 
 /* Inject Giant Icon on the Left */
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::before,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button::before {
+[data-testid="stColumn"]:nth-of-type(2) button::before,
+[data-testid="column"]:nth-of-type(2) button::before {
     content: "📓";
-    font-size: 70px !important; 
+    font-size: 60px !important; 
     margin-right: 15px !important; 
     line-height: 1 !important;
     display: block !important;
 }
 
 /* Inject Stacked Text on the Right */
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::after,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button::after {
+[data-testid="stColumn"]:nth-of-type(2) button::after,
+[data-testid="column"]:nth-of-type(2) button::after {
     content: "Create\\A Blank\\A Notebook"; 
     white-space: pre !important; 
-    font-size: 28px !important; 
+    font-size: 26px !important; 
     font-weight: 800 !important; 
     color: #f8fafc !important; 
     line-height: 1.1 !important;
@@ -172,20 +163,22 @@ div[data-testid*="UploadedFile"] button {
 }
 
 /* =========================================
-   4. FINAL DOWNLOAD BUTTON FORMATTING
+   4. FINAL DOWNLOAD BUTTON FORMATTING (Safe from overriding)
    ========================================= */
-.final-download-target [data-testid="stDownloadButton"] button {
-    width: 100% !important; height: auto !important; padding: 18px !important; margin-top: 10px !important; min-height: unset !important; max-height: unset !important;
+.final-download-target button {
+    width: 100% !important; height: auto !important; min-height: unset !important; padding: 18px !important; margin-top: 10px !important;
     background: #1e293b !important; color: #0ea5e9 !important; border: 1px solid #0ea5e9 !important; border-radius: 8px !important;
     font-size: 18px !important; font-weight: bold !important; transition: 0.2s;
 }
-.final-download-target [data-testid="stDownloadButton"] button:hover { background: #0ea5e9 !important; color: white !important; }
+.final-download-target button:hover { background: #0ea5e9 !important; color: white !important; }
+.final-download-target button p, .final-download-target button div { display: block !important; color: inherit !important; }
+.final-download-target button::before, .final-download-target button::after { display: none !important; }
 
 /* Desktop Spanning Hack */
 @media (min-width: 769px) {
     [data-testid="stUploadedFile"], 
     div[data-testid*="UploadedFile"],
-    .final-download-target [data-testid="stDownloadButton"] button { 
+    .final-download-target button { 
         width: calc(200% + 1rem) !important; 
     }
 }
@@ -238,8 +231,6 @@ div[data-testid*="UploadedFile"] button {
 # ==========================================================================
 # SECTION 2: PRE-GENERATE BLANK NOTEBOOK (CACHED TO PREVENT DOUBLE-CLICK BUG)
 # ==========================================================================
-# We store the generated HTML in session state so clicking the download button
-# doesn't trigger a re-render with a new ID, which breaks the download link.
 if "blank_html" not in st.session_state:
     blank_nav = '<div class="nav-link active-nav" id="link-0" onclick="goTo(\'0\')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text">Page 1</span></div>'
     blank_slides = '<div id="p-0" class="page active" data-page-width="816" data-page-height="1054" style="width:816px; height:1054px;"></div>'
@@ -273,10 +264,8 @@ with col1:
     # SECTION 4: FILE PARSING & PROCESSING (CACHED FOR SPEED & STABILITY)
     # ==========================================================================
     if up:
-        # Create a unique key for the specific file uploaded
         file_key = f"{up.name}_{up.size}"
 
-        # Only re-parse the document if it's a completely new file
         if st.session_state.get("current_file_key") != file_key:
             st.session_state.current_file_key = file_key
             st.session_state.final_html = None
