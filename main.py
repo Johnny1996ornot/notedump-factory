@@ -21,7 +21,7 @@ st.markdown("""
 <style>
 .stApp { background-color: #000000; }
 
-/* Unlock Streamlit Columns so elements can span across them */
+/* Unlock Streamlit Columns */
 [data-testid="stColumn"], [data-testid="column"] { overflow: visible !important; }
 
 /* Nav & Header */
@@ -53,6 +53,7 @@ st.markdown("""
 /* =========================================
    1. FORCE LEFT BOX (UPLOADER) TO EXACTLY 200PX
    ========================================= */
+[data-testid="stFileUploader"] > label { display: block !important; color: transparent !important; height: 0px !important; margin:0 !important;}
 [data-testid="stFileUploader"] { width: 100% !important; margin: 0 !important; padding: 0 !important; }
 
 [data-testid="stFileUploadDropzone"] { 
@@ -71,8 +72,15 @@ st.markdown("""
 }
 
 /* Ensure text inside the dropzone stays visible */
-[data-testid="stFileUploadDropzone"] * { 
+[data-testid="stFileUploadDropzone"] span { 
+    visibility: visible !important; 
+    display: block !important; 
+    font-size: 16px !important; 
+    font-weight: bold !important; 
     color:#e2e8f0 !important; 
+}
+[data-testid="stFileUploadDropzone"] small { 
+    color: #64748b !important; 
 }
 [data-testid="stFileUploadDropzone"] button { 
     background-color: #4f46e5 !important; color: #ffffff !important; border: none !important; 
@@ -81,10 +89,13 @@ st.markdown("""
 }
 
 /* =========================================
-   2. CUSTOM BLANK NOTEBOOK LAYOUT TO MATCH 200PX
+   2. CUSTOM BLANK NOTEBOOK LAYOUT (BULLETPROOF TARGETING)
    ========================================= */
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button {
+/* Using :last-child bypasses Streamlit's invisible spacer injection */
+div[data-testid="stColumn"]:last-child [data-testid="stDownloadButton"] button,
+div[data-testid="column"]:last-child [data-testid="stDownloadButton"] button,
+div[data-testid="stColumn"]:nth-of-type(2) [data-testid="stDownloadButton"] button,
+div[data-testid="column"]:nth-of-type(2) [data-testid="stDownloadButton"] button {
     height: 200px !important; 
     min-height: 200px !important; 
     max-height: 200px !important;
@@ -100,28 +111,29 @@ st.markdown("""
     transition: 0.2s; 
     padding: 0 !important;
 }
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button:hover,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button:hover { 
+
+div[data-testid="stColumn"]:last-child [data-testid="stDownloadButton"] button:hover,
+div[data-testid="column"]:last-child [data-testid="stDownloadButton"] button:hover { 
     border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; 
 }
 
-/* Hide Streamlit's default text wrappers to inject custom format */
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button div,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button div,
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button p,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button p {
+/* Hide Streamlit's default text wrappers */
+div[data-testid="stColumn"]:last-child [data-testid="stDownloadButton"] button div,
+div[data-testid="column"]:last-child [data-testid="stDownloadButton"] button div,
+div[data-testid="stColumn"]:last-child [data-testid="stDownloadButton"] button p,
+div[data-testid="column"]:last-child [data-testid="stDownloadButton"] button p {
     display: none !important;
 }
 
 /* Inject Giant Icon on the Left */
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::before,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button::before {
+div[data-testid="stColumn"]:last-child [data-testid="stDownloadButton"] button::before,
+div[data-testid="column"]:last-child [data-testid="stDownloadButton"] button::before {
     content: "📓"; font-size: 70px !important; margin-right: 15px !important; line-height: 1 !important; display: block !important;
 }
 
 /* Inject Stacked Text on the Right */
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::after,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button::after {
+div[data-testid="stColumn"]:last-child [data-testid="stDownloadButton"] button::after,
+div[data-testid="column"]:last-child [data-testid="stDownloadButton"] button::after {
     content: "Create\\A Blank\\A Notebook"; white-space: pre !important; 
     font-size: 28px !important; font-weight: 800 !important; color: #f8fafc !important; 
     line-height: 1.1 !important; text-align: left !important; letter-spacing: -1px !important; display: block !important;
