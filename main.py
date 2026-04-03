@@ -12,8 +12,7 @@ try:
 except ImportError:
     import fitz
 
-# THE FIX IS HERE: Change layout to "wide" to break the 350px panic threshold
-st.set_page_config(page_title="NoteDump", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="NoteDump", layout="centered", initial_sidebar_state="collapsed")
 
 # ==========================================================================
 # SECTION 1: UI STYLING & MODAL CONTENT
@@ -21,13 +20,6 @@ st.set_page_config(page_title="NoteDump", layout="wide", initial_sidebar_state="
 st.markdown("""
 <style>
 .stApp { background-color: #000000; }
-
-/* THE FIX IS HERE: Re-center the app and lock it at 850px to ensure columns are wide enough */
-.main .block-container { 
-    max-width: 850px !important; 
-    margin: 0 auto !important; 
-    padding-top: 3rem; 
-}
 
 /* Unlock Streamlit Columns so elements can span across them */
 [data-testid="stColumn"], [data-testid="column"] { overflow: visible !important; }
@@ -52,19 +44,18 @@ st.markdown("""
 .tagline { font-size: 18px; color: #94a3b8; margin-top: -8px !important; margin-bottom: 8px !important; font-weight: normal; }
 .support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 20px !important; }
 
-
 /* =========================================
-   1. NATIVE UPLOADER (LEFT BOX) 
+   1. NATIVE UPLOADER (LEFT BOX)
    ========================================= */
-
-/* Safely assassinate the "Upload a document" label without triggering compact mode */
+/* Hide the top label so the box shifts up and naturally aligns with the right side */
 [data-testid="stFileUploader"] [data-testid="stWidgetLabel"] {
     display: none !important;
 }
 
-/* Force the Native Dropzone to exactly 220px to match the right side */
+/* Force the natively rendered dropzone to exactly 220px */
 [data-testid="stFileUploadDropzone"] { 
     height: 220px !important; 
+    min-height: 220px !important;
     background-color: #0f172a !important; 
     border: 1px dashed #334155 !important;
     border-radius: 12px !important; 
@@ -74,6 +65,13 @@ st.markdown("""
     align-items: center !important; 
 }
 
+/* Clean up the native button */
+[data-testid="stFileUploadDropzone"] button {
+    background-color: #4f46e5 !important; 
+    color: #ffffff !important; 
+    border-radius: 6px !important; 
+    font-weight: bold !important;
+}
 
 /* =========================================
    2. CREATE BLANK NOTEBOOK (RIGHT BOX)
@@ -81,6 +79,7 @@ st.markdown("""
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button,
 [data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button {
     height: 220px !important; 
+    min-height: 220px !important; 
     width: 100% !important; 
     margin: 0 !important;
     background-color: #0f172a !important; border: 1px solid #1e293b !important; border-radius: 12px !important;
@@ -95,17 +94,13 @@ st.markdown("""
 
 /* Completely hide Streamlit's default text wrappers */
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button div,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button div,
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button p,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button p,
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button span,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button span {
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button span {
     display: none !important;
 }
 
 /* Inject Giant Icon on the Left */
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::before,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button::before {
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::before {
     content: "📓";
     font-size: 70px !important; 
     margin-right: 15px !important; 
@@ -114,8 +109,7 @@ st.markdown("""
 }
 
 /* Inject Stacked Text on the Right */
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::after,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button::after {
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::after {
     content: "Create\\A Blank\\A Notebook"; 
     white-space: pre !important; 
     font-size: 28px !important; 
@@ -127,13 +121,11 @@ st.markdown("""
     display: block !important;
 }
 
-
 /* =========================================
    3. FORCE UPLOADED FILE BAR TO SPAN & PROTECT X
    ========================================= */
 [data-testid="stUploadedFile"], 
 div[data-testid*="UploadedFile"],
-div[data-testid*="FileUploaderFile"],
 .stUploadedFile { 
     background-color: #0f172a !important; border: 1px solid #334155 !important; border-radius: 12px !important; 
     padding: 15px 20px !important; margin-top: 20px !important;
@@ -171,6 +163,8 @@ div[data-testid*="UploadedFile"] button {
 @media (max-width: 768px) {
     .top-nav { position: relative; justify-content: center; padding-top: 20px; }
 }
+
+[data-testid="block-container"] { max-width: 800px; padding-top: 3rem; }
 </style>
 
 <div class="top-nav">
@@ -242,8 +236,12 @@ with col2:
     )
 
 with col1:
-    # No tricky CSS visibility flags. Just the pure label so Streamlit feels safe rendering the cloud.
-    up = st.file_uploader("Upload a document", type=["pptx", "ppt", "pdf"])
+    # MAGIC FIX: By forcing accept_multiple_files=True, Streamlit is physically incapable of 
+    # using the broken compact mode, guaranteeing the giant cloud dropzone appears natively.
+    uploaded_files = st.file_uploader("Upload a document", type=["pptx", "ppt", "pdf"], accept_multiple_files=True)
+    
+    # We grab the first file they upload so our background processing works exactly the same
+    up = uploaded_files[0] if uploaded_files else None
 
     # ==========================================================================
     # SECTION 4: FILE PARSING & PROCESSING
