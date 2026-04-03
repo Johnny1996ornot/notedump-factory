@@ -53,22 +53,15 @@ st.markdown("""
 /* =========================================
    1. FORCE LEFT BOX (UPLOADER) TO 220PX
    ========================================= */
-/* Aggressively hide any ghost labels Streamlit tries to generate */
-[data-testid="stFileUploader"] > label,
-[data-testid="stFileUploader"] div[data-testid="stWidgetLabel"] { 
-    display: none !important; 
-}
-
-/* Force the wrapper margins to exactly match the right box */
+/* Let the outer wrapper size naturally so it doesn't crush the label */
 [data-testid="stFileUploader"] { 
     width: 100% !important; 
     margin: 0 !important; 
     padding: 0 !important; 
-    height: 220px !important;
     box-sizing: border-box !important;
 }
 
-/* Bulletproof selector: Targets the dropzone OR whatever inner section Streamlit uses */
+/* Force ONLY the dropzone itself to be exactly 220px */
 [data-testid="stFileUploadDropzone"],
 [data-testid="stFileUploader"] > section { 
     height: 220px !important; 
@@ -87,9 +80,8 @@ st.markdown("""
     box-sizing: border-box !important;
 }
 
-/* Force the inner text and buttons to stack neatly */
+/* Ensure inner text and "Browse files" button stack neatly */
 [data-testid="stFileUploadDropzone"] > div,
-[data-testid="stFileUploadDropzone"] > div > div,
 [data-testid="stFileUploader"] > section > div { 
     display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; text-align: center !important; width: 100% !important; 
 }
@@ -105,6 +97,11 @@ st.markdown("""
 /* =========================================
    2. RIGHT BOX: CREATE BLANK NOTEBOOK
    ========================================= */
+/* PUSH RIGHT BOX DOWN: This aligns it perfectly with the dropzone on the left by compensating for the label's height */
+[data-testid="stColumn"]:nth-child(2) div[data-testid="stDownloadButton"] {
+    margin-top: 28px !important;
+}
+
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button,
 [data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button {
     height: 220px !important; 
@@ -273,9 +270,9 @@ with col2:
     )
 
 with col1:
-    # We use label_visibility="hidden" here. It hides the text natively so Streamlit doesn't 
-    # panic about column width, preserving your dropzone structure so the CSS can actually stretch it.
-    up = st.file_uploader("Upload a document", label_visibility="hidden", type=["pptx", "ppt", "pdf"])
+    # MAGIC FIX: By letting Streamlit naturally render the label, it unlocks the full 
+    # widget with the cloud logo and "Browse files" button! 
+    up = st.file_uploader("Upload a document", type=["pptx", "ppt", "pdf"])
 
     # ==========================================================================
     # SECTION 4: FILE PARSING & PROCESSING
