@@ -82,8 +82,7 @@ st.markdown("""
 /* =========================================
    2. CUSTOM INJECTED BLANK NOTEBOOK LAYOUT
    ========================================= */
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button {
+[data-testid="stDownloadButton"] button {
     height: 200px !important; min-height: 200px !important; width: 100% !important; margin: 0 !important;
     background-color: #0f172a !important; border: 1px solid #1e293b !important; border-radius: 12px !important;
     display: flex !important; flex-direction: row !important; /* Puts items side-by-side */
