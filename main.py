@@ -51,93 +51,52 @@ st.markdown("""
 .support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 20px !important; }
 
 /* =========================================
-   1. KILL ALL STREAMLIT GHOST PADDING
+   1. BULLETPROOF CUSTOM WRAPPERS
    ========================================= */
-[data-testid="stFileUploader"], 
-[data-testid="stColumn"]:nth-child(2) div[data-testid="stDownloadButton"] {
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
-    padding: 0 !important;
-}
+.box-left { height: 230px !important; display: block !important; width: 100% !important; margin-top: 5px; }
+.box-right { height: 230px !important; display: block !important; width: 100% !important; margin-top: 5px; }
 
 /* =========================================
-   2. FORCE EXACTLY 220PX HEIGHTS
+   2. LEFT BOX (UPLOADER)
    ========================================= */
-/* Left: Uploader Dropzone */
-[data-testid="stFileUploadDropzone"] { 
-    height: 220px !important; 
-    min-height: 220px !important; 
-    max-height: 220px !important; 
-    box-sizing: border-box !important;
-    background-color: #0f172a !important; 
-    border: 1px dashed #334155 !important;
-    border-radius: 12px !important; 
-    display: flex !important; 
-    flex-direction: column !important; 
-    justify-content: center !important; 
-    align-items: center !important; 
-    padding: 20px !important;
-    text-align: center !important; 
-    margin: 0 !important;
+.box-left [data-testid="stFileUploadDropzone"] {
+    height: 230px !important; min-height: 230px !important; max-height: 230px !important;
+    box-sizing: border-box !important; background-color: #0f172a !important;
+    border: 1px dashed #334155 !important; border-radius: 12px !important;
+    display: flex !important; flex-direction: column !important;
+    justify-content: center !important; align-items: center !important;
+    padding: 20px !important; text-align: center !important; margin: 0 !important;
 }
-[data-testid="stFileUploadDropzone"] > div,
-[data-testid="stFileUploadDropzone"] > div > div { 
-    display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; text-align: center !important; width: 100% !important; 
-}
-[data-testid="stFileUploadDropzone"] span { font-size: 16px !important; font-weight: bold !important; color:#e2e8f0 !important; line-height: 1.2 !important;}
-[data-testid="stFileUploadDropzone"] small { font-size: 13px !important; color: #64748b !important; text-align: center !important; margin: 0 auto !important;}
-[data-testid="stFileUploadDropzone"] button { 
-    background-color: #4f46e5 !important; color: #ffffff !important; border: none !important; padding: 10px 24px !important; border-radius: 6px !important; font-weight: bold !important; margin-top: 15px !important; font-size: 15px !important; margin-left: auto !important; margin-right: auto !important; 
-}
+.box-left [data-testid="stFileUploadDropzone"] > div { display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; width: 100% !important; }
+.box-left [data-testid="stFileUploadDropzone"] span { font-size: 16px !important; font-weight: bold !important; color:#e2e8f0 !important; }
+.box-left [data-testid="stFileUploadDropzone"] small { font-size: 12px !important; color: #64748b !important; }
+.box-left [data-testid="stFileUploadDropzone"] button { background-color: #4f46e5 !important; color: #ffffff !important; border: none !important; padding: 10px 24px !important; border-radius: 6px !important; font-weight: bold !important; margin-top: 15px !important; font-size: 15px !important; }
+.box-left [data-testid="stFileUploader"] label { display: none !important; }
+.box-left [data-testid="stFileUploader"] { margin: 0 !important; padding: 0 !important; }
 
-/* Right: Blank Notebook Button */
-[data-testid="stColumn"]:nth-child(2) div[data-testid="stDownloadButton"] button {
-    height: 220px !important; 
-    min-height: 220px !important; 
-    max-height: 220px !important;
-    box-sizing: border-box !important;
-    width: 100% !important; 
-    margin: 0 !important;
+/* =========================================
+   3. RIGHT BOX (DOWNLOAD BUTTON)
+   ========================================= */
+.box-right [data-testid="stDownloadButton"] { height: 230px !important; margin: 0 !important; padding: 0 !important; display: block !important; }
+.box-right [data-testid="stDownloadButton"] button {
+    height: 230px !important; min-height: 230px !important; max-height: 230px !important;
+    width: 100% !important; box-sizing: border-box !important; margin: 0 !important;
     background-color: #0f172a !important; border: 1px solid #1e293b !important; border-radius: 12px !important;
     display: flex !important; flex-direction: row !important;
     justify-content: center !important; align-items: center !important;
     transition: 0.2s; padding: 0 !important;
 }
-[data-testid="stColumn"]:nth-child(2) div[data-testid="stDownloadButton"] button:hover { 
-    border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; 
-}
+.box-right [data-testid="stDownloadButton"] button:hover { border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; }
 
-/* Completely hide Streamlit's default text wrappers on the right button */
-[data-testid="stColumn"]:nth-child(2) div[data-testid="stDownloadButton"] button div,
-[data-testid="stColumn"]:nth-child(2) div[data-testid="stDownloadButton"] button p,
-[data-testid="stColumn"]:nth-child(2) div[data-testid="stDownloadButton"] button span {
-    display: none !important;
-}
-
-/* Inject Giant Icon on the Left */
-[data-testid="stColumn"]:nth-child(2) div[data-testid="stDownloadButton"] button::before {
-    content: "📓";
-    font-size: 70px !important; 
-    margin-right: 15px !important; 
-    line-height: 1 !important;
-    display: block !important;
-}
-
-/* Inject Stacked Text on the Right */
-[data-testid="stColumn"]:nth-child(2) div[data-testid="stDownloadButton"] button::after {
-    content: "Create\\A Blank\\A Notebook"; 
-    white-space: pre !important; 
-    font-size: 28px !important; 
-    font-weight: 800 !important; 
-    color: #f8fafc !important; 
-    line-height: 1.1 !important;
-    text-align: left !important; 
-    letter-spacing: -1px !important;
-    display: block !important;
-}
+/* Hide default streamit text and inject our custom icon/text */
+.box-right [data-testid="stDownloadButton"] button p,
+.box-right [data-testid="stDownloadButton"] button span,
+.box-right [data-testid="stDownloadButton"] button div { display: none !important; }
+.box-right [data-testid="stDownloadButton"] button::before { content: "📓"; font-size: 70px !important; margin-right: 15px !important; display: block !important; }
+.box-right [data-testid="stDownloadButton"] button::after { content: "Create\\A Blank\\A Notebook"; white-space: pre !important; font-size: 28px !important; font-weight: 800 !important; color: #f8fafc !important; line-height: 1.1 !important; text-align: left !important; letter-spacing: -1px !important; display: block !important; }
 
 /* =========================================
-   3. FORCE UPLOADED FILE BAR TO SPAN & PROTECT X
+   4. FILE UPLOADED BAR (Appears below)
    ========================================= */
 [data-testid="stUploadedFile"], 
 div[data-testid*="UploadedFile"],
@@ -159,33 +118,32 @@ div[data-testid*="UploadedFile"] button {
 }
 
 /* =========================================
-   4. FINAL DOWNLOAD BUTTON FORMATTING (Bottom Button)
+   5. FINAL COMPLETED DOWNLOAD BUTTON
    ========================================= */
-[data-testid="stColumn"]:nth-child(1) .final-download-btn-container [data-testid="stDownloadButton"] {
+.final-download-btn-container [data-testid="stDownloadButton"] {
     height: auto !important;
     display: block !important;
     margin-top: 10px !important;
 }   
-[data-testid="stColumn"]:nth-child(1) .final-download-btn-container [data-testid="stDownloadButton"] button {
+.final-download-btn-container [data-testid="stDownloadButton"] button {
     width: 100% !important; height: auto !important; padding: 18px !important; margin-top: 0 !important;
     background: #1e293b !important; color: #0ea5e9 !important; border: 1px solid #0ea5e9 !important; border-radius: 8px !important;
     font-size: 18px !important; font-weight: bold !important; transition: 0.2s;
     display: block !important;
 }
-[data-testid="stColumn"]:nth-child(1) .final-download-btn-container [data-testid="stDownloadButton"] button:hover { background: #0ea5e9 !important; color: white !important; }
+.final-download-btn-container [data-testid="stDownloadButton"] button:hover { background: #0ea5e9 !important; color: white !important; }
 
 /* Desktop Spanning Hack */
 @media (min-width: 769px) {
     [data-testid="stUploadedFile"], 
     div[data-testid*="UploadedFile"],
-    [data-testid="stColumn"]:nth-child(1) .final-download-btn-container [data-testid="stDownloadButton"] button { 
+    .final-download-btn-container [data-testid="stDownloadButton"] button { 
         width: calc(200% + 1rem) !important; 
     }
 }
 @media (max-width: 768px) {
     .top-nav { position: relative; justify-content: center; padding-top: 20px; }
 }
-
 [data-testid="block-container"] { max-width: 800px; padding-top: 3rem; }
 </style>
 
@@ -249,6 +207,8 @@ st.markdown('<div style="margin-bottom: 10px;"></div>', unsafe_allow_html=True)
 col1, col2 = st.columns(2, gap="medium")
 
 with col2:
+    # Wrap in our custom un-breakable div
+    st.markdown('<div class="box-right">', unsafe_allow_html=True)
     st.download_button(
         label="Create Blank Notebook", 
         data=st.session_state.blank_html.encode('utf-8'), 
@@ -256,10 +216,13 @@ with col2:
         mime="text/html",
         use_container_width=True
     )
+    st.markdown('</div>', unsafe_allow_html=True)
 
 with col1:
-    # THE CRITICAL FIX: label_visibility="collapsed" deletes the ghost gap
+    # Wrap in our custom un-breakable div
+    st.markdown('<div class="box-left">', unsafe_allow_html=True)
     up = st.file_uploader("Upload a document", label_visibility="collapsed", type=["pptx", "ppt", "pdf"])
+    st.markdown('</div>', unsafe_allow_html=True)
 
     # ==========================================================================
     # SECTION 4: FILE PARSING & PROCESSING (CACHED FOR SPEED & STABILITY)
