@@ -51,7 +51,7 @@ st.markdown("""
 .support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 20px !important; }
 
 /* =========================================
-   1. YOUR WORKING CSS: KILL STREAMLIT'S INVISIBLE WRAPPER MARGINS
+   1. KILL STREAMLIT'S INVISIBLE WRAPPER MARGINS
    ========================================= */
 [data-testid="stFileUploader"],
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"],
@@ -63,9 +63,10 @@ st.markdown("""
 }
 
 /* =========================================
-   2. YOUR WORKING CSS: FORCE THE VISIBLE BOXES TO EXACTLY 220PX
+   2. FORCE THE VISIBLE BOXES TO EXACTLY 220PX
    ========================================= */
-/* LEFT: Uploader Dropzone */
+
+/* LEFT BOX: STRETCHING THE UPLOADER DROPZONE BACK TO FULL SIZE */
 [data-testid="stFileUploadDropzone"] { 
     height: 220px !important; 
     min-height: 220px !important; 
@@ -83,17 +84,19 @@ st.markdown("""
     margin: 0 !important;
     overflow: hidden !important;
 }
+
+/* FORCING THE UPLOADER TEXT TO REAPPEAR */
 [data-testid="stFileUploadDropzone"] > div,
 [data-testid="stFileUploadDropzone"] > div > div { 
     display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; text-align: center !important; width: 100% !important; 
 }
-[data-testid="stFileUploadDropzone"] span { font-size: 16px !important; font-weight: bold !important; color:#e2e8f0 !important; line-height: 1.2 !important; text-align: center !important; margin: 0 auto !important;}
-[data-testid="stFileUploadDropzone"] small { font-size: 13px !important; color: #64748b !important; text-align: center !important; margin: 0 auto !important;}
+[data-testid="stFileUploadDropzone"] span { font-size: 16px !important; font-weight: bold !important; color:#e2e8f0 !important; line-height: 1.2 !important; text-align: center !important; margin: 0 auto !important; display: block !important; visibility: visible !important;}
+[data-testid="stFileUploadDropzone"] small { font-size: 13px !important; color: #64748b !important; text-align: center !important; margin: 0 auto !important; display: block !important; visibility: visible !important;}
 [data-testid="stFileUploadDropzone"] button { 
     background-color: #4f46e5 !important; color: #ffffff !important; border: none !important; padding: 10px 24px !important; border-radius: 6px !important; font-weight: bold !important; margin-top: 15px !important; font-size: 15px !important; margin-left: auto !important; margin-right: auto !important; 
 }
 
-/* RIGHT: Download Button */
+/* RIGHT BOX: CREATE BLANK NOTEBOOK */
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button,
 [data-testid="stColumn"]:nth-child(2) div.stDownloadButton button {
     height: 220px !important; 
@@ -207,6 +210,11 @@ div[data-testid*="UploadedFile"] button {
 }
 
 [data-testid="block-container"] { max-width: 800px; padding-top: 3rem; }
+
+/* Hide the invisible spacer label we used in python */
+[data-testid="stFileUploader"] > label {
+    display: none !important;
+}
 </style>
 
 <div class="top-nav">
@@ -269,7 +277,6 @@ st.markdown('<div style="margin-bottom: 10px;"></div>', unsafe_allow_html=True)
 col1, col2 = st.columns(2, gap="medium")
 
 with col2:
-    # BACK TO YOUR NATIVE STREAMLIT BUTTON
     st.download_button(
         label="Create Blank Notebook", 
         data=st.session_state.blank_html.encode('utf-8'), 
@@ -279,9 +286,9 @@ with col2:
     )
 
 with col1:
-    # PASSING AN EMPTY STRING ("") HERE IS THE MAGIC FIX. 
-    # It removes the top label so we don't have to hide it with CSS, which protects your "Drag and drop" text.
-    up = st.file_uploader("", type=["pptx", "ppt", "pdf"])
+    # MAGIC FIX: By passing a blank space (" ") instead of label_visibility="collapsed", 
+    # Streamlit is forced to render the full 220px Drag-and-Drop zone with text!
+    up = st.file_uploader(" ", type=["pptx", "ppt", "pdf"])
 
     # ==========================================================================
     # SECTION 4: FILE PARSING & PROCESSING
@@ -383,6 +390,10 @@ with col1:
                     doc = fitz.open(stream=up.read(), filetype="pdf")
                     total_pages = len(doc)
 
+                    first_page = doc[0]
+                    base_w = 816
+                    p_scale = base_w / first_page.rect.width if first_page.rect.width > 0 else 1
+
                     for i, page in enumerate(doc):
                         page_width = page.rect.width
                         page_height = page.rect.height
@@ -440,9 +451,26 @@ with col1:
                         slides += html_content
                         slides += '</div>'
 
+                dimension_script = f"""
+                <script>
+                    document.addEventListener("DOMContentLoaded", function() {{
+                        var cvs = document.getElementById('canvas');
+                        if(cvs) {{
+                            cvs.style.width = '{base_w}px';
+                            cvs.setAttribute('data-width', '{base_w}');
+                            var wInput = document.getElementById('canvas-w-cm');
+                            var hInput = document.getElementById('canvas-h-cm');
+                            if(wInput) wInput.value = (Math.round(({base_w} / 37.795) * 10) / 10).toFixed(1);
+                            if(hInput) hInput.value = (Math.round((parseInt(cvs.style.height) / 37.795) * 10) / 10).toFixed(1);
+                        }}
+                    }});
+                </script>
+                """
+
+                # Save the final parsed result into session memory
                 st.session_state.final_html = get_template(total_pages)\
                     .replace("{{NAV_LINKS}}", nav)\
-                    .replace("{{SLIDE_CONTENT}}", slides)\
+                    .replace("{{SLIDE_CONTENT}}", dimension_script + slides)\
                     .replace("{{VISIBLE_TITLE}}", html.escape(up.name))\
                     .replace("{{STORAGE_ID}}", html.escape(unique_storage_id))
 
@@ -451,11 +479,11 @@ with col1:
                 if "not a zip file" in err_msg or "badzipfile" in err_msg:
                     st.session_state.error_msg = "🚨 FORMAT ERROR: You uploaded an older `.ppt` file. Python-PPTX only supports modern `.pptx` files. Please open your file in PowerPoint, click 'Save As', choose `.pptx`, and upload the new file."
                 elif "has no attribute 'open'" in err_msg:
-                    st.session_state.error_msg = "🚨 PACKAGE ERROR: You have the wrong 'fitz' package installed. Please ensure you are using `pymupdf`."
+                    st.session_state.error_msg = "🚨 REPLIT PACKAGE ERROR: You have the wrong 'fitz' package installed. Please open the Shell tab, run `pip uninstall fitz -y`, then run `pip install PyMuPDF -y` and restart the app."
                 else:
                     st.session_state.error_msg = f"Error Processing File: {e}"
 
-        # OUTPUT STAGE
+        # OUTPUT STAGE: Render error or the cached download button
         if st.session_state.get("error_msg"):
             st.error(st.session_state.error_msg)
         elif st.session_state.get("final_html"):
