@@ -253,10 +253,7 @@ if "blank_html" not in st.session_state:
 # ==========================================================================
 st.markdown('<div style="margin-bottom: 10px;"></div>', unsafe_allow_html=True)
 col1, col2 = st.columns([1,1], gap="medium")
-/* Force equal column widths */
-[data-testid="column"] {
-    width: 100% !important;
-}
+
 with col2:
     st.download_button(
         label="Create Blank Notebook", 
