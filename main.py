@@ -51,15 +51,15 @@ st.markdown("""
 .support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 20px !important; }
 
 /* =========================================
-   1. FORCE LEFT BOX (UPLOADER) TO 220PX & THEME
+   1. FORCE LEFT BOX (UPLOADER) TO 230PX
    ========================================= */
 [data-testid="stFileUploader"] > label { display: none !important; }
-[data-testid="stFileUploader"] { width: 100% !important; margin: 0 !important; padding: 0 !important; }
+[data-testid="stFileUploader"] { margin: 0 !important; padding: 0 !important; }
 
 [data-testid="stFileUploadDropzone"] { 
-    height: 220px !important; 
-    min-height: 220px !important; 
-    max-height: 220px !important;
+    height: 230px !important; 
+    min-height: 230px !important; 
+    max-height: 230px !important;
     box-sizing: border-box !important;
     background-color: #0f172a !important; 
     border: 1px dashed #334155 !important;
@@ -70,6 +70,7 @@ st.markdown("""
     align-items: center !important; 
     padding: 20px !important;
     text-align: center !important; 
+    margin: 0 !important;
 }
 [data-testid="stFileUploadDropzone"] > div,
 [data-testid="stFileUploadDropzone"] > div > div { 
@@ -82,62 +83,47 @@ st.markdown("""
 }
 
 /* =========================================
-   2. CUSTOM INJECTED BLANK NOTEBOOK LAYOUT (RIGHT BOX)
+   2. PURE HTML RIGHT BOX (NOTEBOOK BUTTON)
    ========================================= */
-/* Target BOTH stColumn (old) and column (new Streamlit Cloud) */
-[data-testid="stColumn"]:nth-of-type(2) button,
-[data-testid="column"]:nth-of-type(2) button {
-    height: 220px !important; 
-    min-height: 220px !important; 
-    max-height: 220px !important;
-    width: 100% !important; margin: 0 !important;
+.custom-blank-btn {
+    display: flex !important;
+    height: 230px !important; 
+    width: 100% !important;
     box-sizing: border-box !important;
     background-color: #0f172a !important; 
     border: 1px solid #1e293b !important; 
     border-radius: 12px !important;
-    display: flex !important; 
-    flex-direction: row !important; 
     justify-content: center !important; 
     align-items: center !important;
-    transition: 0.2s; padding: 0 !important;
+    transition: 0.2s !important;
+    text-decoration: none !important;
+    margin: 0 !important;
 }
-[data-testid="stColumn"]:nth-of-type(2) button:hover,
-[data-testid="column"]:nth-of-type(2) button:hover { 
-    border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; 
+.custom-blank-btn:hover {
+    border-color: #0ea5e9 !important; 
+    background: rgba(14, 165, 233, 0.1) !important;
+}
+.btn-content {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+.btn-icon {
+    font-size: 60px;
+    line-height: 1;
+}
+.btn-text {
+    color: #f8fafc;
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 1.1;
+    text-align: left;
+    letter-spacing: -1px;
 }
 
-/* Completely hide Streamlit's default text wrappers so we can replace them */
-[data-testid="stColumn"]:nth-of-type(2) button div,
-[data-testid="column"]:nth-of-type(2) button div,
-[data-testid="stColumn"]:nth-of-type(2) button p,
-[data-testid="column"]:nth-of-type(2) button p,
-[data-testid="stColumn"]:nth-of-type(2) button span,
-[data-testid="column"]:nth-of-type(2) button span {
-    display: none !important;
-}
-
-/* Inject Giant Icon on the Left */
-[data-testid="stColumn"]:nth-of-type(2) button::before,
-[data-testid="column"]:nth-of-type(2) button::before {
-    content: "📓";
-    font-size: 60px !important; 
-    margin-right: 15px !important; 
-    line-height: 1 !important;
-    display: block !important;
-}
-
-/* Inject Stacked Text on the Right */
-[data-testid="stColumn"]:nth-of-type(2) button::after,
-[data-testid="column"]:nth-of-type(2) button::after {
-    content: "Create\\A Blank\\A Notebook"; 
-    white-space: pre !important; 
-    font-size: 26px !important; 
-    font-weight: 800 !important; 
-    color: #f8fafc !important; 
-    line-height: 1.1 !important;
-    text-align: left !important; 
-    letter-spacing: -1px !important;
-    display: block !important;
+/* Strip margins from markdown containers around the button */
+[data-testid="stColumn"]:nth-of-type(2) [data-testid="stMarkdownContainer"] p {
+    margin: 0 !important; padding: 0 !important;
 }
 
 /* =========================================
@@ -163,7 +149,7 @@ div[data-testid*="UploadedFile"] button {
 }
 
 /* =========================================
-   4. FINAL DOWNLOAD BUTTON FORMATTING (Safe from overriding)
+   4. FINAL DOWNLOAD BUTTON FORMATTING 
    ========================================= */
 .final-download-target button {
     width: 100% !important; height: auto !important; min-height: unset !important; padding: 18px !important; margin-top: 10px !important;
@@ -172,7 +158,6 @@ div[data-testid*="UploadedFile"] button {
 }
 .final-download-target button:hover { background: #0ea5e9 !important; color: white !important; }
 .final-download-target button p, .final-download-target button div { display: block !important; color: inherit !important; }
-.final-download-target button::before, .final-download-target button::after { display: none !important; }
 
 /* Desktop Spanning Hack */
 @media (min-width: 769px) {
@@ -249,13 +234,22 @@ st.markdown('<div style="margin-bottom: 10px;"></div>', unsafe_allow_html=True)
 col1, col2 = st.columns(2, gap="medium")
 
 with col2:
-    st.download_button(
-        label="Create Blank Notebook", 
-        data=st.session_state.blank_html.encode('utf-8'), 
-        file_name="NoteDump_Blank.html", 
-        mime="text/html",
-        use_container_width=True
-    )
+    # ----------------------------------------------------------------------
+    # THIS IS THE NEW BULLETPROOF HTML BUTTON. 
+    # Edit the text inside <span class="btn-text"> here safely.
+    # ----------------------------------------------------------------------
+    b64 = base64.b64encode(st.session_state.blank_html.encode('utf-8')).decode()
+    download_html = f"""
+    <a href="data:text/html;base64,{b64}" download="NoteDump_Blank.html" class="custom-blank-btn">
+        <div class="btn-content">
+            <span class="btn-icon">📓</span>
+            <span class="btn-text">Create<br>A Blank<br>Notebook<br>
+                <span style="font-size:14px; font-weight:normal; color:#94a3b8; letter-spacing:0;">No files needed</span>
+            </span>
+        </div>
+    </a>
+    """
+    st.markdown(download_html, unsafe_allow_html=True)
 
 with col1:
     up = st.file_uploader("Upload a document", label_visibility="collapsed", type=["pptx", "ppt", "pdf"])
