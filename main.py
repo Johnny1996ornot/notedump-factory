@@ -272,7 +272,7 @@ div[data-testid*="UploadedFile"] button {
 
 /* REMOVE hidden gap above columns */
 [data-testid="stHorizontalBlock"] {
-    margin-top: -120px !important;
+    margin-top: -160px !important;
 }
 </style>
 
