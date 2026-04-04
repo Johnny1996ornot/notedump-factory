@@ -36,12 +36,41 @@ st.markdown("""
     display: flex !important;
     flex-direction: column !important;
 }
+[data-testid="stBaseButton-secondary"] {
+    height: 200px !important;
+    width: 100% !important;
+    border-radius: 12px !important;
 
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    background-color: #0f172a !important;
+    border: 1px dashed #334155 !important;
+}
+/* Center the content inside uploader */
+[data-testid="stBaseButton-secondary"] > div {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+}
+/* Hide default text */
+[data-testid="stMarkdownContainer"] {
+    display: none !important;
+}
 /* Make uploader inner container stretch */
 [data-testid="stFileUploader"] > div {
     height: 100% !important;
     display: flex !important;
     flex-direction: column !important;
+}
+/* Force BOTH columns to same height */
+.box-wrapper {
+    height: 200px !important;
+}
+
+.box-wrapper * {
+    height: 100% !important;
 }
 
 /* Make dropzone fill everything */
