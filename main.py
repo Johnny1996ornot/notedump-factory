@@ -27,6 +27,14 @@ st.markdown("""
     display: flex;
     align-items: stretch;
 }
+.box-wrapper > div {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.box-wrapper > div > div {
+    height: 100% !important;
+}
 /* FORCE Streamlit internal wrapper to stretch */
 .box-wrapper > div > div {
     height: 100% !important;
@@ -36,27 +44,12 @@ st.markdown("""
     display: flex !important;
     flex-direction: column !important;
 }
-[data-testid="stBaseButton-secondary"] {
-    height: 200px !important;
-    width: 100% !important;
-    border-radius: 12px !important;
 
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-
-    background-color: #0f172a !important;
-    border: 1px dashed #334155 !important;
-}
 /* Center the content inside uploader */
 [data-testid="stBaseButton-secondary"] > div {
     width: 100% !important;
     display: flex !important;
     justify-content: center !important;
-}
-/* Hide default text */
-[data-testid="stMarkdownContainer"] {
-    display: none !important;
 }
 /* Make uploader inner container stretch */
 [data-testid="stFileUploader"] > div {
@@ -69,20 +62,12 @@ st.markdown("""
     height: 200px !important;
 }
 
-.box-wrapper * {
-    height: 100% !important;
-}
 
 /* Make dropzone fill everything */
 [data-testid="stFileUploadDropzone"] {
     flex-grow: 1 !important;
 }
-/* Remove hidden padding/margin from uploader */
-[data-testid="stFileUploader"] > div {
-    height: 100% !important;
-    display: flex !important;
-    flex-direction: column !important;
-}
+
 /* Make inner elements fill wrapper */
 .box-wrapper > div {
     width: 100% !important;
@@ -93,20 +78,20 @@ st.markdown("""
     display: flex !important;
     flex-direction: column !important;
 }
-[data-testid="stFileUploadDropzone"] {
-    height: 100% !important;
-    flex-grow: 1 !important;
+[data-testid="stFileUploadDropzone"] { 
+    height: 200px !important; 
+    min-height: 200px !important; 
+    display: flex !important; 
+    flex-direction: column !important; 
+    justify-content: center !important; 
+    align-items: center !important; 
 }
-[data-testid="stFileUploader"] > div > div {
-    height: 100% !important;
-    flex-grow: 1 !important;
-    display: flex !important;
-}
+
 /* Unlock Streamlit Columns so elements can span across them */
 [data-testid="stColumn"], [data-testid="column"] { overflow: visible !important; }
 /* FIX: make both columns same height */
 [data-testid="stHorizontalBlock"] {
-    margin-top: -120px !important;
+    margin-top: -80px !important;
     align-items: stretch !important;
 }
 /* Nav & Header */
