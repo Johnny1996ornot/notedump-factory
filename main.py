@@ -99,7 +99,7 @@ st.markdown("""
 [data-testid="stColumn"], [data-testid="column"] { overflow: visible !important; }
 /* FIX: make both columns same height */
 [data-testid="stHorizontalBlock"] {
-    margin-top: -160px !important;
+    margin-top: -200px !important;
     align-items: stretch !important;
 }
 /* Nav & Header */
@@ -272,7 +272,7 @@ div[data-testid*="UploadedFile"] button {
 
 /* REMOVE hidden gap above columns */
 [data-testid="stHorizontalBlock"] {
-    margin-top: -40px !important;
+    margin-top: -120px !important;
 }
 </style>
 
