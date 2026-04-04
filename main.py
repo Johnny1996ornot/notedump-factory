@@ -87,51 +87,14 @@ st.markdown("""
     flex-direction: column !important;
 }
 [data-testid="stFileUploadDropzone"] { 
-    height: 100% !important; 
-    min-height: 100% !important; 
-    background-color: #0f172a !important; 
-    border: 1px dashed #334155 !important;
-    border-radius: 12px !important; 
-
+    height: 200px !important; 
+    min-height: 200px !important; 
     display: flex !important; 
     flex-direction: column !important; 
     justify-content: center !important; 
     align-items: center !important; 
-
-    padding: 20px !important;
-    text-align: center !important; 
 }
 
-/* STACK EVERYTHING CENTER */
-[data-testid="stFileUploadDropzone"] > div {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 8px !important;
-}
-
-/* ADD "DRAG & DROP" TEXT */
-[data-testid="stFileUploadDropzone"]::before {
-    content: "Drag & Drop File";
-    font-size: 18px;
-    font-weight: 700;
-    color: #f8fafc;
-    margin-bottom: 5px;
-}
-
-/* CENTER BUTTON */
-[data-testid="stFileUploadDropzone"] button {
-    margin: 10px auto !important;
-}
-
-/* STYLE THE SMALL TEXT (200MB etc) */
-[data-testid="stFileUploadDropzone"] small {
-    display: block !important;
-    text-align: center !important;
-    margin-top: 5px !important;
-    color: #64748b !important;
-}
 /* Unlock Streamlit Columns so elements can span across them */
 [data-testid="stColumn"], [data-testid="column"] { overflow: visible !important; }
 /* FIX: make both columns same height */
@@ -201,41 +164,61 @@ st.markdown("""
    2. CUSTOM INJECTED BLANK NOTEBOOK LAYOUT
    ========================================= */
 
-/* ONLY style the top-right notebook button */
-.box-wrapper [data-testid="stDownloadButton"] button {
-    height: 100% !important; 
-    width: 100% !important;
+/* FIX: make container same height as uploader */
+[data-testid="stDownloadButton"] {
+    height: 200px !important;
+}
 
+/* FIX: button fills the container */
+[data-testid="stDownloadButton"] button {
+    height: 100% !important; 
+    min-height: 100% !important; 
+    width: 100% !important; 
+    margin: 0 !important;
     background-color: #0f172a !important; 
     border: 1px solid #1e293b !important; 
     border-radius: 12px !important;
-
     display: flex !important; 
-    flex-direction: row !important;
+    flex-direction: row !important; /* Puts items side-by-side */
     justify-content: center !important; 
     align-items: center !important;
+    transition: 0.2s; 
+    padding: 0 !important;
 }
 
-/* hide default text ONLY for notebook button */
-.box-wrapper [data-testid="stDownloadButton"] button div,
-.box-wrapper [data-testid="stDownloadButton"] button span {
+/* FIX: removed nth-child */
+[data-testid="stDownloadButton"] button:hover { 
+    border-color: #0ea5e9 !important; 
+    background: rgba(14, 165, 233, 0.1) !important; 
+}
+
+/* Completely hide Streamlit's default text wrappers */
+[data-testid="stDownloadButton"] button div,
+[data-testid="stDownloadButton"] button p,
+[data-testid="stDownloadButton"] button span {
     display: none !important;
 }
 
-/* icon */
-.box-wrapper [data-testid="stDownloadButton"] button::before {
+/* Inject Giant Icon on the Left */
+[data-testid="stDownloadButton"] button::before {
     content: "📓";
-    font-size: 70px;
-    margin-right: 15px;
+    font-size: 70px !important; /* Massive Logo */
+    margin-right: 15px !important; 
+    line-height: 1 !important;
+    display: block !important;
 }
 
-/* text */
-.box-wrapper [data-testid="stDownloadButton"] button::after {
-    content: "Create\\A Blank\\A Notebook";
-    white-space: pre;
-    font-size: 28px;
-    font-weight: 800;
-    color: #f8fafc;
+/* Inject Stacked Text on the Right */
+[data-testid="stDownloadButton"] button::after {
+    content: "Create\\A Blank\\A Notebook"; /* The \\A creates the hard line breaks */
+    white-space: pre !important; /* Forces the line breaks to render */
+    font-size: 28px !important; 
+    font-weight: 800 !important; 
+    color: #f8fafc !important; 
+    line-height: 1.1 !important;
+    text-align: left !important; 
+    letter-spacing: -1px !important;
+    display: block !important;
 }
 
 /* =========================================
@@ -577,3 +560,5 @@ with col1:
                     use_container_width=True
                 )
                 st.markdown('</div>', unsafe_allow_html=True)
+
+
