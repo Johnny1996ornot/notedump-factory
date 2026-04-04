@@ -51,10 +51,18 @@ st.markdown("""
     flex-direction: column !important;
 }
 /* Make inner elements fill wrapper */
-.box-wrapper div {
+.box-wrapper > div {
     width: 100% !important;
     height: 100% !important;
+}
+[data-testid="stFileUploader"] section {
+    height: 100% !important;
     display: flex !important;
+    flex-direction: column !important;
+}
+[data-testid="stFileUploadDropzone"] {
+    height: 100% !important;
+    flex-grow: 1 !important;
 }
 [data-testid="stFileUploader"] > div > div {
     height: 100% !important;
@@ -64,7 +72,11 @@ st.markdown("""
 /* Unlock Streamlit Columns so elements can span across them */
 [data-testid="stColumn"], [data-testid="column"] { overflow: visible !important; }
 /* FIX: make both columns same height */
-[data-testid="stHorizontalBlock"] {
+[data-testid="stHorizontalBlock"] 
+{
+    margin-top: -30px !important;
+}
+{
     align-items: stretch !important;
 }
 /* Nav & Header */
