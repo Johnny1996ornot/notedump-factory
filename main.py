@@ -106,7 +106,7 @@ st.markdown("""
 [data-testid="stColumn"], [data-testid="column"] { overflow: visible !important; }
 /* FIX: make both columns same height */
 [data-testid="stHorizontalBlock"] {
-    margin-top: -200px !important;
+    margin-top: -120px !important;
     align-items: stretch !important;
 }
 /* Nav & Header */
