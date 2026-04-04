@@ -27,6 +27,22 @@ st.markdown("""
     display: flex;
     align-items: stretch;
 }
+[data-testid="stFileUploader"] {
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+/* Make uploader inner container stretch */
+[data-testid="stFileUploader"] > div {
+    flex-grow: 1 !important;
+    display: flex !important;
+}
+
+/* Make dropzone fill everything */
+[data-testid="stFileUploadDropzone"] {
+    flex-grow: 1 !important;
+}
 /* Remove hidden padding/margin from uploader */
 [data-testid="stFileUploader"] > div {
     height: 100% !important;
