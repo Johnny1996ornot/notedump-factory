@@ -35,8 +35,9 @@ st.markdown("""
 
 /* Make uploader inner container stretch */
 [data-testid="stFileUploader"] > div {
-    flex-grow: 1 !important;
+    height: 100% !important;
     display: flex !important;
+    flex-direction: column !important;
 }
 
 /* Make dropzone fill everything */
@@ -46,11 +47,11 @@ st.markdown("""
 /* Remove hidden padding/margin from uploader */
 [data-testid="stFileUploader"] > div {
     height: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
 }
 /* Make inner elements fill wrapper */
-.box-wrapper > div {
+.box-wrapper div {
     width: 100% !important;
     height: 100% !important;
 }
@@ -84,7 +85,7 @@ st.markdown("""
 .logo-text { font-size: 55px; font-weight: 800; margin: 0; color: #f8fafc;}
 .logo-icon { font-size: 48px; margin: 0;}
 .tagline { font-size: 18px; color: #94a3b8; margin-top: -8px !important; margin-bottom: 8px !important; font-weight: normal; }
-.support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 20px !important; }
+.support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 5px !important; }
 
 /* =========================================
    1. FORCE LEFT BOX (UPLOADER) TO 200PX
@@ -284,7 +285,6 @@ if "blank_html" not in st.session_state:
 # ==========================================================================
 # SECTION 3: THE 2-COLUMN LAYOUT
 # ==========================================================================
-st.markdown('<div style="margin-bottom: 10px;"></div>', unsafe_allow_html=True)
 col1, col2 = st.columns([1,1], gap="medium")
 
 with col2:
