@@ -40,11 +40,19 @@ st.markdown("""
     height: 100% !important;
 }
 [data-testid="stFileUploader"] {
-    height: 100% !important;
+    height: 200px !important;
+    min-height: 200px !important;
     display: flex !important;
     flex-direction: column !important;
+    justify-content: center !important;
+}
+[data-testid="stFileUploader"] > div {
+    height: 100% !important;
 }
 
+[data-testid="stFileUploader"] section {
+    height: 100% !important;
+}
 /* Center the content inside uploader */
 [data-testid="stBaseButton-secondary"] > div {
     width: 100% !important;
@@ -91,7 +99,7 @@ st.markdown("""
 [data-testid="stColumn"], [data-testid="column"] { overflow: visible !important; }
 /* FIX: make both columns same height */
 [data-testid="stHorizontalBlock"] {
-    margin-top: -80px !important;
+    margin-top: -120px !important;
     align-items: stretch !important;
 }
 /* Nav & Header */
