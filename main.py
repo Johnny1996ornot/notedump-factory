@@ -54,6 +54,12 @@ st.markdown("""
 .box-wrapper div {
     width: 100% !important;
     height: 100% !important;
+    display: flex !important;
+}
+[data-testid="stFileUploader"] > div > div {
+    height: 100% !important;
+    flex-grow: 1 !important;
+    display: flex !important;
 }
 /* Unlock Streamlit Columns so elements can span across them */
 [data-testid="stColumn"], [data-testid="column"] { overflow: visible !important; }
@@ -80,7 +86,7 @@ st.markdown("""
 .modal-content li { margin-bottom: 10px; line-height: 1.5; font-size: 15px; color: #cbd5e1;}
 .pro-tag { color: #10b981; font-weight: bold; } 
 
-.hero { text-align: center; color: white; padding: 10px 0; max-width: 500px; margin: 0 auto; }
+.hero { text-align: center; color: white; padding: 5px 0; max-width: 500px; margin: 0 auto; }
 .logo-container { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 0px;}
 .logo-text { font-size: 55px; font-weight: 800; margin: 0; color: #f8fafc;}
 .logo-icon { font-size: 48px; margin: 0;}
@@ -224,7 +230,7 @@ div[data-testid*="UploadedFile"] button {
     .top-nav { position: relative; justify-content: center; padding-top: 20px; }
 }
 
-[data-testid="block-container"] { max-width: 1000px; padding-top: 3rem; }
+[data-testid="block-container"] { max-width: 1000px; padding-top: 1rem; }
 </style>
 
 <div class="top-nav">
