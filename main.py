@@ -77,7 +77,7 @@ st.markdown("""
 [data-testid="stColumn"], [data-testid="column"] { overflow: visible !important; }
 /* FIX: make both columns same height */
 [data-testid="stHorizontalBlock"] {
-    margin-top: -30px !important;
+    margin-top: -200px !important;
     align-items: stretch !important;
 }
 /* Nav & Header */
@@ -116,8 +116,8 @@ st.markdown("""
     display: none !important;
 }
 [data-testid="stFileUploadDropzone"] { 
-    height: 200px !important; 
-    min-height: 200px !important; 
+    height: 100% !important; 
+    min-height: 100% !important; 
     background-color: #0f172a !important; 
     border: 1px dashed #334155 !important;
     border-radius: 12px !important; 
