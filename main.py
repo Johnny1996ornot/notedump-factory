@@ -21,23 +21,23 @@ st.markdown("""
 <style>
 .stApp { background-color: #000000; }
 
-/* MASTER BOX — forces BOTH columns to be identical */
+/* MASTER BOX — forces BOTH to be identical */
 .box-wrapper {
-    height: 200px;
+    height: 200px !important;
     width: 100%;
-    /* display: block prevents the width collapse that triggers Streamlit's compact uploader */
-    display: block; 
+    display: flex;
+    align-items: stretch;
 }
-
-.box-wrapper > div,
-.box-wrapper > div > div {
+.box-wrapper > div {
     width: 100% !important;
+    height: 100% !important;
+}
+.box-wrapper > div > div {
     height: 100% !important;
 }
 
 /* Unlock Streamlit Columns so elements can span across them */
 [data-testid="stColumn"], [data-testid="column"] { overflow: visible !important; }
-
 /* FIX: make both columns same height */
 [data-testid="stHorizontalBlock"] {
     margin-top: -40px !important;
@@ -71,21 +71,27 @@ st.markdown("""
 .support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 5px !important; }
 
 /* =========================================
-   1. FORCE LEFT BOX (UPLOADER) TO 200PX & RESTORE LOGO
+   1. FORCE LEFT BOX (UPLOADER) TO 200PX & BRING LOGO BACK
    ========================================= */
 [data-testid="stFileUploader"] > label { display: none !important; }
-[data-testid="stFileUploader"] { 
-    width: 100% !important; 
-    height: 200px !important; 
+
+[data-testid="stFileUploader"] {
+    height: 200px !important;
+    min-height: 200px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    width: 100% !important;
     margin: 0 !important; 
-    padding: 0 !important; 
-    display: block !important;
-}
-[data-testid="stFileUploader"] > div {
-    height: 100% !important;
+    padding: 0 !important;
 }
 
-/* Ensure the Dropzone box renders fully and correctly */
+[data-testid="stFileUploader"] section {
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
 [data-testid="stFileUploadDropzone"] { 
     height: 200px !important; 
     min-height: 200px !important; 
@@ -98,49 +104,36 @@ st.markdown("""
     align-items: center !important; 
     padding: 20px !important;
     text-align: center !important; 
+    flex-grow: 1 !important;
 }
 
-/* Internal Dropzone Flex Containers */
-[data-testid="stFileUploadDropzone"] > div,
-[data-testid="stFileUploadDropzone"] > div > div { 
-    display: flex !important; 
-    flex-direction: column !important; 
-    align-items: center !important; 
-    justify-content: center !important; 
-    text-align: center !important; 
-    width: 100% !important;
-    gap: 6px !important; 
-}
-
-/* Force Streamlit SVG logo to be visible and immune to squashing */
+/* FIX: UN-SQUASH THE CLOUD LOGO */
 [data-testid="stFileUploadDropzone"] svg {
     width: 45px !important;
     height: 45px !important;
     min-width: 45px !important;
     min-height: 45px !important;
-    flex-shrink: 0 !important;
     display: block !important;
-    fill: #e2e8f0 !important;
+    margin: 0 auto 10px auto !important;
     color: #e2e8f0 !important;
-    margin: 0 auto 5px auto !important;
+    fill: #e2e8f0 !important;
 }
 
-[data-testid="stFileUploadDropzone"] span { 
+/* FIX: FORCE TEXT TO SHOW UP PROPERLY */
+[data-testid="stFileUploadDropzone"] div[data-testid="stMarkdownContainer"] p {
     font-size: 16px !important; 
     font-weight: bold !important; 
-    color: #e2e8f0 !important; 
-    line-height: 1.2 !important; 
-    text-align: center !important; 
-    margin: 0 auto !important;
+    color: #e2e8f0 !important;
+    margin: 0 !important;
     display: block !important;
 }
 
+/* Un-hide the 200MB text that was getting stripped */
 [data-testid="stFileUploadDropzone"] small { 
+    display: block !important;
     font-size: 13px !important; 
     color: #64748b !important; 
-    text-align: center !important; 
-    margin: 0 auto !important;
-    display: block !important;
+    margin-top: 5px !important;
 }
 
 [data-testid="stFileUploadDropzone"] button { 
@@ -150,25 +143,16 @@ st.markdown("""
     padding: 10px 24px !important; 
     border-radius: 6px !important; 
     font-weight: bold !important; 
-    margin-top: 10px !important; 
+    margin-top: 15px !important; 
     font-size: 15px !important; 
-    width: auto !important; 
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    transition: 0.2s;
-}
-
-[data-testid="stFileUploadDropzone"] button:hover {
-    background-color: #4338ca !important;
 }
 
 /* =========================================
    2. CUSTOM INJECTED BLANK NOTEBOOK LAYOUT
    ========================================= */
+
 [data-testid="stDownloadButton"] {
     height: 200px !important;
-    width: 100% !important;
 }
 
 [data-testid="stDownloadButton"] button {
@@ -202,7 +186,7 @@ st.markdown("""
 /* Inject Giant Icon on the Left */
 [data-testid="stDownloadButton"] button::before {
     content: "📓";
-    font-size: 70px !important;
+    font-size: 70px !important; 
     margin-right: 15px !important; 
     line-height: 1 !important;
     display: block !important;
@@ -354,8 +338,10 @@ with col1:
     # SECTION 4: FILE PARSING & PROCESSING (CACHED FOR SPEED & STABILITY)
     # ==========================================================================
     if up:
+        # Create a unique key for the specific file uploaded
         file_key = f"{up.name}_{up.size}"
 
+        # Only re-parse the document if it's a completely new file
         if st.session_state.get("current_file_key") != file_key:
             st.session_state.current_file_key = file_key
             st.session_state.final_html = None
@@ -527,6 +513,7 @@ with col1:
                 </script>
                 """
 
+                # Save the final parsed result into session memory
                 st.session_state.final_html = get_template(total_pages)\
                     .replace("{{NAV_LINKS}}", nav)\
                     .replace("{{SLIDE_CONTENT}}", dimension_script + slides)\
@@ -542,6 +529,7 @@ with col1:
                 else:
                     st.session_state.error_msg = f"Error Processing File: {e}"
 
+        # OUTPUT STAGE: Render error or the cached download button
         if st.session_state.get("error_msg"):
             st.error(st.session_state.error_msg)
         elif st.session_state.get("final_html"):
