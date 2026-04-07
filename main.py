@@ -58,13 +58,14 @@ st.markdown("""
 .support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 5px !important; }
 
 /* =========================================
-   1. FORCE LEFT BOX (UPLOADER) & KILL COMPACT MODE
+   1. FORCE LEFT BOX (UPLOADER) TO 200PX & CENTER
    ========================================= */
+/* Hide the default label */
 [data-testid="stFileUploader"] > label { display: none !important; }
 
-/* The Sledgehammer: Force width so Streamlit NEVER triggers mobile view */
+/* Set the overall uploader constraints */
 [data-testid="stFileUploader"] {
-    min-width: 300px !important; 
+    container-type: normal !important; /* Forces standard desktop UI over compact mobile UI */
     height: 200px !important;
     width: 100% !important;
     display: block !important;
@@ -72,26 +73,14 @@ st.markdown("""
     padding: 0 !important;
 }
 
-[data-testid="stFileUploader"] > section {
-    height: 200px !important;
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: center !important;
-}
-
-/* Hide Streamlit's fallback tiny upload button forever */
-[data-testid="stFileUploader"] button[kind="secondary"] {
-    display: none !important;
-}
-
-/* Force the Main Dropzone Box */
+/* Restyle the main dropzone box to match the right side */
 [data-testid="stFileUploadDropzone"] { 
-    display: flex !important; 
     height: 200px !important; 
     width: 100% !important;
     background-color: #0f172a !important; 
     border: 1px dashed #334155 !important;
     border-radius: 12px !important; 
+    display: flex !important; 
     flex-direction: column !important; 
     justify-content: center !important; 
     align-items: center !important; 
@@ -99,7 +88,7 @@ st.markdown("""
     box-sizing: border-box !important;
 }
 
-/* Force Inner Elements to Center */
+/* Force the inner wrapper to center its items */
 [data-testid="stFileUploadDropzone"] > div {
     display: flex !important;
     flex-direction: column !important;
@@ -109,7 +98,7 @@ st.markdown("""
     width: 100% !important;
 }
 
-/* BRING BACK THE CLOUD LOGO */
+/* The Cloud Logo */
 [data-testid="stFileUploadDropzone"] svg {
     display: block !important;
     width: 45px !important;
@@ -119,26 +108,28 @@ st.markdown("""
     fill: #e2e8f0 !important;
 }
 
-/* BRING BACK "Drag and drop file here" */
+/* The "Drag and drop file here" text */
 [data-testid="stFileUploadDropzone"] [data-testid="stMarkdownContainer"] p {
     display: block !important;
     font-size: 16px !important; 
     font-weight: bold !important; 
     color: #e2e8f0 !important;
     margin: 0 0 5px 0 !important;
+    text-align: center !important;
 }
 
-/* BRING BACK "Limit 200MB per file" */
+/* The "Limit 200MB per file" text */
 [data-testid="stFileUploadDropzone"] small { 
     display: block !important;
     font-size: 13px !important; 
     color: #64748b !important; 
     margin: 0 0 15px 0 !important;
+    text-align: center !important;
 }
 
-/* BRING BACK THE PURPLE BROWSE BUTTON */
+/* The Purple "Browse files" button */
 [data-testid="stFileUploadDropzone"] button { 
-    display: inline-flex !important;
+    display: flex !important;
     background-color: #4f46e5 !important; 
     color: #ffffff !important; 
     border: none !important; 
@@ -149,6 +140,10 @@ st.markdown("""
     margin: 0 auto !important;
     align-items: center !important;
     justify-content: center !important;
+}
+
+[data-testid="stFileUploadDropzone"] button:hover {
+    background-color: #4338ca !important;
 }
 
 /* =========================================
