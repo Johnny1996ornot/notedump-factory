@@ -21,15 +21,13 @@ st.markdown("""
 <style>
 .stApp { background-color: #000000; }
 
-/* Force Streamlit Columns to behave and NEVER trigger mobile compact mode */
+/* Let columns flow naturally without overlapping the header */
 [data-testid="stColumn"], [data-testid="column"] { 
     overflow: visible !important; 
-    min-width: 250px !important; 
 }
 
-/* Make both columns align perfectly */
+/* Ensure columns stretch to match horizontally */
 [data-testid="stHorizontalBlock"] {
-    margin-top: -40px !important;
     align-items: stretch !important;
 }
 
@@ -54,38 +52,45 @@ st.markdown("""
 .support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 5px !important; }
 
 /* =========================================
-   1. LEFT BOX (UPLOADER & DROPZONE)
+   1. LEFT BOX: UPLOADER (FORCED TO 200PX & CENTERED)
    ========================================= */
-[data-testid="stFileUploader"] {
-    height: 200px !important;
-    width: 100% !important;
-    margin: 0 !important; 
-    padding: 0 !important;
-}
 
+/* Hide default label */
 [data-testid="stFileUploader"] > label { 
     display: none !important; 
 }
 
-[data-testid="stFileUploader"] > section {
-    height: 100% !important;
+/* Master wrapper constraints */
+[data-testid="stFileUploader"] {
     width: 100% !important;
+    height: 200px !important;
+    margin: 0 !important; 
+    padding: 0 !important;
+    container-type: normal !important; /* Defeat Streamlit's compact mode */
 }
 
+/* Hide Streamlit's tiny fallback compact button */
+[data-testid="stFileUploader"] > section > button {
+    display: none !important;
+}
+
+/* Force the main dropzone box to permanently show up perfectly sized */
 [data-testid="stFileUploadDropzone"] { 
+    display: flex !important; 
     height: 200px !important; 
+    min-height: 200px !important;
     width: 100% !important;
     background-color: #0f172a !important; 
     border: 1px dashed #334155 !important;
     border-radius: 12px !important; 
-    padding: 0 !important;
-    display: flex !important; 
     flex-direction: column !important; 
     justify-content: center !important; 
     align-items: center !important; 
+    padding: 20px !important;
+    box-sizing: border-box !important;
 }
 
-/* Force perfect inner centering */
+/* Inner elements perfect centering */
 [data-testid="stFileUploadDropzone"] > div {
     display: flex !important;
     flex-direction: column !important;
@@ -93,10 +98,9 @@ st.markdown("""
     justify-content: center !important;
     text-align: center !important;
     width: 100% !important;
-    height: 100% !important;
 }
 
-/* The Cloud Logo */
+/* Cloud Logo */
 [data-testid="stFileUploadDropzone"] svg {
     display: block !important;
     width: 45px !important;
@@ -106,28 +110,26 @@ st.markdown("""
     fill: #e2e8f0 !important;
 }
 
-/* The "Drag and drop" text */
-[data-testid="stFileUploadDropzone"] p {
+/* "Drag and drop file here" Text */
+[data-testid="stFileUploadDropzone"] [data-testid="stMarkdownContainer"] p {
     display: block !important;
     font-size: 16px !important; 
     font-weight: bold !important; 
     color: #e2e8f0 !important;
     margin: 0 0 5px 0 !important;
-    text-align: center !important;
 }
 
-/* The 200MB Limit text */
+/* "Limit 200MB per file" Text */
 [data-testid="stFileUploadDropzone"] small { 
     display: block !important;
     font-size: 13px !important; 
     color: #64748b !important; 
     margin: 0 0 15px 0 !important;
-    text-align: center !important;
 }
 
-/* The Purple Browse Button */
+/* "Browse files" Button */
 [data-testid="stFileUploadDropzone"] button { 
-    display: flex !important;
+    display: inline-flex !important;
     background-color: #4f46e5 !important; 
     color: #ffffff !important; 
     border: none !important; 
@@ -138,16 +140,18 @@ st.markdown("""
     margin: 0 auto !important;
     align-items: center !important;
     justify-content: center !important;
+    transition: 0.2s;
 }
 
 [data-testid="stFileUploadDropzone"] button:hover {
     background-color: #4338ca !important;
 }
 
+
 /* =========================================
-   2. RIGHT BOX (BLANK NOTEBOOK BUTTON)
+   2. RIGHT BOX: BLANK NOTEBOOK
    ========================================= */
-/* Scope this so it doesn't break the final download button later */
+
 .blank-notebook-target [data-testid="stDownloadButton"] {
     height: 200px !important;
     width: 100% !important;
@@ -155,6 +159,7 @@ st.markdown("""
 
 .blank-notebook-target [data-testid="stDownloadButton"] button {
     height: 200px !important; 
+    min-height: 200px !important;
     width: 100% !important; 
     margin: 0 !important;
     background-color: #0f172a !important; 
@@ -173,7 +178,7 @@ st.markdown("""
     background: rgba(14, 165, 233, 0.1) !important; 
 }
 
-/* Hide Streamlit's default text wrappers */
+/* Completely hide Streamlit's default text wrappers */
 .blank-notebook-target [data-testid="stDownloadButton"] button div,
 .blank-notebook-target [data-testid="stDownloadButton"] button p,
 .blank-notebook-target [data-testid="stDownloadButton"] button span {
@@ -201,6 +206,7 @@ st.markdown("""
     letter-spacing: -1px !important;
     display: block !important;
 }
+
 
 /* =========================================
    3. FORCE UPLOADED FILE BAR TO SPAN & PROTECT X
@@ -251,10 +257,6 @@ div[data-testid*="UploadedFile"] button {
     padding-top: 0rem !important;
 }
 
-/* REMOVE hidden gap above columns */
-[data-testid="stHorizontalBlock"] {
-    margin-top: -160px !important;
-}
 </style>
 
 <div class="top-nav">
