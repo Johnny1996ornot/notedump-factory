@@ -21,17 +21,13 @@ st.markdown("""
 <style>
 .stApp { background-color: #000000; }
 
-/* MASTER BOX — forces BOTH to be identical */
-.box-wrapper {
-    height: 200px !important;
-    width: 100%;
-    display: block !important;
+/* Force Streamlit Columns to behave and NEVER trigger mobile compact mode */
+[data-testid="stColumn"], [data-testid="column"] { 
+    overflow: visible !important; 
+    min-width: 250px !important; 
 }
 
-/* Unlock Streamlit Columns so elements can span across them */
-[data-testid="stColumn"], [data-testid="column"] { overflow: visible !important; }
-
-/* FIX: make both columns same height */
+/* Make both columns align perfectly */
 [data-testid="stHorizontalBlock"] {
     margin-top: -40px !important;
     align-items: stretch !important;
@@ -58,37 +54,38 @@ st.markdown("""
 .support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 5px !important; }
 
 /* =========================================
-   1. FORCE LEFT BOX (UPLOADER) TO 200PX & CENTER
+   1. LEFT BOX (UPLOADER & DROPZONE)
    ========================================= */
-/* Hide the default label */
-[data-testid="stFileUploader"] > label { display: none !important; }
-
-/* Set the overall uploader constraints */
 [data-testid="stFileUploader"] {
-    container-type: normal !important; /* Forces standard desktop UI over compact mobile UI */
     height: 200px !important;
     width: 100% !important;
-    display: block !important;
     margin: 0 !important; 
     padding: 0 !important;
 }
 
-/* Restyle the main dropzone box to match the right side */
+[data-testid="stFileUploader"] > label { 
+    display: none !important; 
+}
+
+[data-testid="stFileUploader"] > section {
+    height: 100% !important;
+    width: 100% !important;
+}
+
 [data-testid="stFileUploadDropzone"] { 
     height: 200px !important; 
     width: 100% !important;
     background-color: #0f172a !important; 
     border: 1px dashed #334155 !important;
     border-radius: 12px !important; 
+    padding: 0 !important;
     display: flex !important; 
     flex-direction: column !important; 
     justify-content: center !important; 
     align-items: center !important; 
-    padding: 20px !important;
-    box-sizing: border-box !important;
 }
 
-/* Force the inner wrapper to center its items */
+/* Force perfect inner centering */
 [data-testid="stFileUploadDropzone"] > div {
     display: flex !important;
     flex-direction: column !important;
@@ -96,6 +93,7 @@ st.markdown("""
     justify-content: center !important;
     text-align: center !important;
     width: 100% !important;
+    height: 100% !important;
 }
 
 /* The Cloud Logo */
@@ -108,8 +106,8 @@ st.markdown("""
     fill: #e2e8f0 !important;
 }
 
-/* The "Drag and drop file here" text */
-[data-testid="stFileUploadDropzone"] [data-testid="stMarkdownContainer"] p {
+/* The "Drag and drop" text */
+[data-testid="stFileUploadDropzone"] p {
     display: block !important;
     font-size: 16px !important; 
     font-weight: bold !important; 
@@ -118,7 +116,7 @@ st.markdown("""
     text-align: center !important;
 }
 
-/* The "Limit 200MB per file" text */
+/* The 200MB Limit text */
 [data-testid="stFileUploadDropzone"] small { 
     display: block !important;
     font-size: 13px !important; 
@@ -127,7 +125,7 @@ st.markdown("""
     text-align: center !important;
 }
 
-/* The Purple "Browse files" button */
+/* The Purple Browse Button */
 [data-testid="stFileUploadDropzone"] button { 
     display: flex !important;
     background-color: #4f46e5 !important; 
@@ -147,16 +145,16 @@ st.markdown("""
 }
 
 /* =========================================
-   2. CUSTOM INJECTED BLANK NOTEBOOK LAYOUT
+   2. RIGHT BOX (BLANK NOTEBOOK BUTTON)
    ========================================= */
-
-[data-testid="stDownloadButton"] {
+/* Scope this so it doesn't break the final download button later */
+.blank-notebook-target [data-testid="stDownloadButton"] {
     height: 200px !important;
     width: 100% !important;
 }
 
-[data-testid="stDownloadButton"] button {
-    height: 100% !important; 
+.blank-notebook-target [data-testid="stDownloadButton"] button {
+    height: 200px !important; 
     width: 100% !important; 
     margin: 0 !important;
     background-color: #0f172a !important; 
@@ -170,20 +168,20 @@ st.markdown("""
     padding: 0 !important;
 }
 
-[data-testid="stDownloadButton"] button:hover { 
+.blank-notebook-target [data-testid="stDownloadButton"] button:hover { 
     border-color: #0ea5e9 !important; 
     background: rgba(14, 165, 233, 0.1) !important; 
 }
 
-/* Completely hide Streamlit's default text wrappers */
-[data-testid="stDownloadButton"] button div,
-[data-testid="stDownloadButton"] button p,
-[data-testid="stDownloadButton"] button span {
+/* Hide Streamlit's default text wrappers */
+.blank-notebook-target [data-testid="stDownloadButton"] button div,
+.blank-notebook-target [data-testid="stDownloadButton"] button p,
+.blank-notebook-target [data-testid="stDownloadButton"] button span {
     display: none !important;
 }
 
 /* Inject Giant Icon on the Left */
-[data-testid="stDownloadButton"] button::before {
+.blank-notebook-target [data-testid="stDownloadButton"] button::before {
     content: "📓";
     font-size: 70px !important; 
     margin-right: 15px !important; 
@@ -192,7 +190,7 @@ st.markdown("""
 }
 
 /* Inject Stacked Text on the Right */
-[data-testid="stDownloadButton"] button::after {
+.blank-notebook-target [data-testid="stDownloadButton"] button::after {
     content: "Create\\A Blank\\A Notebook"; 
     white-space: pre !important; 
     font-size: 28px !important; 
@@ -318,7 +316,7 @@ if "blank_html" not in st.session_state:
 col1, col2 = st.columns([1,1], gap="medium")
 
 with col2:
-    st.markdown('<div class="box-wrapper">', unsafe_allow_html=True)
+    st.markdown('<div class="blank-notebook-target">', unsafe_allow_html=True)
     st.download_button(
         label="Create Blank Notebook", 
         data=st.session_state.blank_html.encode('utf-8'), 
@@ -329,9 +327,7 @@ with col2:
     st.markdown('</div>', unsafe_allow_html=True)
 
 with col1:
-    st.markdown('<div class="box-wrapper">', unsafe_allow_html=True)
     up = st.file_uploader("Upload a document", label_visibility="hidden", type=["pptx", "ppt", "pdf"])
-    st.markdown('</div>', unsafe_allow_html=True)
     
     # ==========================================================================
     # SECTION 4: FILE PARSING & PROCESSING (CACHED FOR SPEED & STABILITY)
