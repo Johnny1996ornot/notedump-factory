@@ -75,21 +75,16 @@ st.markdown("""
    ========================================= */
 [data-testid="stFileUploader"] > label { display: none !important; }
 
+/* Disable Streamlit's container query that causes the tiny "Upload" compact mode */
 [data-testid="stFileUploader"] {
+    container-type: normal !important; 
     height: 200px !important;
-    min-height: 200px !important;
+    width: 100% !important;
     display: flex !important;
     flex-direction: column !important;
-    justify-content: center !important;
-    width: 100% !important;
+    justify-content: stretch !important;
     margin: 0 !important; 
     padding: 0 !important;
-}
-
-[data-testid="stFileUploader"] section {
-    height: 100% !important;
-    display: flex !important;
-    flex-direction: column !important;
 }
 
 [data-testid="stFileUploadDropzone"] { 
@@ -107,6 +102,15 @@ st.markdown("""
     flex-grow: 1 !important;
 }
 
+/* Center the internal elements perfectly */
+[data-testid="stFileUploadDropzone"] > div {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+}
+
 /* FIX: UN-SQUASH THE CLOUD LOGO */
 [data-testid="stFileUploadDropzone"] svg {
     width: 45px !important;
@@ -120,11 +124,11 @@ st.markdown("""
 }
 
 /* FIX: FORCE TEXT TO SHOW UP PROPERLY */
-[data-testid="stFileUploadDropzone"] div[data-testid="stMarkdownContainer"] p {
+[data-testid="stFileUploadDropzone"] [data-testid="stMarkdownContainer"] p {
     font-size: 16px !important; 
     font-weight: bold !important; 
     color: #e2e8f0 !important;
-    margin: 0 !important;
+    margin: 0 0 5px 0 !important;
     display: block !important;
 }
 
@@ -133,7 +137,7 @@ st.markdown("""
     display: block !important;
     font-size: 13px !important; 
     color: #64748b !important; 
-    margin-top: 5px !important;
+    margin: 0 0 15px 0 !important;
 }
 
 [data-testid="stFileUploadDropzone"] button { 
@@ -143,8 +147,8 @@ st.markdown("""
     padding: 10px 24px !important; 
     border-radius: 6px !important; 
     font-weight: bold !important; 
-    margin-top: 15px !important; 
     font-size: 15px !important; 
+    margin: 0 !important;
 }
 
 /* =========================================
