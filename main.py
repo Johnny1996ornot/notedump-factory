@@ -20,88 +20,30 @@ st.set_page_config(page_title="NoteDump", layout="centered", initial_sidebar_sta
 st.markdown("""
 <style>
 .stApp { background-color: #000000; }
-/* MASTER BOX — forces BOTH to be identical */
+
+/* MASTER BOX — forces BOTH columns to be identical */
 .box-wrapper {
     height: 200px;
     width: 100%;
-    display: flex;
-    align-items: stretch;
-}
-.box-wrapper > div {
-    width: 100% !important;
-    height: 100% !important;
+    /* display: block prevents the width collapse that triggers Streamlit's compact uploader */
+    display: block; 
 }
 
+.box-wrapper > div,
 .box-wrapper > div > div {
-    height: 100% !important;
-}
-/* FORCE Streamlit internal wrapper to stretch */
-.box-wrapper > div > div {
-    height: 100% !important;
-}
-[data-testid="stFileUploader"] {
-    height: 200px !important;
-    min-height: 200px !important;
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: center !important;
-}
-[data-testid="stFileUploader"] > div {
-    height: 100% !important;
-}
-
-[data-testid="stFileUploader"] section {
-    height: 100% !important;
-}
-/* Center the content inside uploader */
-[data-testid="stBaseButton-secondary"] > div {
-    width: 100% !important;
-    display: flex !important;
-    justify-content: center !important;
-}
-/* Make uploader inner container stretch */
-[data-testid="stFileUploader"] > div {
-    height: 100% !important;
-    display: flex !important;
-    flex-direction: column !important;
-}
-/* Force BOTH columns to same height */
-.box-wrapper {
-    height: 200px !important;
-}
-
-
-/* Make dropzone fill everything */
-[data-testid="stFileUploadDropzone"] {
-    flex-grow: 1 !important;
-}
-
-/* Make inner elements fill wrapper */
-.box-wrapper > div {
     width: 100% !important;
     height: 100% !important;
-}
-[data-testid="stFileUploader"] section {
-    height: 100% !important;
-    display: flex !important;
-    flex-direction: column !important;
-}
-[data-testid="stFileUploadDropzone"] { 
-    height: 200px !important; 
-    min-height: 200px !important; 
-    display: flex !important; 
-    flex-direction: column !important; 
-    justify-content: center !important; 
-    align-items: center !important; 
 }
 
 /* Unlock Streamlit Columns so elements can span across them */
 [data-testid="stColumn"], [data-testid="column"] { overflow: visible !important; }
+
 /* FIX: make both columns same height */
 [data-testid="stHorizontalBlock"] {
     margin-top: -40px !important;
     align-items: stretch !important;
 }
+
 /* Nav & Header */
 .top-nav { display: flex; justify-content: flex-end; align-items: center; padding: 10px 20px; position: absolute; top: 0; right: 0; width: 100%; z-index: 999; gap: 12px; }
 .guide-btn { color: #94a3b8; text-decoration: none; font-size: 16px; font-weight: bold; font-family: sans-serif; border: 1px solid #475569; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: #1e293b; transition: 0.2s; }
@@ -129,17 +71,24 @@ st.markdown("""
 .support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 5px !important; }
 
 /* =========================================
-   1. FORCE LEFT BOX (UPLOADER) TO 200PX
+   1. FORCE LEFT BOX (UPLOADER) TO 200PX & RESTORE LOGO
    ========================================= */
 [data-testid="stFileUploader"] > label { display: none !important; }
-[data-testid="stFileUploader"] { width: 100% !important; margin: 0 !important; padding: 0 !important; }
-/* FIX: remove extra text making box taller */
-[data-testid="stFileUploader"] small {
-    display: none !important;
+[data-testid="stFileUploader"] { 
+    width: 100% !important; 
+    height: 200px !important; 
+    margin: 0 !important; 
+    padding: 0 !important; 
+    display: block !important;
 }
+[data-testid="stFileUploader"] > div {
+    height: 100% !important;
+}
+
+/* Ensure the Dropzone box renders fully and correctly */
 [data-testid="stFileUploadDropzone"] { 
-    height: 100% !important; 
-    min-height: 100% !important; 
+    height: 200px !important; 
+    min-height: 200px !important; 
     background-color: #0f172a !important; 
     border: 1px dashed #334155 !important;
     border-radius: 12px !important; 
@@ -150,26 +99,78 @@ st.markdown("""
     padding: 20px !important;
     text-align: center !important; 
 }
+
+/* Internal Dropzone Flex Containers */
 [data-testid="stFileUploadDropzone"] > div,
 [data-testid="stFileUploadDropzone"] > div > div { 
-    display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; text-align: center !important; width: 100% !important; 
+    display: flex !important; 
+    flex-direction: column !important; 
+    align-items: center !important; 
+    justify-content: center !important; 
+    text-align: center !important; 
+    width: 100% !important;
+    gap: 6px !important; 
 }
-[data-testid="stFileUploadDropzone"] span { font-size: 16px !important; font-weight: bold !important; color:#e2e8f0 !important; line-height: 1.2 !important; text-align: center !important; margin: 0 auto !important;}
-[data-testid="stFileUploadDropzone"] small { font-size: 13px !important; color: #64748b !important; text-align: center !important; margin: 0 auto !important;}
+
+/* Force Streamlit SVG logo to be visible and immune to squashing */
+[data-testid="stFileUploadDropzone"] svg {
+    width: 45px !important;
+    height: 45px !important;
+    min-width: 45px !important;
+    min-height: 45px !important;
+    flex-shrink: 0 !important;
+    display: block !important;
+    fill: #e2e8f0 !important;
+    color: #e2e8f0 !important;
+    margin: 0 auto 5px auto !important;
+}
+
+[data-testid="stFileUploadDropzone"] span { 
+    font-size: 16px !important; 
+    font-weight: bold !important; 
+    color: #e2e8f0 !important; 
+    line-height: 1.2 !important; 
+    text-align: center !important; 
+    margin: 0 auto !important;
+    display: block !important;
+}
+
+[data-testid="stFileUploadDropzone"] small { 
+    font-size: 13px !important; 
+    color: #64748b !important; 
+    text-align: center !important; 
+    margin: 0 auto !important;
+    display: block !important;
+}
+
 [data-testid="stFileUploadDropzone"] button { 
-    background-color: #4f46e5 !important; color: #ffffff !important; border: none !important; padding: 10px 24px !important; border-radius: 6px !important; font-weight: bold !important; margin-top: 15px !important; font-size: 15px !important; margin-left: auto !important; margin-right: auto !important; 
+    background-color: #4f46e5 !important; 
+    color: #ffffff !important; 
+    border: none !important; 
+    padding: 10px 24px !important; 
+    border-radius: 6px !important; 
+    font-weight: bold !important; 
+    margin-top: 10px !important; 
+    font-size: 15px !important; 
+    width: auto !important; 
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: 0.2s;
+}
+
+[data-testid="stFileUploadDropzone"] button:hover {
+    background-color: #4338ca !important;
 }
 
 /* =========================================
    2. CUSTOM INJECTED BLANK NOTEBOOK LAYOUT
    ========================================= */
-
-/* FIX: make container same height as uploader */
 [data-testid="stDownloadButton"] {
     height: 200px !important;
+    width: 100% !important;
 }
 
-/* FIX: button fills the container */
 [data-testid="stDownloadButton"] button {
     height: 100% !important; 
     min-height: 100% !important; 
@@ -179,14 +180,13 @@ st.markdown("""
     border: 1px solid #1e293b !important; 
     border-radius: 12px !important;
     display: flex !important; 
-    flex-direction: row !important; /* Puts items side-by-side */
+    flex-direction: row !important; 
     justify-content: center !important; 
     align-items: center !important;
     transition: 0.2s; 
     padding: 0 !important;
 }
 
-/* FIX: removed nth-child */
 [data-testid="stDownloadButton"] button:hover { 
     border-color: #0ea5e9 !important; 
     background: rgba(14, 165, 233, 0.1) !important; 
@@ -202,7 +202,7 @@ st.markdown("""
 /* Inject Giant Icon on the Left */
 [data-testid="stDownloadButton"] button::before {
     content: "📓";
-    font-size: 70px !important; /* Massive Logo */
+    font-size: 70px !important;
     margin-right: 15px !important; 
     line-height: 1 !important;
     display: block !important;
@@ -210,8 +210,8 @@ st.markdown("""
 
 /* Inject Stacked Text on the Right */
 [data-testid="stDownloadButton"] button::after {
-    content: "Create\\A Blank\\A Notebook"; /* The \\A creates the hard line breaks */
-    white-space: pre !important; /* Forces the line breaks to render */
+    content: "Create\\A Blank\\A Notebook"; 
+    white-space: pre !important; 
     font-size: 28px !important; 
     font-weight: 800 !important; 
     color: #f8fafc !important; 
@@ -318,8 +318,6 @@ div[data-testid*="UploadedFile"] button {
 # ==========================================================================
 # SECTION 2: PRE-GENERATE BLANK NOTEBOOK (CACHED TO PREVENT DOUBLE-CLICK BUG)
 # ==========================================================================
-# We store the generated HTML in session state so clicking the download button
-# doesn't trigger a re-render with a new ID, which breaks the download link.
 if "blank_html" not in st.session_state:
     blank_nav = '<div class="nav-link active-nav" id="link-0" onclick="goTo(\'0\')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text">Page 1</span></div>'
     blank_slides = '<div id="p-0" class="page active" data-page-width="816" data-page-height="1054" style="width:816px; height:1054px;"></div>'
@@ -351,14 +349,13 @@ with col1:
     st.markdown('<div class="box-wrapper">', unsafe_allow_html=True)
     up = st.file_uploader("Upload a document", label_visibility="hidden", type=["pptx", "ppt", "pdf"])
     st.markdown('</div>', unsafe_allow_html=True)
+    
     # ==========================================================================
     # SECTION 4: FILE PARSING & PROCESSING (CACHED FOR SPEED & STABILITY)
     # ==========================================================================
     if up:
-        # Create a unique key for the specific file uploaded
         file_key = f"{up.name}_{up.size}"
 
-        # Only re-parse the document if it's a completely new file
         if st.session_state.get("current_file_key") != file_key:
             st.session_state.current_file_key = file_key
             st.session_state.final_html = None
@@ -530,7 +527,6 @@ with col1:
                 </script>
                 """
 
-                # Save the final parsed result into session memory
                 st.session_state.final_html = get_template(total_pages)\
                     .replace("{{NAV_LINKS}}", nav)\
                     .replace("{{SLIDE_CONTENT}}", dimension_script + slides)\
@@ -546,7 +542,6 @@ with col1:
                 else:
                     st.session_state.error_msg = f"Error Processing File: {e}"
 
-        # OUTPUT STAGE: Render error or the cached download button
         if st.session_state.get("error_msg"):
             st.error(st.session_state.error_msg)
         elif st.session_state.get("final_html"):
@@ -560,5 +555,3 @@ with col1:
                     use_container_width=True
                 )
                 st.markdown('</div>', unsafe_allow_html=True)
-
-
