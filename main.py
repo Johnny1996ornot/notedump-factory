@@ -27,15 +27,19 @@ st.markdown("""
     width: 100%;
     display: block !important;
 }
+/* Force equal height columns */
+[data-testid="stHorizontalBlock"] {
+    align-items: stretch !important;
+}
+
+/* Make both inner elements fill full height */
+.box-wrapper > div {
+    height: 100% !important;
+}
 
 /* Unlock Streamlit Columns so elements can span across them */
 [data-testid="stColumn"], [data-testid="column"] { overflow: visible !important; }
 
-/* FIX: make both columns same height */
-[data-testid="stHorizontalBlock"] {
-    margin-top: -40px !important;
-    align-items: stretch !important;
-}
 
 /* Nav & Header */
 .top-nav { display: flex; justify-content: flex-end; align-items: center; padding: 10px 20px; position: absolute; top: 0; right: 0; width: 100%; z-index: 999; gap: 12px; }
@@ -61,7 +65,7 @@ st.markdown("""
    1. FORCE LEFT BOX (UPLOADER) TO 200PX & CENTER
    ========================================= */
 /* =========================================
-   CLEAN UPLOADER (FIXED)
+   CLEAN UPLOADER (FINAL FIX)
    ========================================= */
 
 /* Hide label */
@@ -73,14 +77,13 @@ st.markdown("""
 [data-testid="stFileUploader"] {
     height: 200px !important;
     width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
 }
 
 /* Dropzone */
 [data-testid="stFileUploadDropzone"] {
-    height: 100% !important;
+    height: 200px !important;
     width: 100% !important;
+
     background-color: #0f172a !important;
     border: 1px dashed #334155 !important;
     border-radius: 12px !important;
@@ -88,20 +91,19 @@ st.markdown("""
     display: flex !important;
     flex-direction: column !important;
 
-    justify-content: center !important;   /* vertical center */
-    align-items: center !important;       /* horizontal center */
+    justify-content: center !important;
+    align-items: center !important;
 
     text-align: center !important;
     padding: 20px !important;
-    box-sizing: border-box !important;
 }
 
-/* IMPORTANT: Let Streamlit layout behave normally */
-[data-testid="stFileUploadDropzone"] * {
-    text-align: center !important;
+/* Let Streamlit render normally */
+[data-testid="stFileUploadDropzone"] div {
+    display: block !important;
 }
 
-/* Cloud icon (DO NOT FORCE display:block aggressively) */
+/* Icon */
 [data-testid="stFileUploadDropzone"] svg {
     width: 42px !important;
     height: 42px !important;
@@ -113,30 +115,21 @@ st.markdown("""
     font-size: 16px !important;
     font-weight: 600 !important;
     color: #e2e8f0 !important;
-    margin: 0 0 4px 0 !important;
 }
 
 /* Sub text */
 [data-testid="stFileUploadDropzone"] small {
     font-size: 13px !important;
     color: #64748b !important;
-    margin-bottom: 12px !important;
 }
 
 /* Button */
 [data-testid="stFileUploadDropzone"] button {
     background-color: #4f46e5 !important;
     color: #ffffff !important;
-    border: none !important;
-    padding: 10px 22px !important;
     border-radius: 6px !important;
+    padding: 10px 22px !important;
     font-weight: bold !important;
-    font-size: 14px !important;
-    margin-top: 8px !important;
-}
-
-[data-testid="stFileUploadDropzone"] button:hover {
-    background-color: #4338ca !important;
 }
 /* =========================================
    2. CUSTOM INJECTED BLANK NOTEBOOK LAYOUT
@@ -245,10 +238,7 @@ div[data-testid*="UploadedFile"] button {
     padding-top: 0rem !important;
 }
 
-/* REMOVE hidden gap above columns */
-[data-testid="stHorizontalBlock"] {
-    margin-top: -160px !important;
-}
+
 </style>
 
 <div class="top-nav">
