@@ -29,7 +29,7 @@ st.markdown("""
 }
 /* Force equal height columns */
 [data-testid="stHorizontalBlock"] {
-    align-items: stretch !important;
+    align-items: flex-start !important;  /* 🔥 prevents downward push */
 }
 
 /* Make both inner elements fill full height */
@@ -42,7 +42,7 @@ st.markdown("""
 
 
 /* Nav & Header */
-.top-nav { display: flex; justify-content: flex-end; align-items: center; padding: 10px 20px; position: absolute; top: 0; right: 0; width: 100%; z-index: 999; gap: 12px; }
+.top-nav { display: flex; justify-content: flex-end; align-items: center; padding: 10px 20px; position: fixed; top: 0; right: 0; width: 100%; z-index: 999; gap: 12px; }
 .guide-btn { color: #94a3b8; text-decoration: none; font-size: 16px; font-weight: bold; font-family: sans-serif; border: 1px solid #475569; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: #1e293b; transition: 0.2s; }
 .guide-btn:hover { color: white; border-color: #0ea5e9; transform: scale(1.1); background: #0ea5e9;}
 .coffee-btn { color: #0ea5e9; text-decoration: none; font-weight: bold; font-size: 12px; border: 1px solid #0ea5e9; padding: 4px 10px; border-radius: 20px; transition: 0.2s; white-space: nowrap; }
@@ -75,6 +75,7 @@ st.markdown("""
 
 /* Outer container */
 [data-testid="stFileUploader"] {
+    container-type: normal !important;  /* 🔥 CRITICAL FIX */
     height: 200px !important;
     width: 100% !important;
 }
@@ -235,9 +236,8 @@ div[data-testid*="UploadedFile"] button {
 
 [data-testid="block-container"] { 
     max-width: 1000px; 
-    padding-top: 0rem !important;
+    padding-top: 2rem !important;  /* 🔥 FIX spacing properly */
 }
-
 
 </style>
 
