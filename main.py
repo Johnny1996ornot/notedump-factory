@@ -25,19 +25,12 @@ st.markdown("""
 .box-wrapper {
     height: 200px !important;
     width: 100%;
-    display: flex;
-    align-items: stretch;
-}
-.box-wrapper > div {
-    width: 100% !important;
-    height: 100% !important;
-}
-.box-wrapper > div > div {
-    height: 100% !important;
+    display: block !important;
 }
 
 /* Unlock Streamlit Columns so elements can span across them */
 [data-testid="stColumn"], [data-testid="column"] { overflow: visible !important; }
+
 /* FIX: make both columns same height */
 [data-testid="stHorizontalBlock"] {
     margin-top: -40px !important;
@@ -57,12 +50,6 @@ st.markdown("""
 .modal-close { position: absolute; top: 20px; right: 25px; color: #64748b; text-decoration: none; font-size: 28px; font-weight: bold; transition: 0.2s; }
 .modal-close:hover { color: #ef4444; }
 
-/* Modal Content Styling */
-.modal-content h2 { margin-top: 0; color: #4f46e5; font-size: 24px; border-bottom: 1px solid #1e293b; padding-bottom: 10px;}
-.modal-content h4 { color: #0ea5e9; margin-top: 20px; margin-bottom: 10px; font-size: 18px;}
-.modal-content li { margin-bottom: 10px; line-height: 1.5; font-size: 15px; color: #cbd5e1;}
-.pro-tag { color: #10b981; font-weight: bold; } 
-
 .hero { text-align: center; color: white; padding: 5px 0; max-width: 500px; margin: 0 auto; }
 .logo-container { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 0px;}
 .logo-text { font-size: 55px; font-weight: 800; margin: 0; color: #f8fafc;}
@@ -71,68 +58,77 @@ st.markdown("""
 .support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 5px !important; }
 
 /* =========================================
-   1. FORCE LEFT BOX (UPLOADER) TO 200PX & BRING LOGO BACK
+   1. FORCE LEFT BOX (UPLOADER) & KILL COMPACT MODE
    ========================================= */
 [data-testid="stFileUploader"] > label { display: none !important; }
 
-/* Disable Streamlit's container query that causes the tiny "Upload" compact mode */
+/* The Sledgehammer: Force width so Streamlit NEVER triggers mobile view */
 [data-testid="stFileUploader"] {
-    container-type: normal !important; 
+    min-width: 300px !important; 
     height: 200px !important;
     width: 100% !important;
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: stretch !important;
+    display: block !important;
     margin: 0 !important; 
     padding: 0 !important;
 }
 
+[data-testid="stFileUploader"] > section {
+    height: 200px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+}
+
+/* Hide Streamlit's fallback tiny upload button forever */
+[data-testid="stFileUploader"] button[kind="secondary"] {
+    display: none !important;
+}
+
+/* Force the Main Dropzone Box */
 [data-testid="stFileUploadDropzone"] { 
+    display: flex !important; 
     height: 200px !important; 
-    min-height: 200px !important; 
+    width: 100% !important;
     background-color: #0f172a !important; 
     border: 1px dashed #334155 !important;
     border-radius: 12px !important; 
-    display: flex !important; 
     flex-direction: column !important; 
     justify-content: center !important; 
     align-items: center !important; 
     padding: 20px !important;
-    text-align: center !important; 
-    flex-grow: 1 !important;
+    box-sizing: border-box !important;
 }
 
-/* Center the internal elements perfectly */
+/* Force Inner Elements to Center */
 [data-testid="stFileUploadDropzone"] > div {
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
     justify-content: center !important;
+    text-align: center !important;
     width: 100% !important;
 }
 
-/* FIX: UN-SQUASH THE CLOUD LOGO */
+/* BRING BACK THE CLOUD LOGO */
 [data-testid="stFileUploadDropzone"] svg {
+    display: block !important;
     width: 45px !important;
     height: 45px !important;
-    min-width: 45px !important;
-    min-height: 45px !important;
-    display: block !important;
     margin: 0 auto 10px auto !important;
     color: #e2e8f0 !important;
     fill: #e2e8f0 !important;
 }
 
-/* FIX: FORCE TEXT TO SHOW UP PROPERLY */
+/* BRING BACK "Drag and drop file here" */
 [data-testid="stFileUploadDropzone"] [data-testid="stMarkdownContainer"] p {
+    display: block !important;
     font-size: 16px !important; 
     font-weight: bold !important; 
     color: #e2e8f0 !important;
     margin: 0 0 5px 0 !important;
-    display: block !important;
 }
 
-/* Un-hide the 200MB text that was getting stripped */
+/* BRING BACK "Limit 200MB per file" */
 [data-testid="stFileUploadDropzone"] small { 
     display: block !important;
     font-size: 13px !important; 
@@ -140,7 +136,9 @@ st.markdown("""
     margin: 0 0 15px 0 !important;
 }
 
+/* BRING BACK THE PURPLE BROWSE BUTTON */
 [data-testid="stFileUploadDropzone"] button { 
+    display: inline-flex !important;
     background-color: #4f46e5 !important; 
     color: #ffffff !important; 
     border: none !important; 
@@ -148,7 +146,9 @@ st.markdown("""
     border-radius: 6px !important; 
     font-weight: bold !important; 
     font-size: 15px !important; 
-    margin: 0 !important;
+    margin: 0 auto !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 
 /* =========================================
@@ -157,11 +157,11 @@ st.markdown("""
 
 [data-testid="stDownloadButton"] {
     height: 200px !important;
+    width: 100% !important;
 }
 
 [data-testid="stDownloadButton"] button {
     height: 100% !important; 
-    min-height: 100% !important; 
     width: 100% !important; 
     margin: 0 !important;
     background-color: #0f172a !important; 
