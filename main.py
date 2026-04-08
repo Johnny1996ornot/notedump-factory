@@ -21,7 +21,7 @@ st.markdown("""
 <style>
 .stApp { background-color: #000000; }
 
-/* 1. TOP NAV - Changed back to absolute so it isn't hidden behind Streamlit's header */
+/* 1. TOP NAV */
 .top-nav { display: flex; justify-content: flex-end; align-items: center; padding: 15px 20px; position: absolute; top: 0; right: 0; width: 100%; z-index: 99999; gap: 12px; }
 .guide-btn { color: #94a3b8; text-decoration: none; font-size: 16px; font-weight: bold; font-family: sans-serif; border: 1px solid #475569; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: #1e293b; transition: 0.2s; }
 .guide-btn:hover { color: white; border-color: #0ea5e9; transform: scale(1.1); background: #0ea5e9;}
@@ -76,6 +76,7 @@ st.markdown("""
     align-items: center !important;
     transition: 0.2s; 
     padding: 0 !important;
+    box-sizing: border-box !important;
 }
 
 [data-testid="column"]:nth-of-type(2) [data-testid="stDownloadButton"] button:hover,
@@ -120,6 +121,8 @@ st.markdown("""
 [data-testid="stFileUploader"] {
     height: 200px !important;
     width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 [data-testid="stFileUploader"] > label { 
@@ -137,6 +140,8 @@ st.markdown("""
     justify-content: center !important; 
     align-items: center !important; 
     padding: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
 }
 
 /* Inner elements styling to guarantee blue button and text */
@@ -243,7 +248,6 @@ if "blank_html" not in st.session_state:
 # ==========================================================================
 # SECTION 3: THE 2-COLUMN LAYOUT
 # ==========================================================================
-# Removed all HTML wrappers. Pure Streamlit layout only.
 col1, col2 = st.columns([1,1], gap="large")
 
 with col2:
@@ -256,7 +260,8 @@ with col2:
     )
 
 with col1:
-    up = st.file_uploader("Upload a document", label_visibility="hidden", type=["pptx", "ppt", "pdf"])
+    # Changed label_visibility from "hidden" to "collapsed" to destroy the ghost gap
+    up = st.file_uploader("Upload a document", label_visibility="collapsed", type=["pptx", "ppt", "pdf"])
     
     # ==========================================================================
     # SECTION 4: FILE PARSING & PROCESSING (CACHED FOR SPEED & STABILITY)
