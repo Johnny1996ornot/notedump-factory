@@ -42,6 +42,12 @@ st.markdown("""
 /* Unlock Streamlit Columns so elements can span across them */
 [data-testid="stColumn"], [data-testid="column"] { overflow: visible !important; }
 
+/* Pulls the boxes upward closer to the text */
+[data-testid="stHorizontalBlock"] {
+    margin-top: 20px !important; 
+    align-items: stretch !important;
+}
+
 
 /* Nav & Header */
 .top-nav { display: flex; justify-content: flex-end; align-items: center; padding: 10px 20px; position: fixed; top: 0; right: 0; width: 100%; z-index: 999; gap: 12px; }
@@ -67,18 +73,17 @@ st.markdown("""
    1. FORCE LEFT BOX (UPLOADER) TO 200PX & CENTER
    ========================================= */
 
-/* Hide default label */
-[data-testid="stFileUploader"] > label { 
-    display: none !important; 
-}
-
-/* Master wrapper constraints */
+/* Disables Streamlit's compact mode trigger */
 [data-testid="stFileUploader"] {
     width: 100% !important;
     height: 200px !important;
     margin: 0 !important; 
     padding: 0 !important;
-    container-type: normal !important; /* Defeat Streamlit's compact mode */
+    container-type: normal !important; 
+}
+
+[data-testid="stFileUploader"] > label { 
+    display: none !important; 
 }
 
 /* Hide Streamlit's tiny fallback compact button */
@@ -90,7 +95,6 @@ st.markdown("""
 [data-testid="stFileUploadDropzone"] { 
     display: flex !important; 
     height: 200px !important; 
-    min-height: 200px !important;
     width: 100% !important;
     background-color: #0f172a !important; 
     border: 1px dashed #334155 !important;
@@ -102,7 +106,7 @@ st.markdown("""
     box-sizing: border-box !important;
 }
 
-/* Inner elements perfect centering */
+/* Force inner wrappers to center perfectly */
 [data-testid="stFileUploadDropzone"] > div {
     display: flex !important;
     flex-direction: column !important;
@@ -112,7 +116,7 @@ st.markdown("""
     width: 100% !important;
 }
 
-/* Cloud Logo */
+/* BRING BACK THE CLOUD LOGO */
 [data-testid="stFileUploadDropzone"] svg {
     display: block !important;
     width: 45px !important;
@@ -122,7 +126,7 @@ st.markdown("""
     fill: #e2e8f0 !important;
 }
 
-/* "Drag and drop file here" Text */
+/* BRING BACK "Drag and drop file here" Text */
 [data-testid="stFileUploadDropzone"] [data-testid="stMarkdownContainer"] p {
     display: block !important;
     font-size: 16px !important; 
@@ -131,7 +135,7 @@ st.markdown("""
     margin: 0 0 5px 0 !important;
 }
 
-/* "Limit 200MB per file" Text */
+/* BRING BACK "Limit 200MB per file" Text */
 [data-testid="stFileUploadDropzone"] small { 
     display: block !important;
     font-size: 13px !important; 
@@ -139,7 +143,7 @@ st.markdown("""
     margin: 0 0 15px 0 !important;
 }
 
-/* "Browse files" Button */
+/* The Purple Browse Button */
 [data-testid="stFileUploadDropzone"] button { 
     display: inline-flex !important;
     background-color: #4f46e5 !important; 
@@ -152,12 +156,8 @@ st.markdown("""
     margin: 0 auto !important;
     align-items: center !important;
     justify-content: center !important;
-    transition: 0.2s;
 }
 
-[data-testid="stFileUploadDropzone"] button:hover {
-    background-color: #4338ca !important;
-}
 
 /* =========================================
    2. CUSTOM INJECTED BLANK NOTEBOOK LAYOUT
@@ -257,18 +257,21 @@ div[data-testid*="UploadedFile"] button {
         width: calc(200% + 1rem) !important; 
     }
 }
+
 @media (max-width: 768px) {
-.top-nav {
-    position: fixed;
-    top: 15px;
-    right: 25px;
-    z-index: 9999;
-    display: flex;
-    gap: 12px;
+    .top-nav {
+        position: fixed;
+        top: 15px;
+        right: 25px;
+        z-index: 9999;
+        display: flex;
+        gap: 12px;
+    }
 }
+
 [data-testid="block-container"] { 
     max-width: 1000px; 
-    padding-top: 100px !important;
+    padding-top: 2rem !important;
 }
 
 </style>
