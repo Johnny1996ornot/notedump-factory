@@ -55,53 +55,38 @@ st.markdown("""
     align-items: stretch !important;
 }
 
-/* =========================================
-   3. PERFECT 200px ALIGNMENT LOCK
-   ========================================= */
-/* Kills the invisible "ghost label" pushing the left box down */
+/* 3. KILL GHOST LABELS */
 [data-testid="stWidgetLabel"] { display: none !important; }
-[data-testid="stFileUploader"] { margin: 0 !important; padding: 0 !important; }
 
-/* Force both targets to identical physical dimensions */
-[data-testid="stFileUploadDropzone"],
+/* =========================================
+   4. RIGHT BOX: CREATE BLANK NOTEBOOK 
+   ========================================= */
 [data-testid="column"]:nth-of-type(2) [data-testid="stDownloadButton"] button,
 [data-testid="stColumn"]:nth-of-type(2) [data-testid="stDownloadButton"] button {
     height: 200px !important;
     min-height: 200px !important;
-    max-height: 200px !important;
     width: 100% !important;
-    margin: 0 !important;
-    box-sizing: border-box !important;
-}
-
-/* =========================================
-   4. RIGHT BOX: CREATE BLANK NOTEBOOK (Centered Vertically)
-   ========================================= */
-[data-testid="column"]:nth-of-type(2) [data-testid="stDownloadButton"] button,
-[data-testid="stColumn"]:nth-of-type(2) [data-testid="stDownloadButton"] button {
     background-color: #0f172a !important; 
     border: 1px solid #1e293b !important; 
     border-radius: 12px !important;
     display: flex !important; 
-    flex-direction: column !important; /* Stacks items vertically for perfect center */
+    flex-direction: column !important; 
     justify-content: center !important; 
     align-items: center !important;
     transition: 0.2s; 
     padding: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
 }
 [data-testid="column"]:nth-of-type(2) [data-testid="stDownloadButton"] button:hover,
 [data-testid="stColumn"]:nth-of-type(2) [data-testid="stDownloadButton"] button:hover { 
     border-color: #0ea5e9 !important; 
     background: rgba(14, 165, 233, 0.1) !important; 
 }
-
-/* Hide default streamlit text inside button */
 [data-testid="column"]:nth-of-type(2) [data-testid="stDownloadButton"] button p,
 [data-testid="stColumn"]:nth-of-type(2) [data-testid="stDownloadButton"] button p {
     display: none !important;
 }
-
-/* Inject Giant Icon (Centered) */
 [data-testid="column"]:nth-of-type(2) [data-testid="stDownloadButton"] button::before,
 [data-testid="stColumn"]:nth-of-type(2) [data-testid="stDownloadButton"] button::before {
     content: "📓";
@@ -109,8 +94,6 @@ st.markdown("""
     margin-bottom: 10px !important; 
     display: block !important;
 }
-
-/* Inject Stacked Text (Centered) */
 [data-testid="column"]:nth-of-type(2) [data-testid="stDownloadButton"] button::after,
 [data-testid="stColumn"]:nth-of-type(2) [data-testid="stDownloadButton"] button::after {
     content: "Create a Blank\\A Notebook"; 
@@ -124,9 +107,24 @@ st.markdown("""
 }
 
 /* =========================================
-   5. LEFT BOX: UPLOADER (Indestructible UI)
+   5. LEFT BOX: UPLOADER (Beating Streamlit's Compact Mode)
    ========================================= */
+
+/* Disables Streamlit's ability to measure the column and hide elements */
+[data-testid="stFileUploader"] {
+    container-type: normal !important; 
+    height: 200px !important;
+    min-height: 200px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+}
+
+/* Force the actual dropzone to perfectly match the right side */
 [data-testid="stFileUploadDropzone"] { 
+    height: 200px !important; 
+    min-height: 200px !important;
+    width: 100% !important;
     background-color: #0f172a !important; 
     border: 1px dashed #334155 !important;
     border-radius: 12px !important; 
@@ -134,42 +132,64 @@ st.markdown("""
     flex-direction: column !important; 
     justify-content: center !important; 
     align-items: center !important; 
+    padding: 20px !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
 }
 
-/* Hide Streamlit's native fragile elements entirely */
-[data-testid="stFileUploadDropzone"] svg,
-[data-testid="stFileUploadDropzone"] [data-testid="stMarkdownContainer"],
-[data-testid="stFileUploadDropzone"] small {
-    display: none !important;
+/* Force inner layout elements to un-hide */
+[data-testid="stFileUploadDropzone"] div {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
 }
 
-/* Inject indestructible CSS-based UI (Cloud + Text) */
-[data-testid="stFileUploadDropzone"]::before {
-    content: "☁️\\A Drag and drop file here";
-    white-space: pre !important;
-    text-align: center !important;
-    font-size: 18px !important;
-    font-weight: 600 !important;
-    color: #e2e8f0 !important;
-    line-height: 1.6 !important;
-    margin-bottom: 12px !important;
+/* Force the native Cloud Logo to appear */
+[data-testid="stFileUploadDropzone"] svg {
     display: block !important;
+    visibility: visible !important;
+    width: 50px !important; 
+    height: 50px !important; 
+    color: #e2e8f0 !important; 
+    fill: #e2e8f0 !important; 
+    margin: 0 auto 10px auto !important;
 }
 
-/* Force the Streamlit Browse Button into position */
-[data-testid="stFileUploadDropzone"] button {
-    background-color: #4f46e5 !important;
-    color: white !important;
-    border: none !important;
-    border-radius: 6px !important;
-    padding: 10px 24px !important;
-    font-size: 15px !important;
-    font-weight: bold !important;
-    margin: 0 auto !important;
-    display: inline-block !important;
+/* Force the "Drag and drop" text to appear */
+[data-testid="stFileUploadDropzone"] p {
+    display: block !important;
+    visibility: visible !important;
+    font-size: 16px !important; 
+    font-weight: bold !important; 
+    color: #e2e8f0 !important; 
+    margin: 0 0 5px 0 !important; 
 }
-[data-testid="stFileUploadDropzone"] button:hover {
+
+/* Force the "Limit 200MB" text to appear */
+[data-testid="stFileUploadDropzone"] small { 
+    display: block !important;
+    visibility: visible !important;
+    font-size: 13px !important; 
+    color: #64748b !important; 
+    margin: 0 0 15px 0 !important; 
+}
+
+/* Force the specific Browse Button to be Purple and match styling */
+[data-testid="stFileUploader"] button { 
+    background-color: #4f46e5 !important; 
+    color: #ffffff !important; 
+    border: none !important; 
+    padding: 10px 24px !important; 
+    border-radius: 6px !important; 
+    font-weight: bold !important; 
+    font-size: 15px !important; 
+    margin: 0 auto !important; 
+    display: inline-flex !important;
+}
+[data-testid="stFileUploader"] button:hover {
     background-color: #4338ca !important;
+    color: #ffffff !important;
+    border: none !important;
 }
 
 /* =========================================
