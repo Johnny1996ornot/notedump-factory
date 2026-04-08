@@ -27,11 +27,9 @@ st.markdown("""
     width: 100%;
     display: block !important;
 }
-/* Force equal height columns */
 [data-testid="stHorizontalBlock"] {
-    align-items: flex-start !important;  /* 🔥 prevents downward push */
+    align-items: stretch !important;
 }
-
 /* Make both inner elements fill full height */
 .box-wrapper > div {
     height: 100% !important;
@@ -75,7 +73,6 @@ st.markdown("""
 
 /* Outer container */
 [data-testid="stFileUploader"] {
-    container-type: normal !important;  /* 🔥 CRITICAL FIX */
     height: 200px !important;
     width: 100% !important;
 }
@@ -100,8 +97,8 @@ st.markdown("""
 }
 
 /* Let Streamlit render normally */
-[data-testid="stFileUploadDropzone"] div {
-    display: block !important;
+[data-testid="stFileUploadDropzone"] * {
+    display: revert !important;
 }
 
 /* Icon */
@@ -231,12 +228,17 @@ div[data-testid*="UploadedFile"] button {
     }
 }
 @media (max-width: 768px) {
-    .top-nav { position: relative; justify-content: center; padding-top: 20px; }
+ .top-nav {
+    position: fixed;
+    top: 10px;
+    right: 20px;
+    display: flex;
+    gap: 12px;
+    z-index: 999;
 }
-
 [data-testid="block-container"] { 
     max-width: 1000px; 
-    padding-top: 2rem !important;  /* 🔥 FIX spacing properly */
+    padding-top: 80px !important;
 }
 
 </style>
