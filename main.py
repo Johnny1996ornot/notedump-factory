@@ -21,36 +21,19 @@ st.markdown("""
 <style>
 .stApp { background-color: #000000; }
 
-/* MASTER BOX — forces BOTH to be identical */
-.box-wrapper {
-    height: 200px !important;
-    width: 100%;
-    display: flex !important;
-}
-
-.box-wrapper > div {
-    width: 100%;
-}
-[data-testid="stHorizontalBlock"] > div {
-    display: flex !important;
-}
-/* Make both inner elements fill full height */
-.box-wrapper > div {
-    height: 100% !important;
-}
-
 /* Unlock Streamlit Columns so elements can span across them */
-[data-testid="stColumn"], [data-testid="column"] { overflow: visible !important; }
+[data-testid="stColumn"], [data-testid="column"] { 
+    overflow: visible !important; 
+}
 
-/* Pulls the boxes upward closer to the text */
+/* Pulls the boxes upward closer to the NoteDump logo */
 [data-testid="stHorizontalBlock"] {
-    margin-top: 20px !important; 
+    margin-top: 15px !important; 
     align-items: stretch !important;
 }
 
-
-/* Nav & Header */
-.top-nav { display: flex; justify-content: flex-end; align-items: center; padding: 10px 20px; position: fixed; top: 0; right: 0; width: 100%; z-index: 999; gap: 12px; }
+/* Nav & Header Fixed Positioning */
+.top-nav { display: flex; justify-content: flex-end; align-items: center; padding: 15px 25px; position: fixed; top: 0; right: 0; width: 100%; z-index: 9999; gap: 12px; }
 .guide-btn { color: #94a3b8; text-decoration: none; font-size: 16px; font-weight: bold; font-family: sans-serif; border: 1px solid #475569; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: #1e293b; transition: 0.2s; }
 .guide-btn:hover { color: white; border-color: #0ea5e9; transform: scale(1.1); background: #0ea5e9;}
 .coffee-btn { color: #0ea5e9; text-decoration: none; font-weight: bold; font-size: 12px; border: 1px solid #0ea5e9; padding: 4px 10px; border-radius: 20px; transition: 0.2s; white-space: nowrap; }
@@ -73,25 +56,20 @@ st.markdown("""
    1. FORCE LEFT BOX (UPLOADER) TO 200PX & CENTER
    ========================================= */
 
-/* Disables Streamlit's compact mode trigger */
+/* Target the wrapper and hide the default label */
 [data-testid="stFileUploader"] {
     width: 100% !important;
-    height: 200px !important;
-    margin: 0 !important; 
-    padding: 0 !important;
-    container-type: normal !important; 
 }
-
 [data-testid="stFileUploader"] > label { 
     display: none !important; 
 }
 
-/* Hide Streamlit's tiny fallback compact button */
+/* KILL STREAMLIT'S COMPACT BUTTON. This stops it from squishing. */
 [data-testid="stFileUploader"] > section > button {
     display: none !important;
 }
 
-/* Force the main dropzone box to permanently show up perfectly sized */
+/* Force the big dropzone box to show permanently at 200px */
 [data-testid="stFileUploadDropzone"] { 
     display: flex !important; 
     height: 200px !important; 
@@ -103,20 +81,18 @@ st.markdown("""
     justify-content: center !important; 
     align-items: center !important; 
     padding: 20px !important;
-    box-sizing: border-box !important;
 }
 
-/* Force inner wrappers to center perfectly */
-[data-testid="stFileUploadDropzone"] > div {
+/* Force the inner text wrappers to be visible */
+[data-testid="stFileUploaderDropzoneInstructions"] {
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
     justify-content: center !important;
-    text-align: center !important;
     width: 100% !important;
 }
 
-/* BRING BACK THE CLOUD LOGO */
+/* Force Cloud Logo to show */
 [data-testid="stFileUploadDropzone"] svg {
     display: block !important;
     width: 45px !important;
@@ -126,24 +102,26 @@ st.markdown("""
     fill: #e2e8f0 !important;
 }
 
-/* BRING BACK "Drag and drop file here" Text */
+/* Force "Drag and drop file here" Text to show */
 [data-testid="stFileUploadDropzone"] [data-testid="stMarkdownContainer"] p {
     display: block !important;
     font-size: 16px !important; 
     font-weight: bold !important; 
     color: #e2e8f0 !important;
     margin: 0 0 5px 0 !important;
+    text-align: center !important;
 }
 
-/* BRING BACK "Limit 200MB per file" Text */
+/* Force "Limit 200MB per file" Text to show */
 [data-testid="stFileUploadDropzone"] small { 
     display: block !important;
     font-size: 13px !important; 
     color: #64748b !important; 
     margin: 0 0 15px 0 !important;
+    text-align: center !important;
 }
 
-/* The Purple Browse Button */
+/* Force the Purple Browse Button to show inside the big box */
 [data-testid="stFileUploadDropzone"] button { 
     display: inline-flex !important;
     background-color: #4f46e5 !important; 
@@ -157,19 +135,21 @@ st.markdown("""
     align-items: center !important;
     justify-content: center !important;
 }
-
+[data-testid="stFileUploadDropzone"] button:hover {
+    background-color: #4338ca !important;
+}
 
 /* =========================================
    2. CUSTOM INJECTED BLANK NOTEBOOK LAYOUT
    ========================================= */
 
-[data-testid="stDownloadButton"] {
+.blank-notebook-container [data-testid="stDownloadButton"] {
     height: 200px !important;
     width: 100% !important;
 }
 
-[data-testid="stDownloadButton"] button {
-    height: 100% !important; 
+.blank-notebook-container [data-testid="stDownloadButton"] button {
+    height: 200px !important; 
     width: 100% !important; 
     margin: 0 !important;
     background-color: #0f172a !important; 
@@ -183,20 +163,20 @@ st.markdown("""
     padding: 0 !important;
 }
 
-[data-testid="stDownloadButton"] button:hover { 
+.blank-notebook-container [data-testid="stDownloadButton"] button:hover { 
     border-color: #0ea5e9 !important; 
     background: rgba(14, 165, 233, 0.1) !important; 
 }
 
 /* Completely hide Streamlit's default text wrappers */
-[data-testid="stDownloadButton"] button div,
-[data-testid="stDownloadButton"] button p,
-[data-testid="stDownloadButton"] button span {
+.blank-notebook-container [data-testid="stDownloadButton"] button div,
+.blank-notebook-container [data-testid="stDownloadButton"] button p,
+.blank-notebook-container [data-testid="stDownloadButton"] button span {
     display: none !important;
 }
 
 /* Inject Giant Icon on the Left */
-[data-testid="stDownloadButton"] button::before {
+.blank-notebook-container [data-testid="stDownloadButton"] button::before {
     content: "📓";
     font-size: 70px !important; 
     margin-right: 15px !important; 
@@ -205,7 +185,7 @@ st.markdown("""
 }
 
 /* Inject Stacked Text on the Right */
-[data-testid="stDownloadButton"] button::after {
+.blank-notebook-container [data-testid="stDownloadButton"] button::after {
     content: "Create\\A Blank\\A Notebook"; 
     white-space: pre !important; 
     font-size: 28px !important; 
@@ -254,26 +234,14 @@ div[data-testid*="UploadedFile"] button {
     [data-testid="stUploadedFile"], 
     div[data-testid*="UploadedFile"],
     .final-download-target [data-testid="stDownloadButton"] button { 
-        width: calc(200% + 1rem) !important; 
-    }
-}
-
-@media (max-width: 768px) {
-    .top-nav {
-        position: fixed;
-        top: 15px;
-        right: 25px;
-        z-index: 9999;
-        display: flex;
-        gap: 12px;
+        width: calc(200% + 1rem + 20px) !important; 
     }
 }
 
 [data-testid="block-container"] { 
     max-width: 1000px; 
-    padding-top: 2rem !important;
+    padding-top: 3rem !important; /* Adjusts top spacing */
 }
-
 </style>
 
 <div class="top-nav">
@@ -332,10 +300,11 @@ if "blank_html" not in st.session_state:
 # ==========================================================================
 # SECTION 3: THE 2-COLUMN LAYOUT
 # ==========================================================================
-col1, col2 = st.columns([1,1], gap="medium")
+# Removed the HTML wrappers entirely so Streamlit's engine works naturally
+col1, col2 = st.columns([1,1], gap="large")
 
 with col2:
-    st.markdown('<div class="box-wrapper">', unsafe_allow_html=True)
+    st.markdown('<div class="blank-notebook-container">', unsafe_allow_html=True)
     st.download_button(
         label="Create Blank Notebook", 
         data=st.session_state.blank_html.encode('utf-8'), 
@@ -346,9 +315,7 @@ with col2:
     st.markdown('</div>', unsafe_allow_html=True)
 
 with col1:
-    st.markdown('<div class="box-wrapper">', unsafe_allow_html=True)
     up = st.file_uploader("Upload a document", label_visibility="hidden", type=["pptx", "ppt", "pdf"])
-    st.markdown('</div>', unsafe_allow_html=True)
     
     # ==========================================================================
     # SECTION 4: FILE PARSING & PROCESSING (CACHED FOR SPEED & STABILITY)
