@@ -66,26 +66,99 @@ st.markdown("""
 /* =========================================
    1. FORCE LEFT BOX (UPLOADER) TO 200PX & CENTER
    ========================================= */
-/* CLEAN UPLOADER (WORKING VERSION) */
 
-[data-testid="stFileUploader"] {
-    height: 200px !important;
+/* Hide default label */
+[data-testid="stFileUploader"] > label { 
+    display: none !important; 
 }
 
-[data-testid="stFileUploadDropzone"] {
-    height: 200px !important;
+/* Master wrapper constraints */
+[data-testid="stFileUploader"] {
     width: 100% !important;
+    height: 200px !important;
+    margin: 0 !important; 
+    padding: 0 !important;
+    container-type: normal !important; /* Defeat Streamlit's compact mode */
+}
 
+/* Hide Streamlit's tiny fallback compact button */
+[data-testid="stFileUploader"] > section > button {
+    display: none !important;
+}
+
+/* Force the main dropzone box to permanently show up perfectly sized */
+[data-testid="stFileUploadDropzone"] { 
+    display: flex !important; 
+    height: 200px !important; 
+    min-height: 200px !important;
+    width: 100% !important;
+    background-color: #0f172a !important; 
+    border: 1px dashed #334155 !important;
+    border-radius: 12px !important; 
+    flex-direction: column !important; 
+    justify-content: center !important; 
+    align-items: center !important; 
+    padding: 20px !important;
+    box-sizing: border-box !important;
+}
+
+/* Inner elements perfect centering */
+[data-testid="stFileUploadDropzone"] > div {
     display: flex !important;
     flex-direction: column !important;
-    justify-content: center !important;
     align-items: center !important;
-
-    background-color: #0f172a !important;
-    border: 1px dashed #334155 !important;
-    border-radius: 12px !important;
-    padding: 20px !important;
+    justify-content: center !important;
+    text-align: center !important;
+    width: 100% !important;
 }
+
+/* Cloud Logo */
+[data-testid="stFileUploadDropzone"] svg {
+    display: block !important;
+    width: 45px !important;
+    height: 45px !important;
+    margin: 0 auto 10px auto !important;
+    color: #e2e8f0 !important;
+    fill: #e2e8f0 !important;
+}
+
+/* "Drag and drop file here" Text */
+[data-testid="stFileUploadDropzone"] [data-testid="stMarkdownContainer"] p {
+    display: block !important;
+    font-size: 16px !important; 
+    font-weight: bold !important; 
+    color: #e2e8f0 !important;
+    margin: 0 0 5px 0 !important;
+}
+
+/* "Limit 200MB per file" Text */
+[data-testid="stFileUploadDropzone"] small { 
+    display: block !important;
+    font-size: 13px !important; 
+    color: #64748b !important; 
+    margin: 0 0 15px 0 !important;
+}
+
+/* "Browse files" Button */
+[data-testid="stFileUploadDropzone"] button { 
+    display: inline-flex !important;
+    background-color: #4f46e5 !important; 
+    color: #ffffff !important; 
+    border: none !important; 
+    padding: 10px 24px !important; 
+    border-radius: 6px !important; 
+    font-weight: bold !important; 
+    font-size: 15px !important; 
+    margin: 0 auto !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: 0.2s;
+}
+
+[data-testid="stFileUploadDropzone"] button:hover {
+    background-color: #4338ca !important;
+}
+
 /* =========================================
    2. CUSTOM INJECTED BLANK NOTEBOOK LAYOUT
    ========================================= */
