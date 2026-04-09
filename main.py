@@ -51,12 +51,14 @@ st.markdown("""
 .support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 20px !important; }
 
 /* =========================================
-   1. FORCE LEFT BOX (UPLOADER) TO 200PX
+   1. FORCE LEFT BOX (UPLOADER) TO 200PX (FIXED FOR CLOUD)
    ========================================= */
 [data-testid="stFileUploader"] > label { display: none !important; }
 [data-testid="stFileUploader"] { width: 100% !important; margin: 0 !important; padding: 0 !important; }
 
-[data-testid="stFileUploadDropzone"] { 
+/* Targeting both old (Replit) and new (Cloud) Dropzone names */
+[data-testid="stFileUploadDropzone"],
+[data-testid="stFileUploaderDropzone"] { 
     height: 200px !important; 
     min-height: 200px !important; 
     background-color: #0f172a !important; 
@@ -69,14 +71,27 @@ st.markdown("""
     padding: 20px !important;
     text-align: center !important; 
 }
+
+/* Force internal wrappers back into column layout */
 [data-testid="stFileUploadDropzone"] > div,
-[data-testid="stFileUploadDropzone"] > div > div { 
+[data-testid="stFileUploadDropzone"] > div > div,
+[data-testid="stFileUploaderDropzone"] > div,
+[data-testid="stFileUploaderDropzone"] > section,
+[data-testid="stFileUploaderDropzone"] > div > div { 
     display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; text-align: center !important; width: 100% !important; 
 }
-[data-testid="stFileUploadDropzone"] span { font-size: 16px !important; font-weight: bold !important; color:#e2e8f0 !important; line-height: 1.2 !important; text-align: center !important; margin: 0 auto !important;}
-[data-testid="stFileUploadDropzone"] small { font-size: 13px !important; color: #64748b !important; text-align: center !important; margin: 0 auto !important;}
-[data-testid="stFileUploadDropzone"] button { 
-    background-color: #4f46e5 !important; color: #ffffff !important; border: none !important; padding: 10px 24px !important; border-radius: 6px !important; font-weight: bold !important; margin-top: 15px !important; font-size: 15px !important; margin-left: auto !important; margin-right: auto !important; 
+
+[data-testid="stFileUploadDropzone"] span,
+[data-testid="stFileUploaderDropzone"] span { font-size: 16px !important; font-weight: bold !important; color:#e2e8f0 !important; line-height: 1.2 !important; text-align: center !important; margin: 0 auto !important;}
+
+/* Fix for newer versions using 'p' tags for small text */
+[data-testid="stFileUploadDropzone"] small,
+[data-testid="stFileUploaderDropzone"] small,
+[data-testid="stFileUploaderDropzone"] p { font-size: 13px !important; color: #64748b !important; text-align: center !important; margin: 0 auto !important;}
+
+[data-testid="stFileUploadDropzone"] button,
+[data-testid="stFileUploaderDropzone"] button { 
+    background-color: #4f46e5 !important; color: #ffffff !important; border: none !important; padding: 10px 24px !important; border-radius: 6px !important; font-weight: bold !important; margin-top: 15px !important; font-size: 15px !important; margin-left: auto !important; margin-right: auto !important; width: auto !important;
 }
 
 /* =========================================
