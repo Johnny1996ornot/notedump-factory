@@ -83,7 +83,7 @@ st.markdown("""
     width: 100% !important; 
 }
 
-/* 1A. INJECT MISSING CLOUD ICON AT THE TOP */
+/* 1A. INJECT MISSING CLOUD ICON */
 [data-testid="stFileUploadDropzone"] > div::before,
 [data-testid="stFileUploadDropzone"] > section::before,
 [data-testid="stFileUploaderDropzone"] > div::before,
@@ -92,12 +92,13 @@ st.markdown("""
     display: block !important;
     width: 45px !important;
     height: 45px !important;
+    margin-top: 15px !important; /* Space between button and icon */
     margin-bottom: 5px !important;
     background-image: url('data:image/svg+xml;utf8,<svg fill="%23ffffff" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.36 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>') !important;
     background-size: contain !important;
     background-repeat: no-repeat !important;
     background-position: center !important;
-    order: -3 !important; /* Force to top */
+    order: -2 !important; /* Placed in the middle */
 }
 
 /* 1B. INJECT MISSING "DRAG AND DROP" TEXT */
@@ -112,7 +113,7 @@ st.markdown("""
     color: #f8fafc !important;
     text-align: center !important;
     margin-bottom: 5px !important;
-    order: -2 !important; /* Force to second position */
+    order: -1 !important; /* Placed below cloud */
 }
 
 /* 1C. HIDE NATIVE ICONS AND NATIVE TEXT CAREFULLY */
@@ -134,9 +135,9 @@ st.markdown("""
     font-size: 13px !important; 
     color: #94a3b8 !important; 
     text-align: center !important; 
-    margin: 5px auto 15px auto !important; 
+    margin: 5px auto 0 auto !important; 
     display: block !important;
-    order: -1 !important; /* Pushes text above the button inside wrapper */
+    order: 0 !important; /* Placed at the very bottom */
     visibility: visible !important;
 }
 
@@ -155,7 +156,7 @@ st.markdown("""
     align-items: center !important; 
     justify-content: center !important; 
     transition: 0.2s !important;
-    order: 0 !important;
+    order: -3 !important; /* Pushed to the very TOP */
 }
 
 [data-testid="stFileUploadDropzone"] button:hover,
