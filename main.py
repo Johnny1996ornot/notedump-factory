@@ -21,7 +21,7 @@ st.markdown("""
 <style>
 .stApp { background-color: #000000; }
 
-/* Unlock Streamlit Columns and PREVENT Compact Mode from deleting the progress bar/logos */
+/* Unlock Streamlit Columns so elements can span across them & PREVENT Compact Mode */
 [data-testid="stColumn"], [data-testid="column"] { 
     min-width: 350px !important; 
     overflow: visible !important; 
@@ -54,7 +54,7 @@ st.markdown("""
 .support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 20px !important; }
 
 /* =========================================
-   1. FORCE LEFT BOX (UPLOADER) TO 200PX & RESTORE NATIVE UI
+   1. FORCE LEFT BOX (UPLOADER) TO 200PX
    ========================================= */
 /* Kill the invisible ghost label pushing the box down */
 [data-testid="stWidgetLabel"] { display: none !important; }
@@ -82,27 +82,34 @@ st.markdown("""
     box-sizing: border-box !important;
 }
 
+[data-testid="stFileUploadDropzone"] > div,
+[data-testid="stFileUploadDropzone"] > div > div { 
+    display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; text-align: center !important; width: 100% !important; 
+}
+
 /* Ensure native Streamlit text and logos remain visible and styled */
 [data-testid="stFileUploadDropzone"] p { color: #e2e8f0 !important; font-size: 16px !important; font-weight: bold !important; margin: 0 0 5px 0 !important; display: block !important; visibility: visible !important; }
-[data-testid="stFileUploadDropzone"] small { color: #94a3b8 !important; font-size: 13px !important; margin: 0 0 15px 0 !important; display: block !important; visibility: visible !important; }
+[data-testid="stFileUploadDropzone"] span { font-size: 16px !important; font-weight: bold !important; color:#e2e8f0 !important; line-height: 1.2 !important; text-align: center !important; margin: 0 auto !important;}
+[data-testid="stFileUploadDropzone"] small { color: #64748b !important; font-size: 13px !important; margin: 0 0 15px 0 !important; text-align: center !important; display: block !important; visibility: visible !important; }
 [data-testid="stFileUploadDropzone"] svg { color: #e2e8f0 !important; fill: #e2e8f0 !important; width: 50px !important; height: 50px !important; margin: 0 auto 10px auto !important; display: block !important; visibility: visible !important; }
 
 [data-testid="stFileUploadDropzone"] button { 
-    background-color: #4f46e5 !important; color: #ffffff !important; border: none !important; padding: 10px 24px !important; border-radius: 6px !important; font-weight: bold !important; margin-top: 5px !important; font-size: 15px !important; margin-left: auto !important; margin-right: auto !important; 
+    background-color: #4f46e5 !important; color: #ffffff !important; border: none !important; padding: 10px 24px !important; border-radius: 6px !important; font-weight: bold !important; margin-top: 15px !important; font-size: 15px !important; margin-left: auto !important; margin-right: auto !important; 
 }
 [data-testid="stFileUploadDropzone"] button:hover { background-color: #4338ca !important; }
 
 
 /* =========================================
-   2. CUSTOM INJECTED BLANK NOTEBOOK LAYOUT (CENTERED)
+   2. CUSTOM INJECTED BLANK NOTEBOOK LAYOUT
    ========================================= */
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button,
 [data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button {
     height: 200px !important; min-height: 200px !important; width: 100% !important; margin: 0 !important;
     background-color: #0f172a !important; border: 1px solid #1e293b !important; border-radius: 12px !important;
-    display: flex !important; flex-direction: column !important; /* Stacks items vertically for center */
+    display: flex !important; flex-direction: row !important; /* Puts items side-by-side */
     justify-content: center !important; align-items: center !important;
-    transition: 0.2s; padding: 0 !important; box-sizing: border-box !important;
+    transition: 0.2s; padding: 0 !important;
+    box-sizing: border-box !important;
 }
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button:hover,
 [data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button:hover { 
@@ -119,26 +126,27 @@ st.markdown("""
     display: none !important;
 }
 
-/* Inject Giant Icon (Centered) */
+/* Inject Giant Icon on the Left */
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::before,
 [data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button::before {
     content: "📓";
-    font-size: 55px !important; 
-    margin-bottom: 10px !important; 
+    font-size: 70px !important; /* Massive Logo */
+    margin-right: 15px !important; 
     line-height: 1 !important;
     display: block !important;
 }
 
-/* Inject Stacked Text (Centered) */
+/* Inject Stacked Text on the Right */
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::after,
 [data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button::after {
-    content: "Create a Blank\\A Notebook"; 
-    white-space: pre !important; 
-    font-size: 22px !important; 
+    content: "Create\\A Blank\\A Notebook"; /* The \\A creates the hard line breaks */
+    white-space: pre !important; /* Forces the line breaks to render */
+    font-size: 28px !important; 
     font-weight: 800 !important; 
     color: #f8fafc !important; 
-    line-height: 1.3 !important;
-    text-align: center !important; 
+    line-height: 1.1 !important;
+    text-align: left !important; /* Aligns text cleanly next to icon */
+    letter-spacing: -1px !important;
     display: block !important;
 }
 
