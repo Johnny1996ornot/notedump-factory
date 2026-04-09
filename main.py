@@ -51,14 +51,23 @@ st.markdown("""
 .support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 20px !important; }
 
 /* =========================================
-   1. FORCE LEFT BOX (UPLOADER) TO 200PX
+   1. FORCE LEFT BOX (UPLOADER) TO 200PX & RESTORE NATIVE UI
    ========================================= */
-[data-testid="stFileUploader"] > label { display: none !important; }
-[data-testid="stFileUploader"] { width: 100% !important; margin: 0 !important; padding: 0 !important; }
+/* Kills the invisible ghost gap pushing the top down */
+[data-testid="stWidgetLabel"] { display: none !important; }
+
+/* Kills Streamlit's Compact Mode without breaking your column widths */
+[data-testid="stFileUploader"] { 
+    container-type: normal !important; 
+    width: 100% !important; 
+    margin: 0 !important; 
+    padding: 0 !important; 
+}
 
 [data-testid="stFileUploadDropzone"] { 
     height: 200px !important; 
     min-height: 200px !important; 
+    box-sizing: border-box !important;
     background-color: #0f172a !important; 
     border: 1px dashed #334155 !important;
     border-radius: 12px !important; 
@@ -69,18 +78,19 @@ st.markdown("""
     padding: 20px !important;
     text-align: center !important; 
 }
-[data-testid="stFileUploadDropzone"] > div,
-[data-testid="stFileUploadDropzone"] > div > div { 
-    display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; text-align: center !important; width: 100% !important; 
-}
-[data-testid="stFileUploadDropzone"] span { font-size: 16px !important; font-weight: bold !important; color:#e2e8f0 !important; line-height: 1.2 !important; text-align: center !important; margin: 0 auto !important;}
-[data-testid="stFileUploadDropzone"] small { font-size: 13px !important; color: #64748b !important; text-align: center !important; margin: 0 auto !important;}
+
+/* Force Streamlit's native text/icons to be white and visible in dark mode */
+[data-testid="stFileUploadDropzone"] p { color: #e2e8f0 !important; font-size: 16px !important; font-weight: bold !important; margin: 0 0 5px 0 !important; display: block !important; visibility: visible !important;}
+[data-testid="stFileUploadDropzone"] small { color: #94a3b8 !important; font-size: 13px !important; margin: 0 0 15px 0 !important; display: block !important; visibility: visible !important;}
+[data-testid="stFileUploadDropzone"] svg { color: #e2e8f0 !important; fill: #e2e8f0 !important; width: 45px !important; height: 45px !important; margin: 0 auto 10px auto !important; display: block !important; visibility: visible !important;}
+
 [data-testid="stFileUploadDropzone"] button { 
-    background-color: #4f46e5 !important; color: #ffffff !important; border: none !important; padding: 10px 24px !important; border-radius: 6px !important; font-weight: bold !important; margin-top: 15px !important; font-size: 15px !important; margin-left: auto !important; margin-right: auto !important; 
+    background-color: #4f46e5 !important; color: #ffffff !important; border: none !important; padding: 10px 24px !important; border-radius: 6px !important; font-weight: bold !important; margin-top: 5px !important; font-size: 15px !important; margin-left: auto !important; margin-right: auto !important; 
 }
+[data-testid="stFileUploadDropzone"] button:hover { background-color: #4338ca !important; }
 
 /* =========================================
-   2. CUSTOM INJECTED BLANK NOTEBOOK LAYOUT
+   2. CUSTOM INJECTED BLANK NOTEBOOK LAYOUT (YOUR ORIGINAL SIDE-BY-SIDE DESIGN)
    ========================================= */
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button,
 [data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button {
@@ -88,7 +98,7 @@ st.markdown("""
     background-color: #0f172a !important; border: 1px solid #1e293b !important; border-radius: 12px !important;
     display: flex !important; flex-direction: row !important; /* Puts items side-by-side */
     justify-content: center !important; align-items: center !important;
-    transition: 0.2s; padding: 0 !important;
+    transition: 0.2s; padding: 0 !important; box-sizing: border-box !important;
 }
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button:hover,
 [data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button:hover { 
