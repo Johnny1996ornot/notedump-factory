@@ -73,68 +73,89 @@ st.markdown("""
     position: relative !important;
 }
 
+/* Force Streamlit inner wrappers into flex column so order works */
+[data-testid="stFileUploadDropzone"] > *,
+[data-testid="stFileUploaderDropzone"] > * { 
+    display: flex !important; 
+    flex-direction: column !important; 
+    align-items: center !important; 
+    justify-content: center !important; 
+    width: 100% !important; 
+}
+
 /* 1A. INJECT MISSING CLOUD ICON AT THE TOP */
-[data-testid="stFileUploadDropzone"]::before,
-[data-testid="stFileUploaderDropzone"]::before {
+[data-testid="stFileUploadDropzone"] > div::before,
+[data-testid="stFileUploadDropzone"] > section::before,
+[data-testid="stFileUploaderDropzone"] > div::before,
+[data-testid="stFileUploaderDropzone"] > section::before {
     content: ""; 
     display: block !important;
     width: 45px !important;
     height: 45px !important;
-    margin-bottom: 10px !important;
-    /* Base64 SVG of the Cloud Upload icon */
+    margin-bottom: 5px !important;
     background-image: url('data:image/svg+xml;utf8,<svg fill="%23ffffff" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.36 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>') !important;
     background-size: contain !important;
     background-repeat: no-repeat !important;
     background-position: center !important;
-    order: -2 !important; /* Force to top */
+    order: -3 !important; /* Force to top */
 }
 
 /* 1B. INJECT MISSING "DRAG AND DROP" TEXT */
-[data-testid="stFileUploadDropzone"]::after,
-[data-testid="stFileUploaderDropzone"]::after {
+[data-testid="stFileUploadDropzone"] > div::after,
+[data-testid="stFileUploadDropzone"] > section::after,
+[data-testid="stFileUploaderDropzone"] > div::after,
+[data-testid="stFileUploaderDropzone"] > section::after {
     content: "Drag and drop file here" !important;
     display: block !important;
     font-size: 16px !important;
     font-weight: bold !important;
     color: #f8fafc !important;
     text-align: center !important;
-    margin-bottom: 8px !important;
-    order: -1 !important; /* Force to second position */
+    margin-bottom: 5px !important;
+    order: -2 !important; /* Force to second position */
 }
 
-/* 1C. FORCE STREAMLIT INNER WRAPPERS INTO FLEX COLUMN */
-[data-testid="stFileUploadDropzone"] > div,
-[data-testid="stFileUploadDropzone"] > div > div,
-[data-testid="stFileUploaderDropzone"] > div,
-[data-testid="stFileUploaderDropzone"] > section,
-[data-testid="stFileUploaderDropzone"] > div > div { 
-    display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; text-align: center !important; width: 100% !important; 
-    order: 1 !important; /* Push existing elements below injected text */
+/* 1C. HIDE NATIVE ICONS AND NATIVE TEXT CAREFULLY */
+[data-testid="stFileUploadDropzone"] svg,
+[data-testid="stFileUploaderDropzone"] svg {
+    display: none !important; /* Hide native icon */
 }
 
-/* Hide native unused title elements to prevent duplicates */
-[data-testid="stFileUploadDropzone"] span,
-[data-testid="stFileUploaderDropzone"] span { 
-    display: none !important; 
+[data-testid="stFileUploadDropzone"] div[data-testid="stMarkdownContainer"] p,
+[data-testid="stFileUploaderDropzone"] div[data-testid="stMarkdownContainer"] p {
+    font-size: 0px !important; /* Hides native drag text safely */
+    color: transparent !important;
+    margin: 0 !important;
 }
 
-/* Reorder and style the 200MB text so it appears ABOVE the button */
+/* 1D. REVEAL AND STYLE THE 200MB TEXT */
 [data-testid="stFileUploadDropzone"] small,
-[data-testid="stFileUploaderDropzone"] small,
-[data-testid="stFileUploaderDropzone"] p { 
-    font-size: 13px !important; color: #94a3b8 !important; text-align: center !important; 
-    margin: 0 auto 15px auto !important; display: block !important;
+[data-testid="stFileUploaderDropzone"] small { 
+    font-size: 13px !important; 
+    color: #94a3b8 !important; 
+    text-align: center !important; 
+    margin: 5px auto 15px auto !important; 
+    display: block !important;
     order: -1 !important; /* Pushes text above the button inside wrapper */
+    visibility: visible !important;
 }
 
-/* 1D. STYLE AND RENAME THE UPLOAD BUTTON TO "BROWSE FILES" */
+/* 1E. STYLE AND RENAME THE UPLOAD BUTTON TO "BROWSE FILES" */
 [data-testid="stFileUploadDropzone"] button,
 [data-testid="stFileUploaderDropzone"] button { 
     background-color: #4f46e5 !important; 
     color: transparent !important; /* Hides the native "Upload" text */
-    border: none !important; border-radius: 6px !important; margin: 0 auto !important; 
-    width: 140px !important; height: 42px !important; position: relative !important; 
-    display: flex !important; align-items: center !important; justify-content: center !important; transition: 0.2s !important;
+    border: none !important; 
+    border-radius: 6px !important; 
+    margin: 0 auto !important; 
+    width: 140px !important; 
+    height: 42px !important; 
+    position: relative !important; 
+    display: flex !important; 
+    align-items: center !important; 
+    justify-content: center !important; 
+    transition: 0.2s !important;
+    order: 0 !important;
 }
 
 [data-testid="stFileUploadDropzone"] button:hover,
@@ -152,12 +173,6 @@ st.markdown("""
     font-weight: bold !important;
     left: 0 !important; right: 0 !important; top: 0 !important; bottom: 0 !important;
     display: flex !important; align-items: center !important; justify-content: center !important;
-}
-
-/* Hide any native arrow SVG inside the new Streamlit button */
-[data-testid="stFileUploadDropzone"] button svg,
-[data-testid="stFileUploaderDropzone"] button svg {
-    display: none !important;
 }
 
 /* =========================================
