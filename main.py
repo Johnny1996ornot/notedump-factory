@@ -51,7 +51,7 @@ st.markdown("""
 .support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 20px !important; }
 
 /* =========================================
-   1. FORCE LEFT BOX (UPLOADER) TO 200PX (FIXED FOR CLOUD)
+   1. FORCE LEFT BOX (UPLOADER) TO 200PX
    ========================================= */
 [data-testid="stFileUploader"] > label { display: none !important; }
 [data-testid="stFileUploader"] { width: 100% !important; margin: 0 !important; padding: 0 !important; }
@@ -59,7 +59,7 @@ st.markdown("""
 /* Setup the Main Container Box */
 [data-testid="stFileUploadDropzone"],
 [data-testid="stFileUploaderDropzone"] { 
-    height: 200px !important; 
+    height: auto !important; 
     min-height: 200px !important; 
     background-color: #0f172a !important; 
     border: 1px dashed #334155 !important;
@@ -117,8 +117,8 @@ st.markdown("""
 }
 
 /* 1C. HIDE NATIVE ICONS AND NATIVE TEXT CAREFULLY */
-[data-testid="stFileUploadDropzone"] svg,
-[data-testid="stFileUploaderDropzone"] svg {
+[data-testid="stFileUploadDropzone"] > div > svg,
+[data-testid="stFileUploaderDropzone"] > div > svg {
     display: none !important; /* Hide native icon */
 }
 
@@ -142,8 +142,9 @@ st.markdown("""
 }
 
 /* 1E. STYLE AND RENAME THE UPLOAD BUTTON TO "BROWSE FILES" */
-[data-testid="stFileUploadDropzone"] button,
-[data-testid="stFileUploaderDropzone"] button { 
+/* Using :not([aria-label="Remove file"]) protects the "X" button from being styled! */
+[data-testid="stFileUploadDropzone"] button:not([aria-label="Remove file"]):not([title="Remove file"]),
+[data-testid="stFileUploaderDropzone"] button:not([aria-label="Remove file"]):not([title="Remove file"]) { 
     background-color: #4f46e5 !important; 
     color: transparent !important; /* Hides the native "Upload" text */
     border: none !important; 
@@ -159,14 +160,14 @@ st.markdown("""
     order: -3 !important; /* Pushed to the very TOP */
 }
 
-[data-testid="stFileUploadDropzone"] button:hover,
-[data-testid="stFileUploaderDropzone"] button:hover {
+[data-testid="stFileUploadDropzone"] button:not([aria-label="Remove file"]):not([title="Remove file"]):hover,
+[data-testid="stFileUploaderDropzone"] button:not([aria-label="Remove file"]):not([title="Remove file"]):hover {
     background-color: #4338ca !important;
 }
 
 /* Inject "Browse files" on top of the transparent text */
-[data-testid="stFileUploadDropzone"] button::after,
-[data-testid="stFileUploaderDropzone"] button::after {
+[data-testid="stFileUploadDropzone"] button:not([aria-label="Remove file"]):not([title="Remove file"])::after,
+[data-testid="stFileUploaderDropzone"] button:not([aria-label="Remove file"]):not([title="Remove file"])::after {
     content: "Browse files" !important;
     position: absolute !important;
     color: #ffffff !important;
@@ -174,6 +175,12 @@ st.markdown("""
     font-weight: bold !important;
     left: 0 !important; right: 0 !important; top: 0 !important; bottom: 0 !important;
     display: flex !important; align-items: center !important; justify-content: center !important;
+}
+
+/* Hide any native arrow SVG inside the new Streamlit button ONLY */
+[data-testid="stFileUploadDropzone"] button:not([aria-label="Remove file"]) svg,
+[data-testid="stFileUploaderDropzone"] button:not([aria-label="Remove file"]) svg {
+    display: none !important;
 }
 
 /* =========================================
@@ -227,25 +234,68 @@ st.markdown("""
 }
 
 /* =========================================
-   3. FORCE UPLOADED FILE BAR TO SPAN & PROTECT X
+   3. RESTORE NATIVE UPLOADED FILE PROGRESS BAR
    ========================================= */
 [data-testid="stUploadedFile"], 
 div[data-testid*="UploadedFile"],
 div[data-testid*="FileUploaderFile"],
 .stUploadedFile { 
-    background-color: #0f172a !important; border: 1px solid #334155 !important; border-radius: 12px !important; 
-    padding: 15px 20px !important; margin-top: 20px !important;
-    position: relative !important; display: block !important;
+    background: transparent !important; 
+    border: none !important; 
+    padding: 5px 10px !important; 
+    margin-top: 15px !important;
+    width: 100% !important;
+    order: 10 !important; /* Push to the very bottom of the dashed box */
+    display: flex !important;
+    flex-direction: row !important; /* Restores the horizontal progress bar layout */
+    align-items: center !important;
 }
-[data-testid="stUploadedFile"] > div:first-child,
-div[data-testid*="UploadedFile"] > div:first-child { 
-    padding-right: 60px !important; width: 100% !important; box-sizing: border-box !important;
+
+/* Ensure text inside the uploaded row is visible */
+[data-testid="stUploadedFile"] p,
+[data-testid="stUploadedFile"] span,
+[data-testid="stUploadedFile"] small,
+div[data-testid*="UploadedFile"] p,
+div[data-testid*="UploadedFile"] span {
+    font-size: 14px !important;
+    color: #f8fafc !important;
+    display: inline-block !important;
 }
+
+/* Ensure icons inside the uploaded row are visible */
+[data-testid="stUploadedFile"] svg,
+div[data-testid*="UploadedFile"] svg {
+    display: inline-block !important;
+    fill: #f8fafc !important;
+}
+
+/* Protect the native Remove (X) button from being modified */
+button[aria-label="Remove file"],
+button[title="Remove file"],
 [data-testid="stUploadedFile"] button,
-div[data-testid*="UploadedFile"] button { 
-    position: absolute !important; right: 15px !important; top: 50% !important; transform: translateY(-50%) !important;
-    margin: 0 !important; width: 35px !important; height: 35px !important; 
-    background: #4f46e5 !important; border-radius: 8px !important; color: white !important; border: none !important;
+div[data-testid*="UploadedFile"] button {
+    background: transparent !important;
+    color: #f8fafc !important;
+    border: none !important;
+    width: auto !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 5px !important;
+    display: block !important;
+}
+
+button[aria-label="Remove file"]::after,
+button[title="Remove file"]::after,
+[data-testid="stUploadedFile"] button::after,
+div[data-testid*="UploadedFile"] button::after {
+    content: none !important; /* Removes the fake Browse files text */
+}
+
+button[aria-label="Remove file"] svg,
+button[title="Remove file"] svg,
+[data-testid="stUploadedFile"] button svg,
+div[data-testid*="UploadedFile"] button svg {
+    display: block !important; /* Shows the X icon */
 }
 
 /* =========================================
