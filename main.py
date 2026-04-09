@@ -56,135 +56,136 @@ st.markdown("""
 [data-testid="stFileUploader"] > label { display: none !important; }
 [data-testid="stFileUploader"] { width: 100% !important; margin: 0 !important; padding: 0 !important; }
 
-/* Setup the Main Container Box */
+/* Dropzone Canvas fixed size */
 [data-testid="stFileUploadDropzone"],
-[data-testid="stFileUploaderDropzone"] { 
-    height: auto !important; 
-    min-height: 200px !important; 
-    background-color: #0f172a !important; 
+[data-testid="stFileUploaderDropzone"] {
+    height: 200px !important;
+    min-height: 200px !important;
+    max-height: 200px !important;
+    background-color: #0f172a !important;
     border: 1px dashed #334155 !important;
-    border-radius: 12px !important; 
-    display: flex !important; 
-    flex-direction: column !important; 
-    justify-content: center !important; 
-    align-items: center !important; 
+    border-radius: 12px !important;
     padding: 20px !important;
-    text-align: center !important; 
-    position: relative !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important; 
 }
 
-/* Force Streamlit inner wrappers into flex column so order works */
-[data-testid="stFileUploadDropzone"] > *,
-[data-testid="stFileUploaderDropzone"] > * { 
-    display: flex !important; 
-    flex-direction: column !important; 
-    align-items: center !important; 
-    justify-content: center !important; 
-    width: 100% !important; 
+/* Force the inner wrapper to flex-col for clean ordering */
+[data-testid="stFileUploadDropzone"] > div,
+[data-testid="stFileUploadDropzone"] > section,
+[data-testid="stFileUploaderDropzone"] > div,
+[data-testid="stFileUploaderDropzone"] > section {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
 }
 
-/* 1A. INJECT MISSING CLOUD ICON */
-[data-testid="stFileUploadDropzone"] > div::before,
-[data-testid="stFileUploadDropzone"] > section::before,
-[data-testid="stFileUploaderDropzone"] > div::before,
-[data-testid="stFileUploaderDropzone"] > section::before {
-    content: ""; 
-    display: block !important;
+/* NATIVE Cloud Icon (Position 1) */
+[data-testid="stFileUploadDropzone"] svg:not([color]),
+[data-testid="stFileUploaderDropzone"] svg:not([color]) {
     width: 45px !important;
     height: 45px !important;
-    margin-top: 15px !important; /* Space between button and icon */
-    margin-bottom: 5px !important;
-    background-image: url('data:image/svg+xml;utf8,<svg fill="%23ffffff" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.36 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>') !important;
-    background-size: contain !important;
-    background-repeat: no-repeat !important;
-    background-position: center !important;
-    order: -2 !important; /* Placed in the middle */
+    fill: #ffffff !important;
+    display: block !important;
+    order: 1 !important;
+    margin-bottom: 10px !important;
 }
 
-/* 1B. INJECT MISSING "DRAG AND DROP" TEXT */
-[data-testid="stFileUploadDropzone"] > div::after,
-[data-testid="stFileUploadDropzone"] > section::after,
-[data-testid="stFileUploaderDropzone"] > div::after,
-[data-testid="stFileUploaderDropzone"] > section::after {
-    content: "Drag and drop file here" !important;
-    display: block !important;
+/* NATIVE Drag and Drop Text (Position 2) */
+[data-testid="stFileUploadDropzone"] div[data-testid="stMarkdownContainer"] p,
+[data-testid="stFileUploaderDropzone"] div[data-testid="stMarkdownContainer"] p,
+[data-testid="stFileUploadDropzone"] span:not([class]),
+[data-testid="stFileUploaderDropzone"] span:not([class]) {
     font-size: 16px !important;
     font-weight: bold !important;
     color: #f8fafc !important;
-    text-align: center !important;
-    margin-bottom: 5px !important;
-    order: -1 !important; /* Placed below cloud */
+    margin: 0 !important;
+    order: 2 !important;
 }
 
-/* 1C. HIDE NATIVE ICONS AND NATIVE TEXT CAREFULLY */
-[data-testid="stFileUploadDropzone"] > div > svg,
-[data-testid="stFileUploaderDropzone"] > div > svg {
-    display: none !important; /* Hide native icon */
+/* NATIVE 200MB Limit Text (Position 3) */
+[data-testid="stFileUploadDropzone"] small,
+[data-testid="stFileUploaderDropzone"] small {
+    font-size: 13px !important;
+    color: #94a3b8 !important;
+    margin: 5px 0 15px 0 !important;
+    order: 3 !important;
 }
 
-[data-testid="stFileUploadDropzone"] div[data-testid="stMarkdownContainer"] p,
-[data-testid="stFileUploaderDropzone"] div[data-testid="stMarkdownContainer"] p {
-    font-size: 0px !important; /* Hides native drag text safely */
-    color: transparent !important;
+/* NATIVE Browse Files Button (Position 4) */
+[data-testid="stFileUploadDropzone"] button:not([aria-label="Remove file"]):not([title="Remove file"]),
+[data-testid="stFileUploaderDropzone"] button:not([aria-label="Remove file"]):not([title="Remove file"]) {
+    background-color: #4f46e5 !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 6px !important;
+    padding: 10px 24px !important;
+    font-size: 15px !important;
+    font-weight: bold !important;
+    order: 4 !important;
     margin: 0 !important;
 }
-
-/* 1D. REVEAL AND STYLE THE 200MB TEXT */
-[data-testid="stFileUploadDropzone"] small,
-[data-testid="stFileUploaderDropzone"] small { 
-    font-size: 13px !important; 
-    color: #94a3b8 !important; 
-    text-align: center !important; 
-    margin: 5px auto 0 auto !important; 
-    display: block !important;
-    order: 0 !important; /* Placed at the very bottom */
-    visibility: visible !important;
-}
-
-/* 1E. STYLE AND RENAME THE UPLOAD BUTTON TO "BROWSE FILES" */
-/* Using :not([aria-label="Remove file"]) protects the "X" button from being styled! */
-[data-testid="stFileUploadDropzone"] button:not([aria-label="Remove file"]):not([title="Remove file"]),
-[data-testid="stFileUploaderDropzone"] button:not([aria-label="Remove file"]):not([title="Remove file"]) { 
-    background-color: #4f46e5 !important; 
-    color: transparent !important; /* Hides the native "Upload" text */
-    border: none !important; 
-    border-radius: 6px !important; 
-    margin: 0 auto !important; 
-    width: 140px !important; 
-    height: 42px !important; 
-    position: relative !important; 
-    display: flex !important; 
-    align-items: center !important; 
-    justify-content: center !important; 
-    transition: 0.2s !important;
-    order: -3 !important; /* Pushed to the very TOP */
-}
-
 [data-testid="stFileUploadDropzone"] button:not([aria-label="Remove file"]):not([title="Remove file"]):hover,
 [data-testid="stFileUploaderDropzone"] button:not([aria-label="Remove file"]):not([title="Remove file"]):hover {
     background-color: #4338ca !important;
 }
 
-/* Inject "Browse files" on top of the transparent text */
-[data-testid="stFileUploadDropzone"] button:not([aria-label="Remove file"]):not([title="Remove file"])::after,
-[data-testid="stFileUploaderDropzone"] button:not([aria-label="Remove file"]):not([title="Remove file"])::after {
-    content: "Browse files" !important;
-    position: absolute !important;
-    color: #ffffff !important;
-    font-size: 15px !important;
-    font-weight: bold !important;
-    left: 0 !important; right: 0 !important; top: 0 !important; bottom: 0 !important;
-    display: flex !important; align-items: center !important; justify-content: center !important;
+/* =========================================
+   2. PROTECT NATIVE UPLOAD PROGRESS BAR
+   ========================================= */
+/* Ensure the uploaded file container keeps its native Streamlit layout */
+[data-testid="stUploadedFile"],
+div[data-testid*="UploadedFile"],
+div[data-testid*="FileUploaderFile"] {
+    background: transparent !important;
+    border: none !important;
+    width: 100% !important;
+    margin-top: 10px !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    order: 10 !important;
 }
 
-/* Hide any native arrow SVG inside the new Streamlit button ONLY */
-[data-testid="stFileUploadDropzone"] button:not([aria-label="Remove file"]) svg,
-[data-testid="stFileUploaderDropzone"] button:not([aria-label="Remove file"]) svg {
-    display: none !important;
+/* Revert text formatting for uploaded file row */
+[data-testid="stUploadedFile"] p,
+[data-testid="stUploadedFile"] span,
+[data-testid="stUploadedFile"] small,
+div[data-testid*="UploadedFile"] p,
+div[data-testid*="UploadedFile"] span {
+    font-size: 14px !important;
+    font-weight: normal !important;
+    color: #f8fafc !important;
+    order: unset !important;
+}
+
+/* Revert SVG formatting for uploaded file row */
+[data-testid="stUploadedFile"] svg,
+div[data-testid*="UploadedFile"] svg {
+    width: 24px !important;
+    height: 24px !important;
+    fill: #f8fafc !important;
+    order: unset !important;
+    margin: 0 10px 0 0 !important;
+}
+
+/* Revert X Button formatting */
+button[aria-label="Remove file"],
+button[title="Remove file"] {
+    background: transparent !important;
+    border: none !important;
+    padding: 5px !important;
+    order: unset !important;
 }
 
 /* =========================================
-   2. CUSTOM INJECTED BLANK NOTEBOOK LAYOUT
+   3. CUSTOM INJECTED BLANK NOTEBOOK LAYOUT
    ========================================= */
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button,
 [data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button {
@@ -231,71 +232,6 @@ st.markdown("""
     text-align: left !important; /* Aligns text cleanly next to icon */
     letter-spacing: -1px !important;
     display: block !important;
-}
-
-/* =========================================
-   3. RESTORE NATIVE UPLOADED FILE PROGRESS BAR
-   ========================================= */
-[data-testid="stUploadedFile"], 
-div[data-testid*="UploadedFile"],
-div[data-testid*="FileUploaderFile"],
-.stUploadedFile { 
-    background: transparent !important; 
-    border: none !important; 
-    padding: 5px 10px !important; 
-    margin-top: 15px !important;
-    width: 100% !important;
-    order: 10 !important; /* Push to the very bottom of the dashed box */
-    display: flex !important;
-    flex-direction: row !important; /* Restores the horizontal progress bar layout */
-    align-items: center !important;
-}
-
-/* Ensure text inside the uploaded row is visible */
-[data-testid="stUploadedFile"] p,
-[data-testid="stUploadedFile"] span,
-[data-testid="stUploadedFile"] small,
-div[data-testid*="UploadedFile"] p,
-div[data-testid*="UploadedFile"] span {
-    font-size: 14px !important;
-    color: #f8fafc !important;
-    display: inline-block !important;
-}
-
-/* Ensure icons inside the uploaded row are visible */
-[data-testid="stUploadedFile"] svg,
-div[data-testid*="UploadedFile"] svg {
-    display: inline-block !important;
-    fill: #f8fafc !important;
-}
-
-/* Protect the native Remove (X) button from being modified */
-button[aria-label="Remove file"],
-button[title="Remove file"],
-[data-testid="stUploadedFile"] button,
-div[data-testid*="UploadedFile"] button {
-    background: transparent !important;
-    color: #f8fafc !important;
-    border: none !important;
-    width: auto !important;
-    height: auto !important;
-    margin: 0 !important;
-    padding: 5px !important;
-    display: block !important;
-}
-
-button[aria-label="Remove file"]::after,
-button[title="Remove file"]::after,
-[data-testid="stUploadedFile"] button::after,
-div[data-testid*="UploadedFile"] button::after {
-    content: none !important; /* Removes the fake Browse files text */
-}
-
-button[aria-label="Remove file"] svg,
-button[title="Remove file"] svg,
-[data-testid="stUploadedFile"] button svg,
-div[data-testid*="UploadedFile"] button svg {
-    display: block !important; /* Shows the X icon */
 }
 
 /* =========================================
