@@ -41,13 +41,13 @@ st.markdown("""
 .tagline { font-size: 18px; color: #94a3b8; margin-top: -8px !important; margin-bottom: 8px !important; font-weight: normal; }
 .support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 5px !important; }
 
-/* 2. MASTER COLUMN CONTROLS */
+/* 2. MASTER COLUMN CONTROLS - Tricking Streamlit into thinking the screen is huge */
 [data-testid="block-container"] { 
     max-width: 1000px; 
     padding-top: 2rem !important; 
 }
 [data-testid="stColumn"], [data-testid="column"] { 
-    min-width: 250px !important; 
+    min-width: 350px !important; /* THIS DISABLES THE TINY PLUS SIGN COMPACT MODE */
     overflow: visible !important;
 }
 [data-testid="stHorizontalBlock"] {
@@ -55,8 +55,12 @@ st.markdown("""
     align-items: stretch !important;
 }
 
-/* 3. KILL GHOST LABELS */
-[data-testid="stWidgetLabel"] { display: none !important; }
+/* 3. ALIGNMENT LOCK */
+[data-testid="stFileUploader"],
+[data-testid="column"]:nth-of-type(2) [data-testid="stDownloadButton"] {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
 
 /* =========================================
    4. RIGHT BOX: CREATE BLANK NOTEBOOK 
@@ -107,20 +111,10 @@ st.markdown("""
 }
 
 /* =========================================
-   5. LEFT BOX: UPLOADER (Beating Streamlit's Compact Mode)
+   5. LEFT BOX: UPLOADER (Restoring Native Progress Bar & UI)
    ========================================= */
 
-/* Disables Streamlit's ability to measure the column and hide elements */
-[data-testid="stFileUploader"] {
-    container-type: normal !important; 
-    height: 200px !important;
-    min-height: 200px !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    width: 100% !important;
-}
-
-/* Force the actual dropzone to perfectly match the right side */
+/* Force exactly 200px on the dropzone */
 [data-testid="stFileUploadDropzone"] { 
     height: 200px !important; 
     min-height: 200px !important;
@@ -137,45 +131,8 @@ st.markdown("""
     box-sizing: border-box !important;
 }
 
-/* Force inner layout elements to un-hide */
-[data-testid="stFileUploadDropzone"] div {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-}
-
-/* Force the native Cloud Logo to appear */
-[data-testid="stFileUploadDropzone"] svg {
-    display: block !important;
-    visibility: visible !important;
-    width: 50px !important; 
-    height: 50px !important; 
-    color: #e2e8f0 !important; 
-    fill: #e2e8f0 !important; 
-    margin: 0 auto 10px auto !important;
-}
-
-/* Force the "Drag and drop" text to appear */
-[data-testid="stFileUploadDropzone"] p {
-    display: block !important;
-    visibility: visible !important;
-    font-size: 16px !important; 
-    font-weight: bold !important; 
-    color: #e2e8f0 !important; 
-    margin: 0 0 5px 0 !important; 
-}
-
-/* Force the "Limit 200MB" text to appear */
-[data-testid="stFileUploadDropzone"] small { 
-    display: block !important;
-    visibility: visible !important;
-    font-size: 13px !important; 
-    color: #64748b !important; 
-    margin: 0 0 15px 0 !important; 
-}
-
-/* Force the specific Browse Button to be Purple and match styling */
-[data-testid="stFileUploader"] button { 
+/* Style the native Streamlit Browse button to match our theme */
+[data-testid="stFileUploadDropzone"] button { 
     background-color: #4f46e5 !important; 
     color: #ffffff !important; 
     border: none !important; 
@@ -183,13 +140,23 @@ st.markdown("""
     border-radius: 6px !important; 
     font-weight: bold !important; 
     font-size: 15px !important; 
-    margin: 0 auto !important; 
-    display: inline-flex !important;
 }
-[data-testid="stFileUploader"] button:hover {
+[data-testid="stFileUploadDropzone"] button:hover {
     background-color: #4338ca !important;
     color: #ffffff !important;
     border: none !important;
+}
+
+/* Ensure native Streamlit text is white so you can read it */
+[data-testid="stFileUploadDropzone"] p {
+    color: #e2e8f0 !important; 
+}
+[data-testid="stFileUploadDropzone"] small {
+    color: #94a3b8 !important;
+}
+[data-testid="stFileUploadDropzone"] svg {
+    color: #e2e8f0 !important; 
+    fill: #e2e8f0 !important; 
 }
 
 /* =========================================
