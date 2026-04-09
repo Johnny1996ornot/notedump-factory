@@ -65,9 +65,9 @@ st.markdown("""
 }
 
 [data-testid="stFileUploadDropzone"] { 
-    height: 200px !important; 
-    min-height: 200px !important; 
-    box-sizing: border-box !important;
+    height: 300px !important;       /* Change this number to make it taller */
+    min-height: 300px !important;   /* Keep this number identical to the one above */
+    
     background-color: #0f172a !important; 
     border: 1px dashed #334155 !important;
     border-radius: 12px !important; 
