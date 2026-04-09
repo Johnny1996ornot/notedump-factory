@@ -21,8 +21,14 @@ st.markdown("""
 <style>
 .stApp { background-color: #000000; }
 
-/* 1. TOP NAV */
-.top-nav { display: flex; justify-content: flex-end; align-items: center; padding: 15px 20px; position: absolute; top: 0; right: 0; width: 100%; z-index: 99999; gap: 12px; }
+/* Unlock Streamlit Columns and PREVENT Compact Mode from deleting the progress bar/logos */
+[data-testid="stColumn"], [data-testid="column"] { 
+    min-width: 350px !important; 
+    overflow: visible !important; 
+}
+
+/* Nav & Header */
+.top-nav { display: flex; justify-content: flex-end; align-items: center; padding: 10px 20px; position: absolute; top: 0; right: 0; width: 100%; z-index: 999; gap: 12px; }
 .guide-btn { color: #94a3b8; text-decoration: none; font-size: 16px; font-weight: bold; font-family: sans-serif; border: 1px solid #475569; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: #1e293b; transition: 0.2s; }
 .guide-btn:hover { color: white; border-color: #0ea5e9; transform: scale(1.1); background: #0ea5e9;}
 .coffee-btn { color: #0ea5e9; text-decoration: none; font-weight: bold; font-size: 12px; border: 1px solid #0ea5e9; padding: 4px 10px; border-radius: 20px; transition: 0.2s; white-space: nowrap; }
@@ -34,72 +40,98 @@ st.markdown("""
 .modal-close { position: absolute; top: 20px; right: 25px; color: #64748b; text-decoration: none; font-size: 28px; font-weight: bold; transition: 0.2s; }
 .modal-close:hover { color: #ef4444; }
 
-.hero { text-align: center; color: white; padding: 5px 0; max-width: 500px; margin: 0 auto; }
+/* Modal Content Styling */
+.modal-content h2 { margin-top: 0; color: #4f46e5; font-size: 24px; border-bottom: 1px solid #1e293b; padding-bottom: 10px;}
+.modal-content h4 { color: #0ea5e9; margin-top: 20px; margin-bottom: 10px; font-size: 18px;}
+.modal-content li { margin-bottom: 10px; line-height: 1.5; font-size: 15px; color: #cbd5e1;}
+.pro-tag { color: #10b981; font-weight: bold; } 
+
+.hero { text-align: center; color: white; padding: 10px 0; max-width: 500px; margin: 0 auto; }
 .logo-container { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 0px;}
 .logo-text { font-size: 55px; font-weight: 800; margin: 0; color: #f8fafc;}
 .logo-icon { font-size: 48px; margin: 0;}
 .tagline { font-size: 18px; color: #94a3b8; margin-top: -8px !important; margin-bottom: 8px !important; font-weight: normal; }
-.support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 5px !important; }
-
-/* 2. MASTER COLUMN CONTROLS - Tricking Streamlit into thinking the screen is huge */
-[data-testid="block-container"] { 
-    max-width: 1000px; 
-    padding-top: 2rem !important; 
-}
-[data-testid="stColumn"], [data-testid="column"] { 
-    min-width: 350px !important; /* THIS DISABLES THE TINY PLUS SIGN COMPACT MODE */
-    overflow: visible !important;
-}
-[data-testid="stHorizontalBlock"] {
-    margin-top: 20px !important; 
-    align-items: stretch !important;
-}
-
-/* 3. ALIGNMENT LOCK */
-[data-testid="stFileUploader"],
-[data-testid="column"]:nth-of-type(2) [data-testid="stDownloadButton"] {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-}
+.support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 20px !important; }
 
 /* =========================================
-   4. RIGHT BOX: CREATE BLANK NOTEBOOK 
+   1. FORCE LEFT BOX (UPLOADER) TO 200PX & RESTORE NATIVE UI
    ========================================= */
-[data-testid="column"]:nth-of-type(2) [data-testid="stDownloadButton"] button,
-[data-testid="stColumn"]:nth-of-type(2) [data-testid="stDownloadButton"] button {
+/* Kill the invisible ghost label pushing the box down */
+[data-testid="stWidgetLabel"] { display: none !important; }
+
+[data-testid="stFileUploader"] { 
+    container-type: normal !important;
+    width: 100% !important; 
     height: 200px !important;
-    min-height: 200px !important;
-    width: 100% !important;
+    margin: 0 !important; 
+    padding: 0 !important; 
+}
+
+[data-testid="stFileUploadDropzone"] { 
+    height: 200px !important; 
+    min-height: 200px !important; 
     background-color: #0f172a !important; 
-    border: 1px solid #1e293b !important; 
-    border-radius: 12px !important;
+    border: 1px dashed #334155 !important;
+    border-radius: 12px !important; 
     display: flex !important; 
     flex-direction: column !important; 
     justify-content: center !important; 
-    align-items: center !important;
-    transition: 0.2s; 
-    padding: 0 !important;
-    margin: 0 !important;
+    align-items: center !important; 
+    padding: 20px !important;
+    text-align: center !important; 
     box-sizing: border-box !important;
 }
-[data-testid="column"]:nth-of-type(2) [data-testid="stDownloadButton"] button:hover,
-[data-testid="stColumn"]:nth-of-type(2) [data-testid="stDownloadButton"] button:hover { 
-    border-color: #0ea5e9 !important; 
-    background: rgba(14, 165, 233, 0.1) !important; 
+
+/* Ensure native Streamlit text and logos remain visible and styled */
+[data-testid="stFileUploadDropzone"] p { color: #e2e8f0 !important; font-size: 16px !important; font-weight: bold !important; margin: 0 0 5px 0 !important; display: block !important; visibility: visible !important; }
+[data-testid="stFileUploadDropzone"] small { color: #94a3b8 !important; font-size: 13px !important; margin: 0 0 15px 0 !important; display: block !important; visibility: visible !important; }
+[data-testid="stFileUploadDropzone"] svg { color: #e2e8f0 !important; fill: #e2e8f0 !important; width: 50px !important; height: 50px !important; margin: 0 auto 10px auto !important; display: block !important; visibility: visible !important; }
+
+[data-testid="stFileUploadDropzone"] button { 
+    background-color: #4f46e5 !important; color: #ffffff !important; border: none !important; padding: 10px 24px !important; border-radius: 6px !important; font-weight: bold !important; margin-top: 5px !important; font-size: 15px !important; margin-left: auto !important; margin-right: auto !important; 
 }
-[data-testid="column"]:nth-of-type(2) [data-testid="stDownloadButton"] button p,
-[data-testid="stColumn"]:nth-of-type(2) [data-testid="stDownloadButton"] button p {
+[data-testid="stFileUploadDropzone"] button:hover { background-color: #4338ca !important; }
+
+
+/* =========================================
+   2. CUSTOM INJECTED BLANK NOTEBOOK LAYOUT (CENTERED)
+   ========================================= */
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button,
+[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button {
+    height: 200px !important; min-height: 200px !important; width: 100% !important; margin: 0 !important;
+    background-color: #0f172a !important; border: 1px solid #1e293b !important; border-radius: 12px !important;
+    display: flex !important; flex-direction: column !important; /* Stacks items vertically for center */
+    justify-content: center !important; align-items: center !important;
+    transition: 0.2s; padding: 0 !important; box-sizing: border-box !important;
+}
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button:hover,
+[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button:hover { 
+    border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; 
+}
+
+/* Completely hide Streamlit's default text wrappers */
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button div,
+[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button div,
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button p,
+[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button p,
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button span,
+[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button span {
     display: none !important;
 }
-[data-testid="column"]:nth-of-type(2) [data-testid="stDownloadButton"] button::before,
-[data-testid="stColumn"]:nth-of-type(2) [data-testid="stDownloadButton"] button::before {
+
+/* Inject Giant Icon (Centered) */
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::before,
+[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button::before {
     content: "📓";
     font-size: 55px !important; 
     margin-bottom: 10px !important; 
+    line-height: 1 !important;
     display: block !important;
 }
-[data-testid="column"]:nth-of-type(2) [data-testid="stDownloadButton"] button::after,
-[data-testid="stColumn"]:nth-of-type(2) [data-testid="stDownloadButton"] button::after {
+
+/* Inject Stacked Text (Centered) */
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::after,
+[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button::after {
     content: "Create a Blank\\A Notebook"; 
     white-space: pre !important; 
     font-size: 22px !important; 
@@ -111,81 +143,50 @@ st.markdown("""
 }
 
 /* =========================================
-   5. LEFT BOX: UPLOADER (Restoring Native Progress Bar & UI)
-   ========================================= */
-
-/* Force exactly 200px on the dropzone */
-[data-testid="stFileUploadDropzone"] { 
-    height: 200px !important; 
-    min-height: 200px !important;
-    width: 100% !important;
-    background-color: #0f172a !important; 
-    border: 1px dashed #334155 !important;
-    border-radius: 12px !important; 
-    display: flex !important; 
-    flex-direction: column !important; 
-    justify-content: center !important; 
-    align-items: center !important; 
-    padding: 20px !important;
-    margin: 0 !important;
-    box-sizing: border-box !important;
-}
-
-/* Style the native Streamlit Browse button to match our theme */
-[data-testid="stFileUploadDropzone"] button { 
-    background-color: #4f46e5 !important; 
-    color: #ffffff !important; 
-    border: none !important; 
-    padding: 10px 24px !important; 
-    border-radius: 6px !important; 
-    font-weight: bold !important; 
-    font-size: 15px !important; 
-}
-[data-testid="stFileUploadDropzone"] button:hover {
-    background-color: #4338ca !important;
-    color: #ffffff !important;
-    border: none !important;
-}
-
-/* Ensure native Streamlit text is white so you can read it */
-[data-testid="stFileUploadDropzone"] p {
-    color: #e2e8f0 !important; 
-}
-[data-testid="stFileUploadDropzone"] small {
-    color: #94a3b8 !important;
-}
-[data-testid="stFileUploadDropzone"] svg {
-    color: #e2e8f0 !important; 
-    fill: #e2e8f0 !important; 
-}
-
-/* =========================================
-   6. COMPLETED FILE BAR & FINAL DOWNLOAD BUTTON
+   3. FORCE UPLOADED FILE BAR TO SPAN & PROTECT X
    ========================================= */
 [data-testid="stUploadedFile"], 
-div[data-testid*="UploadedFile"] { 
+div[data-testid*="UploadedFile"],
+div[data-testid*="FileUploaderFile"],
+.stUploadedFile { 
     background-color: #0f172a !important; border: 1px solid #334155 !important; border-radius: 12px !important; 
-    padding: 15px 20px !important; margin-top: 20px !important; position: relative !important; display: block !important;
+    padding: 15px 20px !important; margin-top: 20px !important;
+    position: relative !important; display: block !important;
 }
-[data-testid="stUploadedFile"] > div:first-child, div[data-testid*="UploadedFile"] > div:first-child { 
+[data-testid="stUploadedFile"] > div:first-child,
+div[data-testid*="UploadedFile"] > div:first-child { 
     padding-right: 60px !important; width: 100% !important; box-sizing: border-box !important;
 }
-[data-testid="stUploadedFile"] button, div[data-testid*="UploadedFile"] button { 
+[data-testid="stUploadedFile"] button,
+div[data-testid*="UploadedFile"] button { 
     position: absolute !important; right: 15px !important; top: 50% !important; transform: translateY(-50%) !important;
     margin: 0 !important; width: 35px !important; height: 35px !important; 
     background: #4f46e5 !important; border-radius: 8px !important; color: white !important; border: none !important;
 }
 
-[data-testid="column"]:nth-of-type(1) [data-testid="stDownloadButton"] button,
-[data-testid="stColumn"]:nth-of-type(1) [data-testid="stDownloadButton"] button {
+/* =========================================
+   4. FINAL DOWNLOAD BUTTON FORMATTING
+   ========================================= */
+.final-download-target [data-testid="stDownloadButton"] button {
     width: 100% !important; height: auto !important; padding: 18px !important; margin-top: 10px !important;
     background: #1e293b !important; color: #0ea5e9 !important; border: 1px solid #0ea5e9 !important; border-radius: 8px !important;
-    font-size: 18px !important; font-weight: bold !important; transition: 0.2s; display: block !important;
+    font-size: 18px !important; font-weight: bold !important; transition: 0.2s;
 }
-[data-testid="column"]:nth-of-type(1) [data-testid="stDownloadButton"] button:hover,
-[data-testid="stColumn"]:nth-of-type(1) [data-testid="stDownloadButton"] button:hover { 
-    background: #0ea5e9 !important; color: white !important; 
+.final-download-target [data-testid="stDownloadButton"] button:hover { background: #0ea5e9 !important; color: white !important; }
+
+/* Desktop Spanning Hack */
+@media (min-width: 769px) {
+    [data-testid="stUploadedFile"], 
+    div[data-testid*="UploadedFile"],
+    .final-download-target [data-testid="stDownloadButton"] button { 
+        width: calc(200% + 1rem) !important; 
+    }
 }
+@media (max-width: 768px) {
+    .top-nav { position: relative; justify-content: center; padding-top: 20px; }
+}
+
+[data-testid="block-container"] { max-width: 800px; padding-top: 3rem; }
 </style>
 
 <div class="top-nav">
@@ -230,6 +231,8 @@ div[data-testid*="UploadedFile"] {
 # ==========================================================================
 # SECTION 2: PRE-GENERATE BLANK NOTEBOOK (CACHED TO PREVENT DOUBLE-CLICK BUG)
 # ==========================================================================
+# We store the generated HTML in session state so clicking the download button
+# doesn't trigger a re-render with a new ID, which breaks the download link.
 if "blank_html" not in st.session_state:
     blank_nav = '<div class="nav-link active-nav" id="link-0" onclick="goTo(\'0\')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text">Page 1</span></div>'
     blank_slides = '<div id="p-0" class="page active" data-page-width="816" data-page-height="1054" style="width:816px; height:1054px;"></div>'
@@ -244,7 +247,8 @@ if "blank_html" not in st.session_state:
 # ==========================================================================
 # SECTION 3: THE 2-COLUMN LAYOUT
 # ==========================================================================
-col1, col2 = st.columns([1,1], gap="large")
+st.markdown('<div style="margin-bottom: 10px;"></div>', unsafe_allow_html=True)
+col1, col2 = st.columns(2, gap="medium")
 
 with col2:
     st.download_button(
@@ -256,8 +260,8 @@ with col2:
     )
 
 with col1:
-    up = st.file_uploader("Upload a document", label_visibility="collapsed", type=["pptx", "ppt", "pdf"])
-    
+    up = st.file_uploader("Upload a document", label_visibility="hidden", type=["pptx", "ppt", "pdf"])
+
     # ==========================================================================
     # SECTION 4: FILE PARSING & PROCESSING (CACHED FOR SPEED & STABILITY)
     # ==========================================================================
@@ -458,6 +462,7 @@ with col1:
             st.error(st.session_state.error_msg)
         elif st.session_state.get("final_html"):
             with col1:
+                st.markdown('<div class="final-download-target">', unsafe_allow_html=True)
                 st.download_button(
                     label="📥 Download Interactive Notebook",
                     data=st.session_state.final_html.encode('utf-8'), 
@@ -465,3 +470,4 @@ with col1:
                     mime="text/html",
                     use_container_width=True
                 )
+                st.markdown('</div>', unsafe_allow_html=True)
