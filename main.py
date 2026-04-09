@@ -58,15 +58,16 @@ st.markdown("""
 
 /* Kills Streamlit's Compact Mode without breaking your column widths */
 [data-testid="stFileUploader"] { 
-    container-type: normal !important; 
+    height: 300px !important;
+    min-height: 300px !important;
     width: 100% !important; 
     margin: 0 !important; 
     padding: 0 !important; 
 }
 
 [data-testid="stFileUploadDropzone"] { 
-    height: 300px !important;       /* Change this number to make it taller */
-    min-height: 300px !important;   /* Keep this number identical to the one above */
+    height: 100% !important; 
+    min-height: 100% !important;
     
     background-color: #0f172a !important; 
     border: 1px dashed #334155 !important;
@@ -94,7 +95,7 @@ st.markdown("""
    ========================================= */
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button,
 [data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button {
-    height: 200px !important; min-height: 200px !important; width: 100% !important; margin: 0 !important;
+    height: 300px !important; min-height: 300px !important; width: 100% !important; margin: 0 !important;
     background-color: #0f172a !important; border: 1px solid #1e293b !important; border-radius: 12px !important;
     display: flex !important; flex-direction: row !important; /* Puts items side-by-side */
     justify-content: center !important; align-items: center !important;
