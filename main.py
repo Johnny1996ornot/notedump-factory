@@ -1,6 +1,6 @@
 import streamlit as st
 from pptx import Presentation
-import html 
+import html
 import base64
 import time
 from io import BytesIO
@@ -30,79 +30,84 @@ st.markdown("""
     flex-direction: column !important;
     box-sizing: border-box !important;
     transition: 0.2s !important;
-    position: relative !important; /* CRITICAL for absolute positioning */
+    position: relative !important;
 }
 
-/* Reset inner padding so we can control it perfectly */
+/* Internal padding and relative positioning for absolute children */
 [data-testid="stColumn"] > div[data-testid="stVerticalBlock"] {
-    padding: 0 !important;
-    gap: 0 !important;
     height: 100% !important;
     width: 100% !important;
     display: flex !important;
     flex-direction: column !important;
-    justify-content: center !important;
+    justify-content: center !important; 
     align-items: center !important;
+    position: relative !important; 
+    padding: 20px !important;
 }
 
 /* LEFT BOX: Dashed border */
 [data-testid="stColumn"]:nth-child(1) { border: 1px dashed #334155 !important; cursor: pointer; }
 [data-testid="stColumn"]:nth-child(1):hover { border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; }
 
-/* RIGHT BOX: Solid border & padding */
-[data-testid="stColumn"]:nth-child(2) { border: 1px solid #1e293b !important; padding: 20px !important;}
+/* RIGHT BOX: Solid border */
+[data-testid="stColumn"]:nth-child(2) { border: 1px solid #1e293b !important; }
 [data-testid="stColumn"]:nth-child(2):hover { border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; }
 
 /* =======================================================================
-   THE CUSTOM UPLOAD VISUALS (Sits in the background)
+   THE CUSTOM UPLOAD VISUALS (Rendered via Python Placeholder)
    ======================================================================= */
 .upload-visuals {
-    position: absolute !important;
-    top: 0; left: 0; width: 100%; height: 240px; /* Matches column height */
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    pointer-events: none; /* Clicks pass right through this to the invisible uploader */
+    text-align: center;
+    pointer-events: none !important; /* Let all clicks pass through to the invisible uploader */
+    position: absolute; /* Sit behind the invisible uploader */
+    top: 0; left: 0; right: 0; bottom: 0;
     z-index: 1;
+    width: 100%;
+    height: 100%;
 }
 
 .upload-icon { font-size: 45px; margin-bottom: 10px; line-height: 1;}
-.upload-title { font-size: 20px; font-weight: 800; color: #f8fafc; text-align: center; line-height: 1.2; margin-bottom: 15px; }
-.upload-sub { font-size: 14px; color: #94a3b8; text-align: center; line-height: 1.5; }
+.upload-title { font-size: 20px; font-weight: 800; color: #f8fafc; line-height: 1.2; margin-bottom: 15px; }
+.upload-sub { font-size: 14px; color: #94a3b8; line-height: 1.5; }
 
 /* =======================================================================
-   THE GHOST UPLOADER (Invisible Overlay that catches clicks & drags)
+   THE NATIVE UPLOADER (State 1: Empty & Invisible Overlay)
    ======================================================================= */
-[data-testid="stFileUploader"] {
-    width: 100% !important; 
-    height: 100% !important; 
-    z-index: 10 !important; /* Keeps it on top */
+/* When no file is uploaded, stretch it over the entire box invisibly */
+div[data-testid="stFileUploader"]:not(:has([data-testid="stUploadedFile"])) {
+    position: absolute !important;
+    top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
+    width: 100% !important; height: 100% !important;
+    z-index: 99 !important; /* Sit on top of visual text */
+    opacity: 0.001 !important; /* Almost pure zero avoids browser hitbox deletion */
 }
 
-/* Make the dropzone completely invisible but stretch to fill the 240px box */
-[data-testid="stFileUploadDropzone"] {
-    opacity: 0 !important; /* THE MAGIC BULLET */
-    position: absolute !important;
-    top: 0 !important; left: 0 !important;
-    width: 100% !important; height: 240px !important;
+/* Force inner dropzone to stretch so drag and drop works everywhere */
+div[data-testid="stFileUploader"]:not(:has([data-testid="stUploadedFile"])) > section,
+div[data-testid="stFileUploader"]:not(:has([data-testid="stUploadedFile"])) [data-testid="stFileUploadDropzone"] {
+    width: 100% !important; 
+    height: 240px !important; /* Force to column height */
+    padding: 0 !important; margin: 0 !important; 
     cursor: pointer !important;
 }
 
 /* =======================================================================
-   ACTIVE STATE: WHEN A FILE IS UPLOADED
+   THE NATIVE UPLOADER (State 2: Filled & Visible)
    ======================================================================= */
-/* 1. Hide our background visuals when a file is detected */
-div[data-testid="stColumn"]:nth-child(1):has([data-testid="stUploadedFile"]) .upload-visuals {
-    display: none !important;
+/* When a file is uploaded, make it relative so it pushes the download button down */
+div[data-testid="stFileUploader"]:has([data-testid="stUploadedFile"]) {
+    position: relative !important;
+    opacity: 1 !important; 
+    width: 100% !important;
+    margin-bottom: 15px !important;
+    z-index: 10 !important;
 }
 
-/* 2. Add padding back to the column so the file card isn't touching the dashed edges */
-div[data-testid="stColumn"]:nth-child(1):has([data-testid="stUploadedFile"]) > div[data-testid="stVerticalBlock"] {
-    padding: 20px !important; 
-}
-
-/* The Uploaded File Card Styling */
+/* The Uploaded File Card */
 [data-testid="stUploadedFile"] {
     background: #1e293b !important; border: none !important; border-radius: 8px !important;
     padding: 15px 50px 15px 15px !important; width: 100% !important; position: relative !important;
@@ -130,7 +135,7 @@ div[data-testid="stColumn"]:nth-child(1):has([data-testid="stUploadedFile"]) > d
 [data-testid="stUploadedFile"] span, [data-testid="stUploadedFile"] small { color: #f8fafc !important; font-size: 14px !important; position: relative; z-index: 2;}
 
 /* Download Button styling inside left column */
-.final-download-target { width: 100% !important; margin-top: 15px; }
+.final-download-target { width: 100% !important; }
 .final-download-target [data-testid="stDownloadButton"] button {
     width: 100% !important; background-color: transparent !important;
     border: 1px solid #0ea5e9 !important; color: #0ea5e9 !important; border-radius: 8px !important;
@@ -254,17 +259,24 @@ with col2:
     )
 
 with col1:
-    # 1. The custom visuals sit in the background
-    st.markdown("""
-    <div class="upload-visuals">
-        <div class="upload-icon">📤</div>
-        <div class="upload-title">Convert file to an<br>interactive notebook</div>
-        <div class="upload-sub">Upload a file<br>200MB per file • PPTX, PPT, PDF</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # 2. The native Streamlit uploader (The CSS makes it invisible and lays it on top)
+    # 1. Create a placeholder so we can obliterate the text when a file uploads
+    visuals_placeholder = st.empty()
+    
+    # 2. Add the native Streamlit uploader
     up = st.file_uploader("Upload", label_visibility="collapsed", type=["pptx", "ppt", "pdf"])
+
+    # 3. Python logic to switch states cleanly
+    if not up:
+        visuals_placeholder.markdown("""
+        <div class="upload-visuals">
+            <div class="upload-icon">📤</div>
+            <div class="upload-title">Convert file to an<br>interactive notebook</div>
+            <div class="upload-sub">Upload a file<br>200MB per file • PPTX, PPT, PDF</div>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        # File is present: Delete the placeholder text immediately to prevent overlaps
+        visuals_placeholder.empty()
 
     # ==========================================================================
     # SECTION 4: FILE PARSING & PROCESSING
