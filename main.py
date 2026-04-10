@@ -21,12 +21,12 @@ st.markdown("""
 <style>
 .stApp { background-color: #000000; }
 
-/* 1. COLUMN WRAPPERS: STRICT 220PX HEIGHT */
+/* 1. COLUMN WRAPPERS: STRICT HEIGHT */
 [data-testid="stColumn"] {
     background-color: #0f172a !important;
     border-radius: 12px !important;
-    height: 220px !important; 
-    padding: 15px 20px !important;
+    height: 240px !important; 
+    padding: 20px !important;
     display: flex !important;
     flex-direction: column !important;
     box-sizing: border-box !important;
@@ -36,7 +36,6 @@ st.markdown("""
 [data-testid="stColumn"]:nth-child(2) { border: 1px solid #1e293b !important; transition: 0.2s !important; }
 [data-testid="stColumn"]:nth-child(2):hover { border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; }
 
-/* Internal column spacing */
 [data-testid="stColumn"] > div[data-testid="stVerticalBlock"] {
     height: 100% !important;
     display: flex !important;
@@ -46,10 +45,9 @@ st.markdown("""
     gap: 10px !important; 
     width: 100% !important;
 }
-[data-testid="stColumn"] > div[data-testid="stVerticalBlock"] > div { width: 100% !important; }
 
 /* =======================================================================
-   2. LEFT BOX: UPLOAD HEADING (MOVED UP)
+   FIX 1: MOVE HEADING UP
    ======================================================================= */
 .upload-heading {
     font-size: 20px !important;
@@ -57,20 +55,16 @@ st.markdown("""
     color: #f8fafc;
     text-align: center;
     line-height: 1.2;
-    margin-top: -15px !important; /* Pushes the text further up */
-    margin-bottom: 5px !important;
-}
-
-/* Hide heading automatically when file is uploaded */
-div[data-testid="stVerticalBlock"]:has([data-testid="stUploadedFile"]) .upload-heading {
-    display: none !important;
+    margin-top: -40px !important; /* Aggressively pushes text up */
+    margin-bottom: 10px !important;
+    width: 100%;
 }
 
 /* =======================================================================
-   3. LEFT BOX: UPLOAD DROPZONE (CENTERED UI)
+   FIX 2: PERFECTLY CENTER UPLOAD BUTTON & TEXT
    ======================================================================= */
+[data-testid="stFileUploader"] { padding: 0 !important; width: 100% !important; }
 [data-testid="stFileUploader"] > label { display: none !important; }
-[data-testid="stFileUploader"] { padding: 0 !important; }
 
 [data-testid="stFileUploadDropzone"] {
     background: transparent !important;
@@ -78,8 +72,8 @@ div[data-testid="stVerticalBlock"]:has([data-testid="stUploadedFile"]) .upload-h
     padding: 0 !important;
     display: flex !important;
     flex-direction: column !important;
-    align-items: center !important; /* PERFECT CENTERING */
-    justify-content: center !important; /* PERFECT CENTERING */
+    align-items: center !important;
+    justify-content: center !important;
     width: 100% !important;
 }
 
@@ -89,17 +83,20 @@ div[data-testid="stVerticalBlock"]:has([data-testid="stUploadedFile"]) .upload-h
     display: none !important;
 }
 
+/* Force Streamlit's inner wrapper to center everything */
 [data-testid="stFileUploadDropzone"] > div {
     display: flex !important;
     flex-direction: column !important;
-    align-items: center !important; /* PERFECT CENTERING */
+    align-items: center !important;
+    text-align: center !important;
     width: 100% !important;
 }
 
 /* Custom Upload Button */
 [data-testid="stFileUploadDropzone"] button {
     order: 1 !important;
-    margin: 0 auto !important; /* EXACT CENTER */
+    margin: 0 auto !important; /* Forces center */
+    align-self: center !important; /* Forces center */
     background-color: transparent !important;
     border: 1px solid #334155 !important;
     border-radius: 6px !important;
@@ -123,7 +120,7 @@ div[data-testid="stVerticalBlock"]:has([data-testid="stUploadedFile"]) .upload-h
 [data-testid="stFileUploadDropzone"] small {
     order: 2 !important;
     display: block !important;
-    text-align: center !important; /* EXACT CENTER */
+    text-align: center !important;
     color: #94a3b8 !important;
     margin-top: 10px !important;
     font-size: 13px !important;
@@ -131,68 +128,68 @@ div[data-testid="stVerticalBlock"]:has([data-testid="stUploadedFile"]) .upload-h
 }
 
 /* =======================================================================
-   4. ACTIVE STATE (UPLOADED FILE UI REWRITE)
+   FIX 3 & 4: HORIZONTAL PROGRESS BAR, BIG 'X', REMOVE '+'
    ======================================================================= */
-/* Hide the + button / extra dropzone area entirely */
+/* OBLITERATE the dropzone (and the '+' button) when a file is uploaded */
 div[data-testid="stFileUploader"]:has([data-testid="stUploadedFile"]) [data-testid="stFileUploadDropzone"],
 ul[data-testid="stUploadedFileList"] + div {
     display: none !important;
 }
 
-/* Hide Streamlit's native spinning circle */
-[data-testid="stUploadedFile"] > div > div > svg {
-    display: none !important;
-}
-
-/* The File Box */
+/* The File Box Wrapper */
 [data-testid="stUploadedFile"] {
     background: #1e293b !important;
     border: none !important;
     border-radius: 8px !important;
-    padding: 15px 50px 15px 15px !important; /* Right padding ensures X button fits */
+    padding: 15px 50px 15px 15px !important; /* Extra right padding for the X */
     width: 100% !important;
     position: relative !important;
-    overflow: hidden !important;
+    overflow: hidden !important; /* Keeps progress bar inside corners */
     display: flex !important;
     align-items: center !important;
-    margin-top: 10px !important;
+    margin-top: 5px !important;
 }
 
-/* HORIZONTAL PROGRESS BAR (Replaces the spinner) */
+/* HORIZONTAL PROGRESS BAR ANIMATION */
 [data-testid="stUploadedFile"]::after {
     content: '';
     position: absolute;
     bottom: 0; 
     left: 0;
     height: 4px;
-    width: 100%;
-    background: linear-gradient(90deg, #0ea5e9, #10b981);
-    border-radius: 0 0 8px 8px;
-    animation: loadBar 1s ease-out forwards;
+    width: 0%;
+    background: #0ea5e9;
+    animation: loadBar 1.5s ease-out forwards;
 }
-
 @keyframes loadBar {
     0% { width: 0%; }
     100% { width: 100%; }
 }
 
-/* ENLARGED & CENTER-ALIGNED 'X' BUTTON */
+/* ENLARGED & PERFECTLY CENTERED 'X' BUTTON */
 [data-testid="stUploadedFile"] button {
     background: transparent !important; 
     border: none !important; 
     position: absolute !important;
-    right: 15px !important; /* Locks it to the right */
-    top: 50% !important;    /* Centers vertically */
-    transform: translateY(-50%) scale(1.4) !important; /* Shifts perfectly to center and makes it bigger */
+    right: 15px !important; 
+    top: 50% !important;    
+    transform: translateY(-50%) scale(1.6) !important; /* Scale 1.6x larger */
     margin: 0 !important;
+    padding: 0 !important;
 }
-[data-testid="stUploadedFile"] span, [data-testid="stUploadedFile"] small { color: #f8fafc !important; font-size: 14px !important; }
-[data-testid="stUploadedFile"] svg { fill: #f8fafc !important; }
+
+/* Hide native spinning circle completely */
+[data-testid="stUploadedFile"] > div > div > svg,
+[data-testid="stUploadedFile"] svg[viewBox="0 0 24 24"] {
+    display: none !important;
+}
+
+[data-testid="stUploadedFile"] span, [data-testid="stUploadedFile"] small { color: #f8fafc !important; font-size: 14px !important; z-index: 2; position: relative;}
 
 /* =======================================================================
    5. DOWNLOAD BUTTON (LEFT BOX)
    ======================================================================= */
-.final-download-target { width: 100% !important; }
+.final-download-target { width: 100% !important; margin-top: auto !important; padding-top: 15px; }
 .final-download-target [data-testid="stDownloadButton"] button {
     width: 100% !important;
     background-color: transparent !important;
@@ -221,7 +218,7 @@ ul[data-testid="stUploadedFileList"] + div {
 }
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::after {
     content: "Create\\A Blank\\A Notebook"; white-space: pre !important; font-size: 24px !important; 
-    font-weight: 800 !important; color: #f8fafc !important; line-height: 1.1 !important; text-align: left !important; letter-spacing: -1px !important;
+    font-weight: 800 !important; color: #f8fafc !important; line-height: 1.1 !important; text-align: left !important;
 }
 
 /* Nav & Header */
@@ -322,8 +319,11 @@ with col2:
     )
 
 with col1:
-    st.markdown('<div class="upload-heading">Convert file to an<br>interactive notebook</div>', unsafe_allow_html=True)
+    heading_placeholder = st.empty()
     up = st.file_uploader("Upload a document", label_visibility="hidden", type=["pptx", "ppt", "pdf"])
+
+    if not up:
+        heading_placeholder.markdown('<div class="upload-heading">Convert file to an<br>interactive notebook</div>', unsafe_allow_html=True)
 
     # ==========================================================================
     # SECTION 4: FILE PARSING & PROCESSING
