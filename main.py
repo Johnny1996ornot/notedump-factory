@@ -51,34 +51,32 @@ st.markdown("""
 .support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 20px !important; }
 
 /* =========================================
-   1. FORCE LEFT BOX (UPLOADER) TO 200PX
+   1. MAIN UPLOADER / DROPZONE BOX
    ========================================= */
 [data-testid="stFileUploader"] > label { display: none !important; }
 [data-testid="stFileUploader"] { width: 100% !important; margin: 0 !important; padding: 0 !important; }
 
-/* Dropzone Canvas fixed size */
-[data-testid="stFileUploadDropzone"],
-[data-testid="stFileUploaderDropzone"] {
+/* The Dropzone Structure */
+[data-testid="stFileUploadDropzone"] {
     height: 200px !important;
-    min-height: 200px !important;
-    max-height: 200px !important;
     background-color: #0f172a !important;
     border: 1px dashed #334155 !important;
     border-radius: 12px !important;
-    padding: 20px !important;
     display: flex !important;
     flex-direction: column !important;
     justify-content: center !important;
     align-items: center !important;
-    box-sizing: border-box !important;
-    overflow: hidden !important; 
+    padding: 20px !important;
 }
 
-/* Force the inner wrapper to flex-col for clean ordering */
-[data-testid="stFileUploadDropzone"] > div,
-[data-testid="stFileUploadDropzone"] > section,
-[data-testid="stFileUploaderDropzone"] > div,
-[data-testid="stFileUploaderDropzone"] > section {
+/* Hide Streamlit Native SVG and Text to prevent duplicates */
+[data-testid="stFileUploadDropzone"] svg,
+[data-testid="stFileUploadDropzone"] div[data-testid="stMarkdownContainer"] p {
+    display: none !important;
+}
+
+/* Setup Inner Wrapper for precise flex ordering */
+[data-testid="stFileUploadDropzone"] > div {
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
@@ -86,103 +84,110 @@ st.markdown("""
     width: 100% !important;
 }
 
-/* NATIVE Cloud Icon (Position 1) */
-[data-testid="stFileUploadDropzone"] svg:not([color]),
-[data-testid="stFileUploaderDropzone"] svg:not([color]) {
+/* INJECT CLOUD ICON */
+[data-testid="stFileUploadDropzone"] > div::before {
+    content: "";
+    display: block !important;
     width: 45px !important;
     height: 45px !important;
-    fill: #ffffff !important;
-    display: block !important;
-    order: 1 !important;
     margin-bottom: 10px !important;
+    background-image: url('data:image/svg+xml;utf8,<svg fill="%23ffffff" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.36 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>') !important;
+    background-size: contain !important;
+    background-repeat: no-repeat !important;
+    background-position: center !important;
+    order: 1 !important;
 }
 
-/* NATIVE Drag and Drop Text (Position 2) */
-[data-testid="stFileUploadDropzone"] div[data-testid="stMarkdownContainer"] p,
-[data-testid="stFileUploaderDropzone"] div[data-testid="stMarkdownContainer"] p,
-[data-testid="stFileUploadDropzone"] span:not([class]),
-[data-testid="stFileUploaderDropzone"] span:not([class]) {
+/* INJECT "DRAG AND DROP" TEXT */
+[data-testid="stFileUploadDropzone"] > div::after {
+    content: "Drag and drop file here" !important;
+    display: block !important;
     font-size: 16px !important;
     font-weight: bold !important;
     color: #f8fafc !important;
-    margin: 0 !important;
+    margin-bottom: 5px !important;
     order: 2 !important;
 }
 
-/* NATIVE 200MB Limit Text (Position 3) */
-[data-testid="stFileUploadDropzone"] small,
-[data-testid="stFileUploaderDropzone"] small {
+/* 200MB LIMIT TEXT */
+[data-testid="stFileUploadDropzone"] small {
     font-size: 13px !important;
     color: #94a3b8 !important;
-    margin: 5px 0 15px 0 !important;
+    margin-bottom: 15px !important;
     order: 3 !important;
+    display: block !important;
 }
 
-/* NATIVE Browse Files Button (Position 4) */
-[data-testid="stFileUploadDropzone"] button:not([aria-label="Remove file"]):not([title="Remove file"]),
-[data-testid="stFileUploaderDropzone"] button:not([aria-label="Remove file"]):not([title="Remove file"]) {
+/* BROWSE FILES BUTTON */
+[data-testid="stFileUploadDropzone"] button {
     background-color: #4f46e5 !important;
-    color: #ffffff !important;
+    color: transparent !important; /* Hides native text */
     border: none !important;
     border-radius: 6px !important;
-    padding: 10px 24px !important;
-    font-size: 15px !important;
-    font-weight: bold !important;
+    width: 140px !important;
+    height: 42px !important;
+    position: relative !important;
     order: 4 !important;
-    margin: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
-[data-testid="stFileUploadDropzone"] button:not([aria-label="Remove file"]):not([title="Remove file"]):hover,
-[data-testid="stFileUploaderDropzone"] button:not([aria-label="Remove file"]):not([title="Remove file"]):hover {
+[data-testid="stFileUploadDropzone"] button:hover {
     background-color: #4338ca !important;
 }
+[data-testid="stFileUploadDropzone"] button::after {
+    content: "Browse files" !important;
+    position: absolute !important;
+    color: #ffffff !important;
+    font-size: 15px !important;
+    font-weight: bold !important;
+}
+
 
 /* =========================================
-   2. PROTECT NATIVE UPLOAD PROGRESS BAR
+   2. "FILE UPLOADED" DYNAMIC STATE 
    ========================================= */
-/* Ensure the uploaded file container keeps its native Streamlit layout */
-[data-testid="stUploadedFile"],
-div[data-testid*="UploadedFile"],
-div[data-testid*="FileUploaderFile"] {
-    background: transparent !important;
-    border: none !important;
-    width: 100% !important;
-    margin-top: 10px !important;
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    order: 10 !important;
+
+/* THE MAGIC TRICK: Hide the giant Dropzone entirely if a file is uploaded */
+div[data-testid="stFileUploader"]:has([data-testid="stUploadedFile"]) [data-testid="stFileUploadDropzone"] {
+    display: none !important;
 }
 
-/* Revert text formatting for uploaded file row */
-[data-testid="stUploadedFile"] p,
-[data-testid="stUploadedFile"] span,
-[data-testid="stUploadedFile"] small,
-div[data-testid*="UploadedFile"] p,
-div[data-testid*="UploadedFile"] span {
-    font-size: 14px !important;
-    font-weight: normal !important;
-    color: #f8fafc !important;
-    order: unset !important;
+/* Style the Progress Bar / File Row */
+[data-testid="stUploadedFile"] {
+    background-color: #0f172a !important;
+    border: 1px solid #334155 !important;
+    border-radius: 12px 12px 0 0 !important; /* Top rounded, bottom flat to connect to download */
+    padding: 15px 20px !important;
+    margin-top: 0 !important;
 }
 
-/* Revert SVG formatting for uploaded file row */
-[data-testid="stUploadedFile"] svg,
-div[data-testid*="UploadedFile"] svg {
-    width: 24px !important;
-    height: 24px !important;
-    fill: #f8fafc !important;
-    order: unset !important;
-    margin: 0 10px 0 0 !important;
+/* The Target Container for our Download Button */
+.final-download-target {
+    margin-top: -10px; /* Pulls the download button up to connect with the file box */
+    position: relative;
+    z-index: 10;
 }
 
-/* Revert X Button formatting */
-button[aria-label="Remove file"],
-button[title="Remove file"] {
-    background: transparent !important;
-    border: none !important;
-    padding: 5px !important;
-    order: unset !important;
+/* Final Download Button (Becomes the primary action) */
+.final-download-target [data-testid="stDownloadButton"] button {
+    width: 100% !important; 
+    height: 55px !important; 
+    background: #1e293b !important; 
+    color: #0ea5e9 !important; 
+    border: 1px solid #334155 !important; 
+    border-top: none !important; /* Merge seamlessly with the file row */
+    border-radius: 0 0 12px 12px !important; /* Bottom rounded */
+    font-size: 16px !important; 
+    font-weight: bold !important; 
+    transition: 0.2s;
 }
+.final-download-target [data-testid="stDownloadButton"] button:hover { 
+    background: #0ea5e9 !important; 
+    color: white !important;
+    border-color: #0ea5e9 !important;
+}
+
 
 /* =========================================
    3. CUSTOM INJECTED BLANK NOTEBOOK LAYOUT
@@ -191,7 +196,7 @@ button[title="Remove file"] {
 [data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button {
     height: 200px !important; min-height: 200px !important; width: 100% !important; margin: 0 !important;
     background-color: #0f172a !important; border: 1px solid #1e293b !important; border-radius: 12px !important;
-    display: flex !important; flex-direction: row !important; /* Puts items side-by-side */
+    display: flex !important; flex-direction: row !important;
     justify-content: center !important; align-items: center !important;
     transition: 0.2s; padding: 0 !important;
 }
@@ -200,62 +205,27 @@ button[title="Remove file"] {
     border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; 
 }
 
-/* Completely hide Streamlit's default text wrappers */
+/* Hide default wrappers */
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button div,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button div,
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button p,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button p,
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button span,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button span {
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button span {
     display: none !important;
 }
 
-/* Inject Giant Icon on the Left */
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::before,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button::before {
-    content: "📓";
-    font-size: 70px !important; /* Massive Logo */
-    margin-right: 15px !important; 
-    line-height: 1 !important;
-    display: block !important;
+/* Inject Giant Icon */
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::before {
+    content: "📓"; font-size: 70px !important; margin-right: 15px !important; line-height: 1 !important; display: block !important;
 }
 
-/* Inject Stacked Text on the Right */
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::after,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button::after {
-    content: "Create\\A Blank\\A Notebook"; /* The \\A creates the hard line breaks */
-    white-space: pre !important; /* Forces the line breaks to render */
-    font-size: 28px !important; 
-    font-weight: 800 !important; 
-    color: #f8fafc !important; 
-    line-height: 1.1 !important;
-    text-align: left !important; /* Aligns text cleanly next to icon */
-    letter-spacing: -1px !important;
-    display: block !important;
+/* Inject Stacked Text */
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::after {
+    content: "Create\\A Blank\\A Notebook"; white-space: pre !important; font-size: 28px !important; 
+    font-weight: 800 !important; color: #f8fafc !important; line-height: 1.1 !important;
+    text-align: left !important; letter-spacing: -1px !important; display: block !important;
 }
 
-/* =========================================
-   4. FINAL DOWNLOAD BUTTON FORMATTING
-   ========================================= */
-.final-download-target [data-testid="stDownloadButton"] button {
-    width: 100% !important; height: auto !important; padding: 18px !important; margin-top: 10px !important;
-    background: #1e293b !important; color: #0ea5e9 !important; border: 1px solid #0ea5e9 !important; border-radius: 8px !important;
-    font-size: 18px !important; font-weight: bold !important; transition: 0.2s;
-}
-.final-download-target [data-testid="stDownloadButton"] button:hover { background: #0ea5e9 !important; color: white !important; }
-
-/* Desktop Spanning Hack */
-@media (min-width: 769px) {
-    [data-testid="stUploadedFile"], 
-    div[data-testid*="UploadedFile"],
-    .final-download-target [data-testid="stDownloadButton"] button { 
-        width: calc(200% + 1rem) !important; 
-    }
-}
-@media (max-width: 768px) {
-    .top-nav { position: relative; justify-content: center; padding-top: 20px; }
-}
-
+/* Mobile Top Nav Fix */
+@media (max-width: 768px) { .top-nav { position: relative; justify-content: center; padding-top: 20px; } }
 [data-testid="block-container"] { max-width: 800px; padding-top: 3rem; }
 </style>
 
@@ -299,10 +269,8 @@ button[title="Remove file"] {
 """, unsafe_allow_html=True)
 
 # ==========================================================================
-# SECTION 2: PRE-GENERATE BLANK NOTEBOOK (CACHED TO PREVENT DOUBLE-CLICK BUG)
+# SECTION 2: PRE-GENERATE BLANK NOTEBOOK 
 # ==========================================================================
-# We store the generated HTML in session state so clicking the download button
-# doesn't trigger a re-render with a new ID, which breaks the download link.
 if "blank_html" not in st.session_state:
     blank_nav = '<div class="nav-link active-nav" id="link-0" onclick="goTo(\'0\')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text">Page 1</span></div>'
     blank_slides = '<div id="p-0" class="page active" data-page-width="816" data-page-height="1054" style="width:816px; height:1054px;"></div>'
@@ -333,13 +301,11 @@ with col1:
     up = st.file_uploader("Upload a document", label_visibility="hidden", type=["pptx", "ppt", "pdf"])
 
     # ==========================================================================
-    # SECTION 4: FILE PARSING & PROCESSING (CACHED FOR SPEED & STABILITY)
+    # SECTION 4: FILE PARSING & PROCESSING
     # ==========================================================================
     if up:
-        # Create a unique key for the specific file uploaded
         file_key = f"{up.name}_{up.size}"
 
-        # Only re-parse the document if it's a completely new file
         if st.session_state.get("current_file_key") != file_key:
             st.session_state.current_file_key = file_key
             st.session_state.final_html = None
@@ -527,10 +493,14 @@ with col1:
                 else:
                     st.session_state.error_msg = f"Error Processing File: {e}"
 
-        # OUTPUT STAGE: Render error or the cached download button
+        # OUTPUT STAGE: Render Error OR the seamlessly connected Download Button
         if st.session_state.get("error_msg"):
             st.error(st.session_state.error_msg)
-        elif st.session_state.get("final_html"):
+            
+        # IMPORTANT: Only render the download button if `up` is still active. 
+        # If the user clicks "X" to delete the file, `up` becomes None, 
+        # the dropzone reappears, and this download button vanishes.
+        elif st.session_state.get("final_html") and up:
             with col1:
                 st.markdown('<div class="final-download-target">', unsafe_allow_html=True)
                 st.download_button(
