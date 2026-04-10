@@ -21,82 +21,99 @@ st.markdown("""
 <style>
 .stApp { background-color: #000000; }
 
-/* 1. COLUMN WRAPPERS: STRICT HEIGHT & MATCHING BOXES */
+/* 1. COLUMN WRAPPERS */
 [data-testid="stColumn"] {
-    background-color: #0f172a !important; 
+    background-color: #0f172a !important;
     border-radius: 12px !important;
     height: 240px !important; 
     display: flex !important;
     flex-direction: column !important;
     box-sizing: border-box !important;
-    transition: 0.2s !important;
 }
 
-/* Internal padding and relative positioning for absolute children */
-[data-testid="stColumn"] > div[data-testid="stVerticalBlock"] {
-    height: 100% !important;
-    width: 100% !important;
+/* RIGHT BOX (Create Blank) */
+[data-testid="stColumn"]:nth-child(2) { 
+    border: 1px solid #1e293b !important; 
+    transition: 0.2s !important; 
+    padding: 20px !important;
+}
+[data-testid="stColumn"]:nth-child(2):hover { 
+    border-color: #0ea5e9 !important; 
+    background: rgba(14, 165, 233, 0.1) !important; 
+}
+[data-testid="stColumn"]:nth-child(2) > div[data-testid="stVerticalBlock"] {
+    height: 100% !important; display: flex !important; flex-direction: column !important;
+    justify-content: center !important; align-items: center !important;
+}
+
+/* LEFT BOX (Uploader Container) */
+[data-testid="stColumn"]:nth-child(1) { 
+    border: 1px dashed #334155 !important; 
+    transition: 0.2s !important; 
+    padding: 0 !important; /* Remove padding so dropzone fills it */
+    overflow: hidden !important;
+}
+[data-testid="stColumn"]:nth-child(1):hover { 
+    border-color: #0ea5e9 !important; 
+    background: rgba(14, 165, 233, 0.1) !important; 
+}
+
+/* =======================================================================
+   THE NATIVE DROPZONE (Styled to be the massive box)
+   ======================================================================= */
+[data-testid="stFileUploader"] { 
+    width: 100% !important; 
+    height: 100% !important; 
+    margin: 0 !important; 
+}
+
+[data-testid="stFileUploadDropzone"] {
+    width: 100% !important; 
+    height: 100% !important; 
+    min-height: 240px !important; /* Match column height */
+    background: transparent !important;
+    border: none !important;
     display: flex !important;
     flex-direction: column !important;
-    justify-content: center !important; 
     align-items: center !important;
-    position: relative !important; 
+    justify-content: center !important;
+    cursor: pointer !important;
     padding: 20px !important;
 }
 
-/* LEFT BOX: Dashed border */
-[data-testid="stColumn"]:nth-child(1) { border: 1px dashed #334155 !important; cursor: pointer; }
-[data-testid="stColumn"]:nth-child(1):hover { border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; }
-
-/* RIGHT BOX: Solid border */
-[data-testid="stColumn"]:nth-child(2) { border: 1px solid #1e293b !important; }
-[data-testid="stColumn"]:nth-child(2):hover { border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; }
-
-/* =======================================================================
-   THE CUSTOM UPLOAD VISUALS (Rendered via Python Placeholder)
-   ======================================================================= */
-.upload-visuals {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    pointer-events: none; /* Let all clicks pass through to the invisible uploader */
-    z-index: 1;
-    width: 100%;
+/* Hide Streamlit's default inner junk (but keep the element functional) */
+[data-testid="stFileUploadDropzone"] > div,
+[data-testid="stFileUploadDropzone"] button,
+[data-testid="stFileUploadDropzone"] small {
+    display: none !important;
 }
 
-.upload-icon { font-size: 45px; margin-bottom: 10px; line-height: 1;}
-.upload-title { font-size: 20px; font-weight: 800; color: #f8fafc; line-height: 1.2; margin-bottom: 15px; }
-.upload-sub { font-size: 14px; color: #94a3b8; line-height: 1.5; }
-
-/* =======================================================================
-   THE NATIVE UPLOADER (State 1: Empty & Invisible Overlay)
-   ======================================================================= */
-/* When no file is uploaded, stretch it over the entire box invisibly */
-div[data-testid="stFileUploader"]:not(:has([data-testid="stUploadedFile"])) {
-    position: absolute !important;
-    top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
-    width: 100% !important; height: 100% !important;
-    z-index: 10 !important;
-    opacity: 0 !important; /* COMPLETELY INVISIBLE */
-}
-
-/* Force inner dropzone to stretch so drag and drop works everywhere */
-div[data-testid="stFileUploader"]:not(:has([data-testid="stUploadedFile"])) [data-testid="stFileUploadDropzone"] {
-    width: 100% !important; height: 100% !important; min-height: 240px !important;
-    padding: 0 !important; margin: 0 !important; cursor: pointer !important;
-}
-
-/* =======================================================================
-   THE NATIVE UPLOADER (State 2: Filled & Visible)
-   ======================================================================= */
-/* When a file is uploaded, make it relative so it pushes the download button down */
-div[data-testid="stFileUploader"]:has([data-testid="stUploadedFile"]) {
-    position: relative !important;
-    opacity: 1 !important; 
-    width: 100% !important;
+/* Inject our custom text directly into the native dropzone */
+[data-testid="stFileUploadDropzone"]::before {
+    content: "📤\\A Convert file to an\\A interactive notebook";
+    white-space: pre-wrap !important;
+    text-align: center !important;
+    font-size: 20px !important;
+    font-weight: 800 !important;
+    color: #f8fafc !important;
+    line-height: 1.2 !important;
     margin-bottom: 15px !important;
+}
+[data-testid="stFileUploadDropzone"]::after {
+    content: "Upload a file\\A 200MB per file • PPTX, PPT, PDF";
+    white-space: pre-wrap !important;
+    text-align: center !important;
+    font-size: 14px !important;
+    color: #94a3b8 !important;
+    line-height: 1.5 !important;
+}
+
+/* =======================================================================
+   ACTIVE STATE: WHEN A FILE IS UPLOADED
+   ======================================================================= */
+/* When a file is uploaded, give the left column its internal padding back */
+div[data-testid="stColumn"]:nth-child(1):has([data-testid="stUploadedFile"]) {
+    padding: 20px !important;
 }
 
 /* The Uploaded File Card */
@@ -127,7 +144,7 @@ div[data-testid="stFileUploader"]:has([data-testid="stUploadedFile"]) {
 [data-testid="stUploadedFile"] span, [data-testid="stUploadedFile"] small { color: #f8fafc !important; font-size: 14px !important; position: relative; z-index: 2;}
 
 /* Download Button styling inside left column */
-.final-download-target { width: 100% !important; }
+.final-download-target { width: 100% !important; margin-top: 15px; }
 .final-download-target [data-testid="stDownloadButton"] button {
     width: 100% !important; background-color: transparent !important;
     border: 1px solid #0ea5e9 !important; color: #0ea5e9 !important; border-radius: 8px !important;
@@ -251,24 +268,8 @@ with col2:
     )
 
 with col1:
-    # 1. Create a placeholder so we can obliterate the text when a file uploads
-    visuals_placeholder = st.empty()
-    
-    # 2. Add the native Streamlit uploader
+    # This is the actual, native Streamlit uploader
     up = st.file_uploader("Upload", label_visibility="collapsed", type=["pptx", "ppt", "pdf"])
-
-    # 3. Python logic to switch states cleanly
-    if not up:
-        visuals_placeholder.markdown("""
-        <div class="upload-visuals">
-            <div class="upload-icon">📤</div>
-            <div class="upload-title">Convert file to an<br>interactive notebook</div>
-            <div class="upload-sub">Upload a file<br>200MB per file • PPTX, PPT, PDF</div>
-        </div>
-        """, unsafe_allow_html=True)
-    else:
-        # File is present: Delete the placeholder text immediately to prevent overlaps
-        visuals_placeholder.empty()
 
     # ==========================================================================
     # SECTION 4: FILE PARSING & PROCESSING
