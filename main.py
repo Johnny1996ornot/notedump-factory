@@ -21,80 +21,73 @@ st.markdown("""
 <style>
 .stApp { background-color: #000000; }
 
-/* 1. COLUMN SIZES AND STRUCTURE */
+/* 1. COLUMN WRAPPERS: STRICT 220PX HEIGHT */
 [data-testid="stColumn"] {
     background-color: #0f172a !important;
-    border-radius: 16px !important;
-    min-height: 400px !important; /* Enforces height so elements aren't sandwiched */
-    padding: 30px !important;
+    border-radius: 12px !important;
+    height: 220px !important; /* Reverted to your preferred size */
+    padding: 15px !important;
     display: flex !important;
     flex-direction: column !important;
+    box-sizing: border-box !important;
 }
 
-/* Left Column Border */
 [data-testid="stColumn"]:nth-child(1) { border: 1px dashed #334155 !important; }
-
-/* Right Column Border */
 [data-testid="stColumn"]:nth-child(2) { border: 1px solid #1e293b !important; }
 
-/* Ensure the internal flexbox stretches full height to push download button down */
+/* Internal Flexbox: Distributes space perfectly to avoid sandwiching */
 [data-testid="stColumn"] > div[data-testid="stVerticalBlock"] {
     height: 100% !important;
     display: flex !important;
     flex-direction: column !important;
-    justify-content: flex-start !important;
-    flex: 1 !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 12px !important; /* Strict gap so file info and download button never touch */
 }
 
-/* 2. LEFT BOX HEADING */
+/* 2. LEFT BOX: HEADING (EMPTY STATE) */
 .upload-heading {
-    font-size: 22px !important; /* Smaller text */
+    font-size: 18px !important; /* Made words smaller */
     font-weight: 800;
     color: #f8fafc;
-    margin-top: 0px !important; /* Moved upward */
-    margin-bottom: 20px !important;
+    margin: -10px 0 10px 0 !important; /* Shifted slightly upward */
     text-align: center;
-    line-height: 1.2;
+    line-height: 1.1;
+    width: 100%;
 }
 
-/* 3. UPLOAD DROPZONE (EMPTY STATE) */
+/* 3. LEFT BOX: UPLOAD DROPZONE (EMPTY STATE) */
+[data-testid="stFileUploader"] { width: 100% !important; }
+[data-testid="stFileUploader"] > label { display: none !important; }
+
 [data-testid="stFileUploadDropzone"] {
-    background-color: #1e293b !important;
+    background: transparent !important;
     border: none !important;
-    border-radius: 12px !important;
-    padding: 30px 20px !important;
+    padding: 0 !important;
     display: flex !important;
     flex-direction: column !important;
-    align-items: center !important; /* Strictly centers contents */
-    justify-content: center !important;
-}
-
-/* Hide Streamlit's native SVG cloud and text */
-[data-testid="stFileUploadDropzone"] > div > svg { display: none !important; }
-[data-testid="stFileUploadDropzone"] > div > div[data-testid="stMarkdownContainer"] { display: none !important; }
-
-/* Force internal wrappers to center */
-[data-testid="stFileUploadDropzone"] > div {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
+    align-items: center !important; /* Perfect Center */
+    justify-content: center !important; /* Perfect Center */
     width: 100% !important;
 }
 
-/* The custom ↑ Upload Button */
+/* Hide Native SVG and default text */
+[data-testid="stFileUploadDropzone"] > div > svg { display: none !important; }
+[data-testid="stFileUploadDropzone"] > div > div[data-testid="stMarkdownContainer"] { display: none !important; }
+[data-testid="stFileUploadDropzone"] > div { align-items: center !important; width: 100% !important; }
+
+/* Custom Upload Button */
 [data-testid="stFileUploadDropzone"] button {
-    margin: 0 auto !important; /* PERFECT CENTERING */
+    margin: 0 auto !important;
     background-color: transparent !important;
     border: 1px solid #334155 !important;
-    border-radius: 8px !important;
+    border-radius: 6px !important;
     width: 120px !important;
-    height: 40px !important;
+    height: 36px !important;
     position: relative;
-    color: transparent !important; /* Hides 'Browse files' */
+    color: transparent !important; /* Hides default text */
 }
-[data-testid="stFileUploadDropzone"] button:hover {
-    background-color: rgba(255,255,255,0.05) !important;
-}
+[data-testid="stFileUploadDropzone"] button:hover { background-color: rgba(255,255,255,0.05) !important; }
 [data-testid="stFileUploadDropzone"] button::after {
     content: "↑ Upload" !important;
     position: absolute;
@@ -105,73 +98,73 @@ st.markdown("""
     font-weight: 600 !important;
 }
 
-/* The Limit Text */
+/* Limit Text underneath button */
 [data-testid="stFileUploadDropzone"] small {
     display: block !important;
-    text-align: center !important; /* PERFECT CENTERING */
+    text-align: center !important;
     color: #94a3b8 !important;
-    margin-top: 15px !important;
-    font-size: 13px !important;
+    margin-top: 10px !important;
+    font-size: 12px !important;
 }
 
-/* 4. ACTIVE STATE (FILE UPLOADED) */
-/* Reset dropzone padding so the + sign isn't massive */
+/* 4. ACTIVE STATE: FILE UPLOADED */
+/* Hides the heading and dropzone entirely to make room for progress bar & download */
+div[data-testid="stColumn"]:has([data-testid="stUploadedFile"]) .upload-heading,
 div[data-testid="stFileUploader"]:has([data-testid="stUploadedFile"]) [data-testid="stFileUploadDropzone"] {
-    background-color: transparent !important;
-    padding: 10px !important;
-    min-height: auto !important;
+    display: none !important;
 }
 
-/* The Streamlit Progress Bar / File Box UI */
+/* The Native File Box / Progress Area */
 [data-testid="stUploadedFile"] {
     background-color: #1e293b !important;
     border-radius: 8px !important;
     border: none !important;
+    width: 100% !important;
+    padding: 10px !important;
 }
 
-/* 5. DOWNLOAD BUTTON (LEFT COLUMN) */
-/* Pushes the download button completely to the bottom, fixing the sandwich issue */
-.final-download-target {
-    margin-top: auto !important; 
-    padding-top: 30px !important;
-    width: 100% !important;
-}
+/* 5. THE NEW DOWNLOAD BUTTON (INSIDE LEFT BOX) */
+.final-download-target { width: 100% !important; }
 .final-download-target [data-testid="stDownloadButton"] button {
     width: 100% !important;
     background-color: transparent !important;
-    border: 1px solid #334155 !important;
-    color: white !important;
+    border: 1px solid #0ea5e9 !important;
+    color: #0ea5e9 !important;
     border-radius: 8px !important;
-    height: 45px !important;
+    height: 42px !important;
+    font-size: 14px !important;
+    font-weight: bold !important;
+    transition: 0.2s;
 }
 .final-download-target [data-testid="stDownloadButton"] button:hover {
-    background-color: rgba(255,255,255,0.05) !important;
+    background: rgba(14, 165, 233, 0.1) !important;
 }
 
-/* 6. RIGHT COLUMN BLANK NOTEBOOK BUTTON */
+/* 6. RIGHT BOX: BLANK NOTEBOOK */
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] { height: 100% !important; width: 100% !important; margin: 0 !important; }
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button {
     background: transparent !important; border: none !important;
     height: 100% !important; width: 100% !important;
-    display: flex !important; align-items: center !important; justify-content: center !important;
+    display: flex !important; flex-direction: row !important; justify-content: center !important; align-items: center !important;
 }
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button * { display: none !important; }
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::before {
-    content: "📓"; font-size: 60px !important; margin-right: 20px !important;
+    content: "📓"; font-size: 60px !important; margin-right: 15px !important;
 }
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::after {
     content: "Create\\A Blank\\A Notebook"; white-space: pre !important; font-size: 24px !important; 
-    font-weight: 800 !important; color: #f8fafc !important; line-height: 1.2 !important; text-align: left !important;
+    font-weight: 800 !important; color: #f8fafc !important; line-height: 1.1 !important; text-align: left !important;
 }
 
-/* MISCELLANEOUS HERO UI */
-.hero { text-align: center; color: white; padding: 20px 0; }
-.logo-container { display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 5px; }
-.logo-text { font-size: 48px; font-weight: 800; color: #f8fafc; margin: 0;}
-.logo-icon { font-size: 40px; margin: 0; }
-.tagline { font-size: 16px; color: #94a3b8; margin-top: 0; }
-.support-text { font-size: 12px; color: #475569; }
-.top-nav { display: flex; justify-content: flex-end; padding: 10px 20px; gap: 12px; }
-.coffee-btn { color: #0ea5e9; text-decoration: none; border: 1px solid #0ea5e9; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+/* HERO & NAV LOGISTICS */
+.hero { text-align: center; color: white; padding: 10px 0; max-width: 500px; margin: 0 auto; }
+.logo-container { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 0px;}
+.logo-text { font-size: 48px; font-weight: 800; margin: 0; color: #f8fafc;}
+.logo-icon { font-size: 40px; margin: 0;}
+.tagline { font-size: 16px; color: #94a3b8; margin-top: 0 !important; margin-bottom: 8px !important;}
+.support-text { font-size: 12px; color: #475569; margin-bottom: 20px !important; }
+.top-nav { display: flex; justify-content: flex-end; padding: 10px 20px; gap: 12px; position: absolute; top: 0; right: 0; width: 100%; z-index: 999;}
+.coffee-btn { color: #0ea5e9; text-decoration: none; font-weight: bold; font-size: 12px; border: 1px solid #0ea5e9; padding: 4px 10px; border-radius: 20px;}
 </style>
 
 <div class="top-nav">
@@ -189,17 +182,22 @@ div[data-testid="stFileUploader"]:has([data-testid="stUploadedFile"]) [data-test
 """, unsafe_allow_html=True)
 
 # ==========================================================================
-# SECTION 2: APP LOGIC & FILE PROCESSING
+# SECTION 2: PRE-GENERATE BLANK NOTEBOOK 
 # ==========================================================================
-
 if "blank_html" not in st.session_state:
+    blank_nav = '<div class="nav-link active-nav" id="link-0" onclick="goTo(\'0\')"><span class="nav-text">Page 1</span></div>'
+    blank_slides = '<div id="p-0" class="page active" style="width:816px; height:1054px;"></div>'
     unique_blank_id = f"New_Notebook_{int(time.time())}"
+
     st.session_state.blank_html = get_template(1)\
-        .replace("{{NAV_LINKS}}", '<div class="nav-link active-nav" id="link-0" onclick="goTo(\'0\')"><span class="nav-text">Page 1</span></div>')\
-        .replace("{{SLIDE_CONTENT}}", '<div id="p-0" class="page active" style="width:816px; height:1054px;"></div>')\
+        .replace("{{NAV_LINKS}}", blank_nav)\
+        .replace("{{SLIDE_CONTENT}}", blank_slides)\
         .replace("{{VISIBLE_TITLE}}", "New_Notebook")\
         .replace("{{STORAGE_ID}}", unique_blank_id)
 
+# ==========================================================================
+# SECTION 3: THE 2-COLUMN LAYOUT
+# ==========================================================================
 st.markdown('<div style="margin-bottom: 10px;"></div>', unsafe_allow_html=True)
 col1, col2 = st.columns(2, gap="medium")
 
@@ -208,7 +206,7 @@ with col2:
         label="Create Blank Notebook", 
         data=st.session_state.blank_html.encode('utf-8'), 
         file_name="NoteDump_Blank.html", 
-        mime="text/html", 
+        mime="text/html",
         use_container_width=True
     )
 
@@ -216,8 +214,12 @@ with col1:
     st.markdown('<div class="upload-heading">Convert file to<br>interactive notebook</div>', unsafe_allow_html=True)
     up = st.file_uploader("Upload a document", label_visibility="hidden", type=["pptx", "ppt", "pdf"])
 
+    # ==========================================================================
+    # SECTION 4: FILE PARSING & PROCESSING
+    # ==========================================================================
     if up:
         file_key = f"{up.name}_{up.size}"
+
         if st.session_state.get("current_file_key") != file_key:
             st.session_state.current_file_key = file_key
             st.session_state.final_html = None
@@ -228,7 +230,8 @@ with col1:
                 file_name = up.name.lower()
                 total_pages = 0
                 unique_storage_id = f"{file_name}_{int(time.time())}"
-                base_w, base_h = 816, 1054
+                base_w = 816 
+                base_h = 1054
 
                 if file_name.endswith(('.pptx', '.ppt')):
                     ppt = Presentation(up)
@@ -242,30 +245,40 @@ with col1:
                                 if shape.shape_type == 6: 
                                     html_content += parse_shapes(shape.shapes)
                                     continue
+
                                 top = (shape.top * scale_w) if shape.top else 0
                                 left = (shape.left * scale_w) if shape.left else 0
                                 width = (shape.width * scale_w) if shape.width else 200
                                 height = (shape.height * scale_w) if shape.height else 50
 
-                                if shape.shape_type == 13: # Image
+                                if shape.shape_type == 13: 
                                     img_stream = BytesIO(shape.image.blob)
                                     base64_img = base64.b64encode(img_stream.getvalue()).decode()
                                     html_content += f'<div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; height:{height}px; z-index:10;"><img src="data:image/png;base64,{base64_img}" style="width:100%; height:100%; object-fit:contain;"></div>'
-                                elif shape.has_table: # Table
-                                    t_html = "<table style='width:100%; border-collapse: collapse; font-size:12px;' border='1'>"
+
+                                elif shape.has_table:
+                                    table_html = "<table style='width:100%; height:100%; border-collapse: collapse; font-size:12px;' border='1'>"
                                     for row in shape.table.rows:
-                                        t_html += "<tr>" + "".join([f"<td style='padding:5px;'>{html.escape(c.text)}</td>" for c in row.cells]) + "</tr>"
-                                    t_html += "</table>"
-                                    html_content += f'<div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; background:rgba(255,255,255,0.9); z-index:15;"><div class="content-area">{t_html}</div></div>'
-                                elif shape.has_text_frame and shape.text.strip(): # Text
-                                    html_text = "".join([f"<div>{html.escape(p.text)}</div>" for p in shape.text_frame.paragraphs])
+                                        table_html += "<tr>"
+                                        for cell in row.cells:
+                                            table_html += f"<td style='padding:5px;'>{html.escape(cell.text)}</td>"
+                                        table_html += "</tr>"
+                                    table_html += "</table>"
+                                    html_content += f'<div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; background:rgba(255,255,255,0.9); z-index:15;"><div class="content-area">{table_html}</div></div>'
+
+                                elif shape.has_text_frame and shape.text.strip():
+                                    html_text = ""
+                                    for paragraph in shape.text_frame.paragraphs:
+                                        p_text = "".join([html.escape(run.text) for run in paragraph.runs])
+                                        html_text += f"<div>{p_text}</div>" if p_text.strip() else "<br>"
                                     html_content += f'<div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; min-height:{height}px; z-index:20;"><div class="content-area" style="word-wrap: break-word; white-space: pre-wrap;">{html_text}</div></div>'
-                            except: continue
+                            except Exception:
+                                continue 
                         return html_content
 
                     for i, slide in enumerate(ppt.slides):
-                        t = slide.shapes.title.text if slide.shapes.title else f"Slide {i+1}"
-                        nav += f'<div class="nav-link" onclick="goTo(\'{i}\')"><span class="nav-text">{html.escape(t)}</span></div>'
+                        title_text = slide.shapes.title.text if slide.shapes.title else f"Slide {i+1}"
+                        nav += f'<div class="nav-link" onclick="goTo(\'{i}\')"><span class="nav-text">{html.escape(title_text)}</span></div>'
                         slides += f'<div id="p-{i}" class="page {"active" if i==0 else ""}" style="height:{base_h}px;">{parse_shapes(slide.shapes)}</div>'
 
                 elif file_name.endswith('.pdf'):
@@ -273,35 +286,41 @@ with col1:
                     total_pages = len(doc)
                     for i, page in enumerate(doc):
                         p_scale = base_w / page.rect.width if page.rect.width > 0 else 1
-                        scaled_h = max(1054, int(page.rect.height * p_scale))
+                        scaled_height = max(1054, int(page.rect.height * p_scale))
                         nav += f'<div class="nav-link" onclick="goTo(\'{i}\')"><span class="nav-text">Page {i+1}</span></div>'
-                        slides += f'<div id="p-{i}" class="page {"active" if i==0 else ""}" style="height:{scaled_h}px;">'
+                        slides += f'<div id="p-{i}" class="page {"active" if i==0 else ""}" style="height:{scaled_height}px;">'
+                        
                         for b in page.get_text("dict")["blocks"]:
                             bbox = b["bbox"]
-                            t, l, w, h = bbox[1]*p_scale, bbox[0]*p_scale, (bbox[2]-bbox[0])*p_scale, (bbox[3]-bbox[1])*p_scale
-                            if b["type"] == 0: # Text
-                                txt = "".join(["".join([html.escape(s["text"]) for s in ln["spans"]]) for ln in b["lines"]])
-                                slides += f'<div class="canvas-box" style="top:{t}px; left:{l}px; width:{w}px;"><div class="content-area">{txt}</div></div>'
-                            elif b["type"] == 1: # Image
-                                b64 = base64.b64encode(b.get("image")).decode()
-                                slides += f'<div class="canvas-box" style="top:{t}px; left:{l}px; width:{w}px; height:{h}px;"><img src="data:image/png;base64,{b64}" style="width:100%; height:100%; object-fit:contain;"></div>'
+                            top, left = bbox[1] * p_scale, bbox[0] * p_scale
+                            width, height = (bbox[2] - bbox[0]) * p_scale, (bbox[3] - bbox[1]) * p_scale
+
+                            if b["type"] == 0: 
+                                text_html = "".join(["<div>" + "".join([html.escape(span["text"]) for span in line["spans"]]) + "</div>" for line in b["lines"]])
+                                slides += f'<div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; min-height:{height}px; z-index:20;"><div class="content-area" style="word-wrap: break-word; white-space: pre-wrap;">{text_html}</div></div>'
+                            elif b["type"] == 1: 
+                                img_bytes = b.get("image")
+                                if img_bytes:
+                                    base64_img = base64.b64encode(img_bytes).decode()
+                                    slides += f'<div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; height:{height}px; z-index:10;"><img src="data:image/png;base64,{base64_img}" style="width:100%; height:100%; object-fit:contain;"></div>'
                         slides += '</div>'
 
                 st.session_state.final_html = get_template(total_pages).replace("{{NAV_LINKS}}", nav).replace("{{SLIDE_CONTENT}}", slides).replace("{{VISIBLE_TITLE}}", html.escape(up.name)).replace("{{STORAGE_ID}}", html.escape(unique_storage_id))
+
             except Exception as e:
                 st.session_state.error_msg = f"Error: {e}"
 
+        # Render Error OR Download Button
         if st.session_state.get("error_msg"):
             st.error(st.session_state.error_msg)
             
         elif st.session_state.get("final_html"):
-            # This target div utilizes margin-top: auto to drop to the bottom of the column!
             st.markdown('<div class="final-download-target">', unsafe_allow_html=True)
             st.download_button(
-                label="📥 Download Interactive Notebook", 
+                label="📥 Download Interactive Notebook",
                 data=st.session_state.final_html.encode('utf-8'), 
                 file_name=f"NoteDump_{up.name}.html", 
-                mime="text/html", 
+                mime="text/html",
                 use_container_width=True
             )
             st.markdown('</div>', unsafe_allow_html=True)
