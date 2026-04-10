@@ -81,7 +81,7 @@ div[data-testid="stColumn"]:has([data-testid="stUploadedFile"]) .upload-heading 
 }
 
 /* =======================================================================
-   UPLOAD DROPZONE (THE SURGICAL CENTERING FIX)
+   UPLOAD DROPZONE (THE CONTAINER FIX)
    ======================================================================= */
 [data-testid="stFileUploader"] { 
     padding: 0 !important; 
@@ -95,7 +95,7 @@ div[data-testid="stColumn"]:has([data-testid="stUploadedFile"]) .upload-heading 
     padding: 0 !important;
     display: flex !important;
     flex-direction: column !important;
-    align-items: center !important; /* Perfect visual centering */
+    align-items: center !important;
     justify-content: center !important;
     width: 100% !important;
 }
@@ -106,15 +106,13 @@ div[data-testid="stColumn"]:has([data-testid="stUploadedFile"]) .upload-heading 
     display: none !important;
 }
 
-/* THE REAL FIX: Force the INNER container (actual content wrapper) */
-[data-testid="stFileUploadDropzone"] > div > section > div,
-[data-testid="stFileUploadDropzone"] section div,
+/* 🔥 THIS IS THE REAL FIX: Shrink container to content and center it */
 [data-testid="stFileUploadDropzone"] > div {
+    width: fit-content !important;
+    margin: 0 auto !important;
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
-    justify-content: center !important;
-    width: 100% !important;
 }
 
 /* Custom Upload Button */
