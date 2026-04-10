@@ -21,38 +21,7 @@ st.markdown("""
 <style>
 .stApp { background-color: #000000; }
 
-/* Unlock Streamlit Columns */
-[data-testid="stColumn"], [data-testid="column"] { overflow: visible !important; }
-
-/* Nav & Header (RESTORED TO YOUR ORIGINAL) */
-.top-nav { display: flex; justify-content: flex-end; align-items: center; padding: 10px 20px; position: absolute; top: 0; right: 0; width: 100%; z-index: 999; gap: 12px; }
-.guide-btn { color: #94a3b8; text-decoration: none; font-size: 16px; font-weight: bold; font-family: sans-serif; border: 1px solid #475569; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: #1e293b; transition: 0.2s; }
-.guide-btn:hover { color: white; border-color: #0ea5e9; transform: scale(1.1); background: #0ea5e9;}
-.coffee-btn { color: #0ea5e9; text-decoration: none; font-weight: bold; font-size: 12px; border: 1px solid #0ea5e9; padding: 4px 10px; border-radius: 20px; transition: 0.2s; white-space: nowrap; }
-.coffee-btn:hover { background: rgba(14, 165, 233, 0.15); color: #fff; }
-
-.modal-window { position: fixed; background-color: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px); top: 0; right: 0; bottom: 0; left: 0; z-index: 99999; visibility: hidden; opacity: 0; transition: all 0.3s; display: flex; justify-content: center; align-items: center; }
-.modal-window:target { visibility: visible; opacity: 1; }
-.modal-content { background: #0f172a; width: 90%; max-width: 650px; padding: 30px; border-radius: 16px; border: 1px solid #334155; color: #f1f5f9; position: relative; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
-.modal-close { position: absolute; top: 20px; right: 25px; color: #64748b; text-decoration: none; font-size: 28px; font-weight: bold; transition: 0.2s; }
-.modal-close:hover { color: #ef4444; }
-
-/* Modal Content Styling */
-.modal-content h2 { margin-top: 0; color: #4f46e5; font-size: 24px; border-bottom: 1px solid #1e293b; padding-bottom: 10px;}
-.modal-content h4 { color: #0ea5e9; margin-top: 20px; margin-bottom: 10px; font-size: 18px;}
-.modal-content li { margin-bottom: 10px; line-height: 1.5; font-size: 15px; color: #cbd5e1;}
-.pro-tag { color: #10b981; font-weight: bold; } 
-
-.hero { text-align: center; color: white; padding: 10px 0; max-width: 500px; margin: 0 auto; }
-.logo-container { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 0px;}
-.logo-text { font-size: 55px; font-weight: 800; margin: 0; color: #f8fafc;}
-.logo-icon { font-size: 48px; margin: 0;}
-.tagline { font-size: 18px; color: #94a3b8; margin-top: -8px !important; margin-bottom: 8px !important; font-weight: normal; }
-.support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 20px !important; }
-
-/* =======================================================================
-   1. COLUMN WRAPPERS: STRICT 220PX HEIGHT
-   ======================================================================= */
+/* 1. COLUMN WRAPPERS: STRICT 220PX HEIGHT */
 [data-testid="stColumn"] {
     background-color: #0f172a !important;
     border-radius: 12px !important;
@@ -63,7 +32,7 @@ st.markdown("""
     box-sizing: border-box !important;
 }
 
-[data-testid="stColumn"]:nth-child(1) { border: 1px dashed #334155 !important; }
+[data-testid="stColumn"]:nth-child(1) { border: 1px dashed #334155 !important; position: relative; }
 [data-testid="stColumn"]:nth-child(2) { border: 1px solid #1e293b !important; transition: 0.2s !important; }
 [data-testid="stColumn"]:nth-child(2):hover { border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; }
 
@@ -74,13 +43,13 @@ st.markdown("""
     flex-direction: column !important;
     justify-content: center !important;
     align-items: center !important;
-    gap: 12px !important; /* Prevents sandwiching */
+    gap: 10px !important; 
     width: 100% !important;
 }
 [data-testid="stColumn"] > div[data-testid="stVerticalBlock"] > div { width: 100% !important; }
 
 /* =======================================================================
-   2. LEFT BOX: UPLOAD HEADING (EMPTY STATE)
+   2. LEFT BOX: UPLOAD HEADING (MOVED UP)
    ======================================================================= */
 .upload-heading {
     font-size: 20px !important;
@@ -88,11 +57,17 @@ st.markdown("""
     color: #f8fafc;
     text-align: center;
     line-height: 1.2;
-    margin-bottom: 5px;
+    margin-top: -15px !important; /* Pushes the text further up */
+    margin-bottom: 5px !important;
+}
+
+/* Hide heading automatically when file is uploaded */
+div[data-testid="stVerticalBlock"]:has([data-testid="stUploadedFile"]) .upload-heading {
+    display: none !important;
 }
 
 /* =======================================================================
-   3. LEFT BOX: UPLOAD DROPZONE (EMPTY STATE)
+   3. LEFT BOX: UPLOAD DROPZONE (CENTERED UI)
    ======================================================================= */
 [data-testid="stFileUploader"] > label { display: none !important; }
 [data-testid="stFileUploader"] { padding: 0 !important; }
@@ -103,8 +78,8 @@ st.markdown("""
     padding: 0 !important;
     display: flex !important;
     flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
+    align-items: center !important; /* PERFECT CENTERING */
+    justify-content: center !important; /* PERFECT CENTERING */
     width: 100% !important;
 }
 
@@ -117,14 +92,14 @@ st.markdown("""
 [data-testid="stFileUploadDropzone"] > div {
     display: flex !important;
     flex-direction: column !important;
-    align-items: center !important;
+    align-items: center !important; /* PERFECT CENTERING */
     width: 100% !important;
 }
 
 /* Custom Upload Button */
 [data-testid="stFileUploadDropzone"] button {
     order: 1 !important;
-    margin: 0 auto !important;
+    margin: 0 auto !important; /* EXACT CENTER */
     background-color: transparent !important;
     border: 1px solid #334155 !important;
     border-radius: 6px !important;
@@ -135,7 +110,7 @@ st.markdown("""
 }
 [data-testid="stFileUploadDropzone"] button:hover { background-color: rgba(255,255,255,0.05) !important; border-color: #94a3b8 !important;}
 [data-testid="stFileUploadDropzone"] button::after {
-    content: "↑ Upload File" !important;
+    content: "↑ Upload" !important;
     position: absolute;
     top: 50%; left: 50%;
     transform: translate(-50%, -50%);
@@ -148,31 +123,71 @@ st.markdown("""
 [data-testid="stFileUploadDropzone"] small {
     order: 2 !important;
     display: block !important;
-    text-align: center !important;
+    text-align: center !important; /* EXACT CENTER */
     color: #94a3b8 !important;
     margin-top: 10px !important;
     font-size: 13px !important;
+    width: 100% !important;
 }
 
 /* =======================================================================
-   4. LEFT BOX: ACTIVE STATE (FILE UPLOADED)
+   4. ACTIVE STATE (UPLOADED FILE UI REWRITE)
    ======================================================================= */
-/* Hide the Dropzone area once uploaded */
-div[data-testid="stFileUploader"]:has([data-testid="stUploadedFile"]) [data-testid="stFileUploadDropzone"] {
+/* Hide the + button / extra dropzone area entirely */
+div[data-testid="stFileUploader"]:has([data-testid="stUploadedFile"]) [data-testid="stFileUploadDropzone"],
+ul[data-testid="stUploadedFileList"] + div {
     display: none !important;
 }
 
-/* Native Progress Bar Container */
+/* Hide Streamlit's native spinning circle */
+[data-testid="stUploadedFile"] > div > div > svg {
+    display: none !important;
+}
+
+/* The File Box */
 [data-testid="stUploadedFile"] {
     background: #1e293b !important;
     border: none !important;
     border-radius: 8px !important;
-    padding: 12px 15px !important;
+    padding: 15px 50px 15px 15px !important; /* Right padding ensures X button fits */
     width: 100% !important;
+    position: relative !important;
+    overflow: hidden !important;
+    display: flex !important;
+    align-items: center !important;
+    margin-top: 10px !important;
+}
+
+/* HORIZONTAL PROGRESS BAR (Replaces the spinner) */
+[data-testid="stUploadedFile"]::after {
+    content: '';
+    position: absolute;
+    bottom: 0; 
+    left: 0;
+    height: 4px;
+    width: 100%;
+    background: linear-gradient(90deg, #0ea5e9, #10b981);
+    border-radius: 0 0 8px 8px;
+    animation: loadBar 1s ease-out forwards;
+}
+
+@keyframes loadBar {
+    0% { width: 0%; }
+    100% { width: 100%; }
+}
+
+/* ENLARGED & CENTER-ALIGNED 'X' BUTTON */
+[data-testid="stUploadedFile"] button {
+    background: transparent !important; 
+    border: none !important; 
+    position: absolute !important;
+    right: 15px !important; /* Locks it to the right */
+    top: 50% !important;    /* Centers vertically */
+    transform: translateY(-50%) scale(1.4) !important; /* Shifts perfectly to center and makes it bigger */
+    margin: 0 !important;
 }
 [data-testid="stUploadedFile"] span, [data-testid="stUploadedFile"] small { color: #f8fafc !important; font-size: 14px !important; }
 [data-testid="stUploadedFile"] svg { fill: #f8fafc !important; }
-[data-testid="stUploadedFile"] button { background: transparent !important; border: none !important; margin: 0 !important; width: auto !important; height: auto !important; }
 
 /* =======================================================================
    5. DOWNLOAD BUTTON (LEFT BOX)
@@ -184,8 +199,8 @@ div[data-testid="stFileUploader"]:has([data-testid="stUploadedFile"]) [data-test
     border: 1px solid #0ea5e9 !important;
     color: #0ea5e9 !important;
     border-radius: 8px !important;
-    height: 42px !important;
-    font-size: 14px !important;
+    height: 45px !important;
+    font-size: 15px !important;
     font-weight: bold !important;
     transition: 0.2s;
 }
@@ -208,6 +223,31 @@ div[data-testid="stFileUploader"]:has([data-testid="stUploadedFile"]) [data-test
     content: "Create\\A Blank\\A Notebook"; white-space: pre !important; font-size: 24px !important; 
     font-weight: 800 !important; color: #f8fafc !important; line-height: 1.1 !important; text-align: left !important; letter-spacing: -1px !important;
 }
+
+/* Nav & Header */
+.top-nav { display: flex; justify-content: flex-end; align-items: center; padding: 10px 20px; position: absolute; top: 0; right: 0; width: 100%; z-index: 999; gap: 12px; }
+.guide-btn { color: #94a3b8; text-decoration: none; font-size: 16px; font-weight: bold; font-family: sans-serif; border: 1px solid #475569; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: #1e293b; transition: 0.2s; }
+.guide-btn:hover { color: white; border-color: #0ea5e9; transform: scale(1.1); background: #0ea5e9;}
+.coffee-btn { color: #0ea5e9; text-decoration: none; font-weight: bold; font-size: 12px; border: 1px solid #0ea5e9; padding: 4px 10px; border-radius: 20px; transition: 0.2s; white-space: nowrap; }
+.coffee-btn:hover { background: rgba(14, 165, 233, 0.15); color: #fff; }
+
+.modal-window { position: fixed; background-color: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px); top: 0; right: 0; bottom: 0; left: 0; z-index: 99999; visibility: hidden; opacity: 0; transition: all 0.3s; display: flex; justify-content: center; align-items: center; }
+.modal-window:target { visibility: visible; opacity: 1; }
+.modal-content { background: #0f172a; width: 90%; max-width: 650px; padding: 30px; border-radius: 16px; border: 1px solid #334155; color: #f1f5f9; position: relative; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
+.modal-close { position: absolute; top: 20px; right: 25px; color: #64748b; text-decoration: none; font-size: 28px; font-weight: bold; transition: 0.2s; }
+.modal-close:hover { color: #ef4444; }
+
+.modal-content h2 { margin-top: 0; color: #4f46e5; font-size: 24px; border-bottom: 1px solid #1e293b; padding-bottom: 10px;}
+.modal-content h4 { color: #0ea5e9; margin-top: 20px; margin-bottom: 10px; font-size: 18px;}
+.modal-content li { margin-bottom: 10px; line-height: 1.5; font-size: 15px; color: #cbd5e1;}
+.pro-tag { color: #10b981; font-weight: bold; } 
+
+.hero { text-align: center; color: white; padding: 10px 0; max-width: 500px; margin: 0 auto; }
+.logo-container { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 0px;}
+.logo-text { font-size: 55px; font-weight: 800; margin: 0; color: #f8fafc;}
+.logo-icon { font-size: 48px; margin: 0;}
+.tagline { font-size: 18px; color: #94a3b8; margin-top: -8px !important; margin-bottom: 8px !important; font-weight: normal; }
+.support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 20px !important; }
 
 @media (max-width: 768px) { .top-nav { position: relative; justify-content: center; padding-top: 20px; } }
 [data-testid="block-container"] { max-width: 800px; padding-top: 3rem; }
@@ -282,14 +322,8 @@ with col2:
     )
 
 with col1:
-    # Python placeholder logic: This GUARANTEES the heading disappears 
-    # instead of relying on buggy CSS selectors.
-    heading_placeholder = st.empty()
+    st.markdown('<div class="upload-heading">Convert file to an<br>interactive notebook</div>', unsafe_allow_html=True)
     up = st.file_uploader("Upload a document", label_visibility="hidden", type=["pptx", "ppt", "pdf"])
-
-    # If no file is uploaded yet, render the text into the empty container.
-    if not up:
-        heading_placeholder.markdown('<div class="upload-heading">Convert your file to an<br>interactive notebook</div>', unsafe_allow_html=True)
 
     # ==========================================================================
     # SECTION 4: FILE PARSING & PROCESSING
