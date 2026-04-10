@@ -36,15 +36,29 @@ st.markdown("""
 [data-testid="stColumn"]:nth-child(2) { border: 1px solid #1e293b !important; transition: 0.2s !important; }
 [data-testid="stColumn"]:nth-child(2):hover { border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; }
 
-/* THE FIX: START AT THE TOP, NOT THE CENTER */
-[data-testid="stColumn"] > div[data-testid="stVerticalBlock"] {
+/* =======================================================================
+   COLUMN ALIGNMENTS: SEPARATED LOGIC FOR LEFT VS RIGHT
+   ======================================================================= */
+/* LEFT BOX: Start at the top to utilize space and create the gap */
+[data-testid="stColumn"]:nth-child(1) > div[data-testid="stVerticalBlock"] {
     height: 100% !important;
     display: flex !important;
     flex-direction: column !important;
-    justify-content: flex-start !important; /* Starts elements at the top to utilize the empty space */
+    justify-content: flex-start !important; 
     align-items: center !important;
     width: 100% !important;
-    padding-top: 10px !important; /* Small buffer from the top border */
+    padding-top: 10px !important; 
+}
+
+/* RIGHT BOX: Absolute dead center vertically and horizontally */
+[data-testid="stColumn"]:nth-child(2) > div[data-testid="stVerticalBlock"] {
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important; 
+    align-items: center !important;
+    width: 100% !important;
+    padding: 0 !important; /* Prevents any padding from pushing it down */
 }
 
 /* =======================================================================
@@ -57,7 +71,7 @@ st.markdown("""
     text-align: center;
     line-height: 1.2;
     margin-top: 0 !important; 
-    margin-bottom: 35px !important; /* THIS IS THE GAP BETWEEN THE TEXT AND THE UPLOAD BUTTON */
+    margin-bottom: 35px !important; /* GAP BETWEEN TEXT AND UPLOAD BUTTON */
     width: 100%;
 }
 
