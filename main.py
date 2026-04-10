@@ -58,7 +58,7 @@ st.markdown("""
     justify-content: center !important; 
     align-items: center !important;
     width: 100% !important;
-    padding: 0 !important; /* Prevents any padding from pushing it down */
+    padding: 0 !important; 
 }
 
 /* =======================================================================
@@ -81,16 +81,21 @@ div[data-testid="stColumn"]:has([data-testid="stUploadedFile"]) .upload-heading 
 }
 
 /* =======================================================================
-   UPLOAD DROPZONE (PERFECTLY ALIGNED BELOW HEADING)
+   UPLOAD DROPZONE (PERFECTLY CENTERED HORIZONTALLY)
    ======================================================================= */
 [data-testid="stFileUploader"] { 
     padding: 0 !important; 
     width: 100% !important; 
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
 }
 [data-testid="stFileUploader"] > label { display: none !important; }
+
+/* Force Streamlit's invisible wrapper div to center its children */
+[data-testid="stFileUploader"] > div {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    width: 100% !important;
+}
 
 [data-testid="stFileUploadDropzone"] {
     background: transparent !important;
@@ -98,7 +103,7 @@ div[data-testid="stColumn"]:has([data-testid="stUploadedFile"]) .upload-heading 
     padding: 0 !important;
     display: flex !important;
     flex-direction: column !important;
-    align-items: center !important;
+    align-items: center !important; /* Absolute Horizontal Center */
     justify-content: center !important;
     width: 100% !important;
 }
@@ -109,11 +114,12 @@ div[data-testid="stColumn"]:has([data-testid="stUploadedFile"]) .upload-heading 
     display: none !important;
 }
 
-/* Force inner wrappers to center */
-[data-testid="stFileUploadDropzone"] > div {
+/* Aggressively force all deeply nested internal wrappers to center */
+[data-testid="stFileUploadDropzone"] > div,
+[data-testid="stFileUploadDropzone"] > div > div {
     display: flex !important;
     flex-direction: column !important;
-    align-items: center !important;
+    align-items: center !important; /* Absolute Horizontal Center */
     text-align: center !important;
     width: 100% !important;
 }
