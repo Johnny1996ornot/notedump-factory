@@ -81,11 +81,9 @@ div[data-testid="stColumn"]:has([data-testid="stUploadedFile"]) .upload-heading 
 }
 
 /* =======================================================================
-   UPLOAD DROPZONE (BRUTE FORCE CENTERING)
+   UPLOAD DROPZONE (THE BLANKET CENTERING FIX)
    ======================================================================= */
-/* Ensure the uploader container takes full width so centering works */
-[data-testid="stFileUploader"], 
-[data-testid="stFileUploader"] > div { 
+[data-testid="stFileUploader"] { 
     padding: 0 !important; 
     width: 100% !important; 
 }
@@ -108,27 +106,24 @@ div[data-testid="stColumn"]:has([data-testid="stUploadedFile"]) .upload-heading 
     display: none !important;
 }
 
-/* THE FIX: Brute-force center EVERY single nested wrapper Streamlit creates */
-[data-testid="stFileUploadDropzone"] div,
-[data-testid="stFileUploadDropzone"] span,
-[data-testid="stFileUploadDropzone"] section {
+/* THE FIX: Force EVERY nested container inside the dropzone to center */
+[data-testid="stFileUploadDropzone"],
+[data-testid="stFileUploadDropzone"] > div,
+[data-testid="stFileUploadDropzone"] > section,
+[data-testid="stFileUploadDropzone"] div {
     display: flex !important;
     flex-direction: column !important;
-    align-items: center !important; 
+    align-items: center !important;  
     justify-content: center !important;
     text-align: center !important;
     width: 100% !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
 }
 
 /* Custom Upload Button */
 [data-testid="stFileUploadDropzone"] button {
     order: 1 !important;
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    margin: 0 auto !important; /* Absolute dead center */
+    margin: 0 auto !important; /* Dead Center */
+    align-self: center !important; /* Dead Center */
     background-color: transparent !important;
     border: 1px solid #334155 !important;
     border-radius: 6px !important;
@@ -136,6 +131,7 @@ div[data-testid="stColumn"]:has([data-testid="stUploadedFile"]) .upload-heading 
     height: 38px !important;
     position: relative !important;
     color: transparent !important; 
+    display: block !important;
 }
 [data-testid="stFileUploadDropzone"] button:hover { background-color: rgba(255,255,255,0.05) !important; border-color: #94a3b8 !important;}
 [data-testid="stFileUploadDropzone"] button::after {
@@ -152,8 +148,8 @@ div[data-testid="stColumn"]:has([data-testid="stUploadedFile"]) .upload-heading 
 [data-testid="stFileUploadDropzone"] small {
     order: 2 !important;
     display: block !important;
-    text-align: center !important;
-    margin: 10px auto 0 auto !important; /* Absolute dead center */
+    text-align: center !important; /* Dead Center */
+    margin: 10px auto 0 auto !important; 
     color: #94a3b8 !important;
     font-size: 13px !important;
     width: 100% !important;
