@@ -37,12 +37,6 @@ st.markdown("""
 .modal-close { position: absolute; top: 20px; right: 25px; color: #64748b; text-decoration: none; font-size: 28px; font-weight: bold; transition: 0.2s; }
 .modal-close:hover { color: #ef4444; }
 
-/* Modal Content Styling */
-.modal-content h2 { margin-top: 0; color: #4f46e5; font-size: 24px; border-bottom: 1px solid #1e293b; padding-bottom: 10px;}
-.modal-content h4 { color: #0ea5e9; margin-top: 20px; margin-bottom: 10px; font-size: 18px;}
-.modal-content li { margin-bottom: 10px; line-height: 1.5; font-size: 15px; color: #cbd5e1;}
-.pro-tag { color: #10b981; font-weight: bold; } 
-
 .hero { text-align: center; color: white; padding: 10px 0; max-width: 500px; margin: 0 auto; }
 .logo-container { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 0px;}
 .logo-text { font-size: 55px; font-weight: 800; margin: 0; color: #f8fafc;}
@@ -50,15 +44,14 @@ st.markdown("""
 .tagline { font-size: 18px; color: #94a3b8; margin-top: -8px !important; margin-bottom: 8px !important; font-weight: normal; }
 .support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 20px !important; }
 
-
 /* =======================================================================
-   1. COLUMN WRAPPERS (FORCING EQUAL SIZE BOXES)
+   1. COLUMN WRAPPERS
    ======================================================================= */
 [data-testid="stColumn"]:nth-child(1),
 [data-testid="stColumn"]:nth-child(2) {
     background-color: #0f172a !important;
     border-radius: 12px !important;
-    height: 220px !important; /* Fixed exactly the same */
+    height: 240px !important;
     padding: 20px !important;
     box-sizing: border-box !important;
     display: flex !important;
@@ -66,9 +59,7 @@ st.markdown("""
 }
 
 /* Left Box Border (Upload) */
-[data-testid="stColumn"]:nth-child(1) {
-    border: 1px dashed #334155 !important;
-}
+[data-testid="stColumn"]:nth-child(1) { border: 1px dashed #334155 !important; }
 
 /* Right Box Border (Blank Notebook) */
 [data-testid="stColumn"]:nth-child(2) {
@@ -80,7 +71,7 @@ st.markdown("""
     background: rgba(14, 165, 233, 0.1) !important;
 }
 
-/* Force contents to stretch full height and vertically center inside boxes */
+/* Vertical centering within columns */
 [data-testid="stColumn"] > div[data-testid="stVerticalBlock"] {
     height: 100% !important;
     display: flex !important;
@@ -90,119 +81,88 @@ st.markdown("""
     width: 100% !important;
     gap: 0 !important; 
 }
-[data-testid="stColumn"] > div[data-testid="stVerticalBlock"] > div { width: 100% !important; }
-
 
 /* =======================================================================
-   2. RIGHT BOX: BLANK NOTEBOOK
+   2. LEFT BOX: UPLOAD UI
    ======================================================================= */
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] {
-    height: 100% !important; width: 100% !important; margin: 0 !important;
-}
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button {
-    background: transparent !important; border: none !important; box-shadow: none !important;
-    height: 100% !important; width: 100% !important;
-    display: flex !important; flex-direction: row !important; justify-content: center !important; align-items: center !important;
-}
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button * { display: none !important; }
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::before {
-    content: "📓"; font-size: 70px !important; margin-right: 15px !important;
-}
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::after {
-    content: "Create\\A Blank\\A Notebook"; white-space: pre !important; font-size: 26px !important; 
-    font-weight: 800 !important; color: #f8fafc !important; line-height: 1.1 !important; text-align: left !important; letter-spacing: -1px !important;
+.upload-heading {
+    font-size: 24px;
+    font-weight: 800;
+    color: #f8fafc;
+    margin-bottom: 15px;
+    text-align: center;
+    line-height: 1.1;
+    letter-spacing: -1px;
 }
 
-
-/* =======================================================================
-   3. LEFT BOX: DEFAULT STATE (NO FILE)
-   ======================================================================= */
 [data-testid="stFileUploader"] > label { display: none !important; }
 [data-testid="stFileUploader"], [data-testid="stFileUploadDropzone"] {
-    background: transparent !important; border: none !important; padding: 0 !important; min-height: auto !important; height: auto !important; margin: 0 !important;
+    background: transparent !important; border: none !important; padding: 0 !important;
 }
 
-/* Hide native default visual text */
+/* Center and clean up the dropzone */
 [data-testid="stFileUploadDropzone"] svg, 
 [data-testid="stFileUploadDropzone"] div[data-testid="stMarkdownContainer"] p {
     display: none !important;
 }
 
 [data-testid="stFileUploadDropzone"] > div {
-    display: flex !important; flex-direction: column !important; align-items: center !important; width: 100% !important;
-}
-/* Cloud */
-[data-testid="stFileUploadDropzone"] > div::before {
-    content: ""; display: block !important; width: 45px !important; height: 45px !important; margin-bottom: 10px !important;
-    background-image: url('data:image/svg+xml;utf8,<svg fill="%23ffffff" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.36 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>') !important;
-    background-size: contain !important; background-repeat: no-repeat !important; background-position: center !important; order: 1 !important;
-}
-/* Drag Text */
-[data-testid="stFileUploadDropzone"] > div::after {
-    content: "Drag and drop file here" !important; display: block !important; font-size: 16px !important; font-weight: bold !important; color: #f8fafc !important; margin-bottom: 5px !important; order: 2 !important;
-}
-/* 200MB Limit */
-[data-testid="stFileUploadDropzone"] small {
-    order: 3 !important; font-size: 13px !important; color: #94a3b8 !important; margin-bottom: 15px !important; display: block !important; text-align: center !important; width: 100% !important;
-}
-/* Browse Button */
-[data-testid="stFileUploadDropzone"] button {
-    order: 4 !important; background-color: #4f46e5 !important; color: transparent !important; border: none !important; border-radius: 6px !important; width: 140px !important; height: 42px !important; position: relative !important; display: flex !important; align-items: center !important; justify-content: center !important; margin: 0 auto !important;
-}
-[data-testid="stFileUploadDropzone"] button:hover { background-color: #4338ca !important; }
-[data-testid="stFileUploadDropzone"] button::after {
-    content: "Browse files" !important; position: absolute !important; color: #ffffff !important; font-size: 15px !important; font-weight: bold !important; left: 0; right: 0; display: flex; align-items: center; justify-content: center;
+    display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; width: 100% !important;
 }
 
+/* Center the small limit text */
+[data-testid="stFileUploadDropzone"] small {
+    order: 2 !important; font-size: 13px !important; color: #475569 !important; margin-top: 10px !important; display: block !important; text-align: center !important;
+}
+
+/* Center and style the Browse button */
+[data-testid="stFileUploadDropzone"] button {
+    order: 1 !important; background-color: #1e293b !important; color: transparent !important; border: 1px solid #334155 !important; border-radius: 8px !important; width: 140px !important; height: 42px !important; position: relative !important; display: flex !important; align-items: center !important; justify-content: center !important; margin: 0 auto !important;
+}
+[data-testid="stFileUploadDropzone"] button:hover { background-color: #4f46e5 !important; border-color: #4f46e5 !important;}
+[data-testid="stFileUploadDropzone"] button::after {
+    content: "Browse files" !important; position: absolute !important; color: #ffffff !important; font-size: 15px !important; font-weight: bold !important; display: flex; align-items: center; justify-content: center;
+}
 
 /* =======================================================================
-   4. LEFT BOX: UPLOADED STATE (FILE ACTIVE & PROGRESS BAR)
+   3. ACTIVE STATE: HIDE DEFAULT UI WHEN FILE UPLOADED
    ======================================================================= */
-/* HIDE the default drag/drop UI completely when a file is uploaded */
-div[data-testid="stFileUploader"]:has([data-testid="stUploadedFile"]) [data-testid="stFileUploadDropzone"] {
+div[data-testid="stColumn"]:has([data-testid="stUploadedFile"]) .upload-heading,
+div[data-testid="stColumn"]:has([data-testid="stUploadedFile"]) [data-testid="stFileUploadDropzone"] {
     display: none !important;
 }
 
-/* NATIVE Progress Bar Container */
+/* Progress Bar / Uploaded File Styling */
 [data-testid="stUploadedFile"] {
     background: rgba(30, 41, 59, 0.7) !important;
-    border: 1px solid #334155 !important;
-    border-radius: 8px !important;
-    padding: 10px 15px !important;
-    margin-bottom: 15px !important; 
+    border: 1px solid #0ea5e9 !important;
+    border-radius: 12px !important;
+    padding: 15px !important;
     width: 100% !important;
 }
-[data-testid="stUploadedFile"] span, [data-testid="stUploadedFile"] small {
-    color: #f8fafc !important; font-size: 14px !important;
-}
-[data-testid="stUploadedFile"] svg { fill: #f8fafc !important; }
-
-/* The 'X' Button styling (safely contained in stUploadedFile without inheriting Browse text) */
-[data-testid="stUploadedFile"] button {
-    background: transparent !important; border: none !important; margin: 0 !important; width: auto !important; height: auto !important;
-}
-
 
 /* =======================================================================
-   5. THE NEW DOWNLOAD BUTTON (INSIDE THE LEFT BOX)
+   4. RIGHT BOX: BLANK NOTEBOOK
    ======================================================================= */
-.final-download-target {
-    width: 100% !important;
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] { height: 100% !important; width: 100% !important; margin: 0 !important; }
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button {
+    background: transparent !important; border: none !important; box-shadow: none !important;
+    height: 100% !important; width: 100% !important;
+    display: flex !important; flex-direction: row !important; justify-content: center !important; align-items: center !important;
 }
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button * { display: none !important; }
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::before { content: "📓"; font-size: 70px !important; margin-right: 15px !important; }
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::after {
+    content: "Create\\A Blank\\A Notebook"; white-space: pre !important; font-size: 26px !important; 
+    font-weight: 800 !important; color: #f8fafc !important; line-height: 1.1 !important; text-align: left !important; letter-spacing: -1px !important;
+}
+
+/* =======================================================================
+   5. FINAL DOWNLOAD BUTTON (LEFT BOX)
+   ======================================================================= */
+.final-download-target { width: 100% !important; margin-top: 15px !important; }
 .final-download-target [data-testid="stDownloadButton"] button {
-    width: 100% !important;
-    height: 50px !important;
-    background: #1e293b !important;
-    color: #0ea5e9 !important;
-    border: 1px solid #0ea5e9 !important;
-    border-radius: 8px !important;
-    font-size: 16px !important;
-    font-weight: bold !important;
-    transition: 0.2s;
-}
-.final-download-target [data-testid="stDownloadButton"] button:hover {
-    background: #0ea5e9 !important;
-    color: white !important;
+    width: 100% !important; height: 50px !important; background: #0ea5e9 !important; color: white !important; border: none !important; border-radius: 8px !important; font-size: 16px !important; font-weight: bold !important;
 }
 
 @media (max-width: 768px) { .top-nav { position: relative; justify-content: center; padding-top: 20px; } }
@@ -219,21 +179,11 @@ div[data-testid="stFileUploader"]:has([data-testid="stUploadedFile"]) [data-test
 <a href="#" class="modal-close" title="Close">&times;</a>
 <h2>📝 Welcome to NoteDump</h2>
 <p>Turning your documents into an interactive notebook.</p>
-
 <h4>✨ NoteDump Features & Guide</h4>
 <ul>
 <li>Providing an HTML based editor that allows for creating seamless interactive notebooks.</li>
 <li>Add pins to images to correctly identify them.</li>
 <li>Add audio or links that will allow a better review.</li>
-<li>Create reviewers with more freedom and specialized tools.</li>
-</ul>
-
-<h4>🚀 Why Use NoteDump?</h4>
-<ul>
-<li><span class="pro-tag">100% Offline Capable:</span> Once downloaded, your interactive notebook is a single HTML file that works perfectly without an internet connection.</li>
-<li><span class="pro-tag">Ultimate Privacy:</span> No accounts, no cloud syncing, no subscriptions. Your notes and files stay locally on your device.</li>
-<li><span class="pro-tag">Limitless Annotation:</span> Draw freely, drop sticky notes, create custom tables, and pin interactive markers directly onto your lecture slides.</li>
-<li><span class="pro-tag">Universal Compatibility:</span> Works natively on any modern device (desktop, tablet, or phone) using just a standard web browser.</li>
 </ul>
 </div>
 </div>
@@ -249,43 +199,28 @@ div[data-testid="stFileUploader"]:has([data-testid="stUploadedFile"]) [data-test
 """, unsafe_allow_html=True)
 
 # ==========================================================================
-# SECTION 2: PRE-GENERATE BLANK NOTEBOOK 
+# SECTION 2: LOGIC & PROCESSING
 # ==========================================================================
 if "blank_html" not in st.session_state:
-    blank_nav = '<div class="nav-link active-nav" id="link-0" onclick="goTo(\'0\')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text">Page 1</span></div>'
-    blank_slides = '<div id="p-0" class="page active" data-page-width="816" data-page-height="1054" style="width:816px; height:1054px;"></div>'
     unique_blank_id = f"New_Notebook_{int(time.time())}"
-
     st.session_state.blank_html = get_template(1)\
-        .replace("{{NAV_LINKS}}", blank_nav)\
-        .replace("{{SLIDE_CONTENT}}", blank_slides)\
+        .replace("{{NAV_LINKS}}", '<div class="nav-link active-nav" id="link-0" onclick="goTo(\'0\')"><span class="nav-text">Page 1</span></div>')\
+        .replace("{{SLIDE_CONTENT}}", '<div id="p-0" class="page active" style="width:816px; height:1054px;"></div>')\
         .replace("{{VISIBLE_TITLE}}", "New_Notebook")\
         .replace("{{STORAGE_ID}}", unique_blank_id)
 
-# ==========================================================================
-# SECTION 3: THE 2-COLUMN LAYOUT
-# ==========================================================================
 st.markdown('<div style="margin-bottom: 10px;"></div>', unsafe_allow_html=True)
 col1, col2 = st.columns(2, gap="medium")
 
 with col2:
-    st.download_button(
-        label="Create Blank Notebook", 
-        data=st.session_state.blank_html.encode('utf-8'), 
-        file_name="NoteDump_Blank.html", 
-        mime="text/html",
-        use_container_width=True
-    )
+    st.download_button(label="Create Blank Notebook", data=st.session_state.blank_html.encode('utf-8'), file_name="NoteDump_Blank.html", mime="text/html", use_container_width=True)
 
 with col1:
+    st.markdown('<div class="upload-heading">Convert file to<br>interactive notebook</div>', unsafe_allow_html=True)
     up = st.file_uploader("Upload a document", label_visibility="hidden", type=["pptx", "ppt", "pdf"])
 
-    # ==========================================================================
-    # SECTION 4: FILE PARSING & PROCESSING
-    # ==========================================================================
     if up:
         file_key = f"{up.name}_{up.size}"
-
         if st.session_state.get("current_file_key") != file_key:
             st.session_state.current_file_key = file_key
             st.session_state.final_html = None
@@ -296,14 +231,12 @@ with col1:
                 file_name = up.name.lower()
                 total_pages = 0
                 unique_storage_id = f"{file_name}_{int(time.time())}"
-                base_w = 816 
-                base_h = 1054
+                base_w, base_h = 816, 1054
 
                 if file_name.endswith(('.pptx', '.ppt')):
                     ppt = Presentation(up)
                     total_pages = len(ppt.slides)
-                    slide_width_emu = ppt.slide_width or 9144000
-                    scale_w = base_w / slide_width_emu
+                    scale_w = base_w / (ppt.slide_width or 9144000)
 
                     def parse_shapes(shapes):
                         html_content = ""
@@ -312,180 +245,58 @@ with col1:
                                 if shape.shape_type == 6: 
                                     html_content += parse_shapes(shape.shapes)
                                     continue
-
                                 top = (shape.top * scale_w) if shape.top else 0
                                 left = (shape.left * scale_w) if shape.left else 0
                                 width = (shape.width * scale_w) if shape.width else 200
                                 height = (shape.height * scale_w) if shape.height else 50
 
-                                if shape.shape_type == 13: 
+                                if shape.shape_type == 13: # Image
                                     img_stream = BytesIO(shape.image.blob)
                                     base64_img = base64.b64encode(img_stream.getvalue()).decode()
-                                    html_content += f'''
-                                    <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; height:{height}px; z-index:10; transform: translate(0px, 0px);">
-                                        <img src="data:image/png;base64,{base64_img}" style="width:100%; height:100%; object-fit:contain;">
-                                    </div>'''
-
-                                elif shape.has_table:
-                                    table_html = "<table style='width:100%; height:100%; border-collapse: collapse; font-size:12px;' border='1'>"
+                                    html_content += f'<div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; height:{height}px; z-index:10;"><img src="data:image/png;base64,{base64_img}" style="width:100%; height:100%; object-fit:contain;"></div>'
+                                elif shape.has_table: # Table
+                                    t_html = "<table style='width:100%; border-collapse: collapse; font-size:12px;' border='1'>"
                                     for row in shape.table.rows:
-                                        table_html += "<tr>"
-                                        for cell in row.cells:
-                                            table_html += f"<td style='padding:5px;'>{html.escape(cell.text)}</td>"
-                                        table_html += "</tr>"
-                                    table_html += "</table>"
-                                    html_content += f'''
-                                    <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; background:rgba(255,255,255,0.9); z-index:15; transform: translate(0px, 0px);">
-                                        <div class="content-area">{table_html}</div>
-                                    </div>'''
-
-                                elif shape.has_text_frame and shape.text.strip():
-                                    html_text = ""
-                                    for paragraph in shape.text_frame.paragraphs:
-                                        p_text = ""
-                                        for run in paragraph.runs:
-                                            r_txt = html.escape(run.text)
-                                            fs_style = ""
-                                            if hasattr(run.font, 'size') and run.font.size:
-                                                pt_size = run.font.size.pt
-                                                px_size = max(10, int(pt_size * scale_w * 12700 * 1.33))
-                                                fs_style = f"font-size:{px_size}px;"
-
-                                            if getattr(run.font, 'bold', False) == True: r_txt = f"<strong>{r_txt}</strong>"
-                                            if getattr(run.font, 'italic', False) == True: r_txt = f"<em>{r_txt}</em>"
-                                            if getattr(run.font, 'underline', False) == True: r_txt = f"<u>{r_txt}</u>"
-
-                                            if fs_style: p_text += f"<span style='{fs_style}'>{r_txt}</span>"
-                                            else: p_text += r_txt
-
-                                        if not p_text.strip(): html_text += "<br>"
-                                        else: html_text += f"<div>{p_text}</div>"
-
-                                    html_content += f'''
-                                    <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; min-height:{height}px; z-index:20; transform: translate(0px, 0px);">
-                                        <div class="content-area" style="word-wrap: break-word; white-space: pre-wrap; overflow-wrap: break-word;">{html_text}</div>
-                                    </div>'''
-                            except Exception as e:
-                                continue 
+                                        t_html += "<tr>" + "".join([f"<td style='padding:5px;'>{html.escape(c.text)}</td>" for c in row.cells]) + "</tr>"
+                                    t_html += "</table>"
+                                    html_content += f'<div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; background:rgba(255,255,255,0.9); z-index:15;"><div class="content-area">{t_html}</div></div>'
+                                elif shape.has_text_frame and shape.text.strip(): # Text
+                                    html_text = "".join([f"<div>{html.escape(p.text)}</div>" for p in shape.text_frame.paragraphs])
+                                    html_content += f'<div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; min-height:{height}px; z-index:20;"><div class="content-area" style="word-wrap: break-word; white-space: pre-wrap;">{html_text}</div></div>'
+                            except: continue
                         return html_content
 
                     for i, slide in enumerate(ppt.slides):
-                        title_text = slide.shapes.title.text if slide.shapes.title else f"Slide {i+1}"
-                        nav += f'<div class="nav-link" id="link-{i}" onclick="goTo(\'{i}\')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text">{html.escape(title_text)}</span></div>'
-                        slides += f'<div id="p-{i}" class="page {"active" if i==0 else ""}" data-page-height="{base_h}" style="height:{base_h}px;"> '
-                        slides += parse_shapes(slide.shapes)
-                        slides += '</div>'
+                        t = slide.shapes.title.text if slide.shapes.title else f"Slide {i+1}"
+                        nav += f'<div class="nav-link" onclick="goTo(\'{i}\')"><span class="nav-text">{html.escape(t)}</span></div>'
+                        slides += f'<div id="p-{i}" class="page {"active" if i==0 else ""}" style="height:{base_h}px;">{parse_shapes(slide.shapes)}</div>'
 
                 elif file_name.endswith('.pdf'):
                     doc = fitz.open(stream=up.read(), filetype="pdf")
                     total_pages = len(doc)
-
-                    first_page = doc[0]
-                    base_w = 816
-                    p_scale = base_w / first_page.rect.width if first_page.rect.width > 0 else 1
-
                     for i, page in enumerate(doc):
-                        page_width = page.rect.width
-                        page_height = page.rect.height
-                        p_scale = base_w / page_width if page_width > 0 else 1
-                        scaled_height = max(1054, int(page_height * p_scale))
-
-                        nav += f'<div class="nav-link" id="link-{i}" onclick="goTo(\'{i}\')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text">Page {i+1}</span></div>'
-                        slides += f'<div id="p-{i}" class="page {"active" if i==0 else ""}" data-page-height="{scaled_height}" style="height:{scaled_height}px;"> '
-
-                        blocks = page.get_text("dict")["blocks"]
-                        html_content = ""
-
-                        for b in blocks:
+                        p_scale = base_w / page.rect.width if page.rect.width > 0 else 1
+                        scaled_h = max(1054, int(page.rect.height * p_scale))
+                        nav += f'<div class="nav-link" onclick="goTo(\'{i}\')"><span class="nav-text">Page {i+1}</span></div>'
+                        slides += f'<div id="p-{i}" class="page {"active" if i==0 else ""}" style="height:{scaled_h}px;">'
+                        for b in page.get_text("dict")["blocks"]:
                             bbox = b["bbox"]
-                            top = bbox[1] * p_scale
-                            left = bbox[0] * p_scale
-                            width = (bbox[2] - bbox[0]) * p_scale
-                            height = (bbox[3] - bbox[1]) * p_scale
-
-                            if b["type"] == 0: 
-                                text_html = ""
-                                for line in b["lines"]:
-                                    line_html = ""
-                                    for span in line["spans"]:
-                                        txt = html.escape(span["text"])
-                                        if not txt.strip():
-                                            line_html += " "
-                                            continue
-
-                                        px_size = max(10, int(span["size"] * p_scale))
-                                        fs_style = f"font-size:{px_size}px;"
-
-                                        if span["flags"] & 16: txt = f"<strong>{txt}</strong>"
-                                        if span["flags"] & 2: txt = f"<em>{txt}</em>"
-
-                                        line_html += f"<span style='{fs_style}'>{txt}</span>"
-
-                                    if not line_html.strip(): text_html += "<br>"
-                                    else: text_html += f"<div>{line_html}</div>"
-
-                                html_content += f'''
-                                <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; min-height:{height}px; z-index:20; transform: translate(0px, 0px);">
-                                    <div class="content-area" style="word-wrap: break-word; white-space: pre-wrap; overflow-wrap: break-word; font-family: sans-serif;">{text_html}</div>
-                                </div>'''
-
-                            elif b["type"] == 1: 
-                                img_bytes = b.get("image")
-                                if img_bytes:
-                                    base64_img = base64.b64encode(img_bytes).decode()
-                                    html_content += f'''
-                                    <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; height:{height}px; z-index:10; transform: translate(0px, 0px);">
-                                        <img src="data:image/png;base64,{base64_img}" style="width:100%; height:100%; object-fit:contain;">
-                                    </div>'''
-
-                        slides += html_content
+                            t, l, w, h = bbox[1]*p_scale, bbox[0]*p_scale, (bbox[2]-bbox[0])*p_scale, (bbox[3]-bbox[1])*p_scale
+                            if b["type"] == 0: # Text
+                                txt = "".join(["".join([html.escape(s["text"]) for s in ln["spans"]]) for ln in b["lines"]])
+                                slides += f'<div class="canvas-box" style="top:{t}px; left:{l}px; width:{w}px;"><div class="content-area">{txt}</div></div>'
+                            elif b["type"] == 1: # Image
+                                b64 = base64.b64encode(b.get("image")).decode()
+                                slides += f'<div class="canvas-box" style="top:{t}px; left:{l}px; width:{w}px; height:{h}px;"><img src="data:image/png;base64,{b64}" style="width:100%; height:100%; object-fit:contain;"></div>'
                         slides += '</div>'
 
-                dimension_script = f"""
-                <script>
-                    document.addEventListener("DOMContentLoaded", function() {{
-                        var cvs = document.getElementById('canvas');
-                        if(cvs) {{
-                            cvs.style.width = '{base_w}px';
-                            cvs.setAttribute('data-width', '{base_w}');
-                            var wInput = document.getElementById('canvas-w-cm');
-                            var hInput = document.getElementById('canvas-h-cm');
-                            if(wInput) wInput.value = (Math.round(({base_w} / 37.795) * 10) / 10).toFixed(1);
-                            if(hInput) hInput.value = (Math.round((parseInt(cvs.style.height) / 37.795) * 10) / 10).toFixed(1);
-                        }}
-                    }});
-                </script>
-                """
-
-                # Save the final parsed result into session memory
-                st.session_state.final_html = get_template(total_pages)\
-                    .replace("{{NAV_LINKS}}", nav)\
-                    .replace("{{SLIDE_CONTENT}}", dimension_script + slides)\
-                    .replace("{{VISIBLE_TITLE}}", html.escape(up.name))\
-                    .replace("{{STORAGE_ID}}", html.escape(unique_storage_id))
-
+                st.session_state.final_html = get_template(total_pages).replace("{{NAV_LINKS}}", nav).replace("{{SLIDE_CONTENT}}", slides).replace("{{VISIBLE_TITLE}}", html.escape(up.name)).replace("{{STORAGE_ID}}", html.escape(unique_storage_id))
             except Exception as e:
-                err_msg = str(e).lower()
-                if "not a zip file" in err_msg or "badzipfile" in err_msg:
-                    st.session_state.error_msg = "🚨 FORMAT ERROR: You uploaded an older `.ppt` file. Python-PPTX only supports modern `.pptx` files. Please open your file in PowerPoint, click 'Save As', choose `.pptx`, and upload the new file."
-                elif "has no attribute 'open'" in err_msg:
-                    st.session_state.error_msg = "🚨 REPLIT PACKAGE ERROR: You have the wrong 'fitz' package installed. Please open the Shell tab, run `pip uninstall fitz -y`, then run `pip install PyMuPDF -y` and restart the app."
-                else:
-                    st.session_state.error_msg = f"Error Processing File: {e}"
+                st.session_state.error_msg = f"Error: {e}"
 
-        # OUTPUT STAGE: Render Error OR the seamlessly connected Download Button
         if st.session_state.get("error_msg"):
             st.error(st.session_state.error_msg)
-            
-        # Ensure the download button only renders while the file exists
-        elif st.session_state.get("final_html") and up:
-            with col1:
-                st.markdown('<div class="final-download-target">', unsafe_allow_html=True)
-                st.download_button(
-                    label="📥 Download Interactive Notebook",
-                    data=st.session_state.final_html.encode('utf-8'), 
-                    file_name=f"NoteDump_{up.name}.html", 
-                    mime="text/html",
-                    use_container_width=True
-                )
-                st.markdown('</div>', unsafe_allow_html=True)
+        elif st.session_state.get("final_html"):
+            st.markdown('<div class="final-download-target">', unsafe_allow_html=True)
+            st.download_button(label="📥 Download Interactive Notebook", data=st.session_state.final_html.encode('utf-8'), file_name=f"NoteDump_{up.name}.html", mime="text/html", use_container_width=True)
+            st.markdown('</div>', unsafe_allow_html=True)
