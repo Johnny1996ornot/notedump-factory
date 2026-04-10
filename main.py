@@ -21,29 +21,36 @@ st.markdown("""
 <style>
 .stApp { background-color: #000000; }
 
-/* 1. COLUMN WRAPPERS */
+/* 1. COLUMN WRAPPERS: STRICT HEIGHT & MATCHING BOXES */
 [data-testid="stColumn"] {
-    background-color: #0f172a !important;
+    background-color: #0f172a !important; /* Brings the box background back */
     border-radius: 12px !important;
     height: 240px !important; 
+    padding: 20px !important;
     display: flex !important;
     flex-direction: column !important;
     box-sizing: border-box !important;
-    position: relative !important; /* CRITICAL for overlay */
+    transition: 0.2s !important;
+    position: relative !important; /* CRITICAL: Allows the invisible uploader to stretch */
+    overflow: hidden !important; 
 }
 
-/* RIGHT BOX (Normal styling) */
-[data-testid="stColumn"]:nth-child(2) { 
-    border: 1px solid #1e293b !important; 
-    transition: 0.2s !important; 
-    padding: 20px !important;
+/* LEFT BOX: Dashed border, matching right size */
+[data-testid="stColumn"]:nth-child(1) { 
+    border: 1px dashed #334155 !important; 
+    cursor: pointer; 
 }
-[data-testid="stColumn"]:nth-child(2):hover { 
+[data-testid="stColumn"]:nth-child(1):hover { 
     border-color: #0ea5e9 !important; 
     background: rgba(14, 165, 233, 0.1) !important; 
 }
 
-[data-testid="stColumn"]:nth-child(2) > div[data-testid="stVerticalBlock"] {
+/* RIGHT BOX: Solid border */
+[data-testid="stColumn"]:nth-child(2) { border: 1px solid #1e293b !important; }
+[data-testid="stColumn"]:nth-child(2):hover { border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; }
+
+/* Vertically center content in BOTH boxes */
+[data-testid="stColumn"] > div[data-testid="stVerticalBlock"] {
     height: 100% !important;
     display: flex !important;
     flex-direction: column !important;
@@ -53,45 +60,27 @@ st.markdown("""
     padding: 0 !important; 
 }
 
-/* LEFT BOX (Strip native padding/borders so custom box can fill it) */
-[data-testid="stColumn"]:nth-child(1) { 
-    border: none !important; 
-    padding: 0 !important; 
-    background: transparent !important;
-}
-
 /* =======================================================================
-   THE NEW LEFT UPLOAD BUTTON (CUSTOM HTML VISUALS)
+   THE NEW LEFT UPLOAD TEXT VISUALS (INSIDE THE BOX)
    ======================================================================= */
-.custom-upload-box {
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    display: flex; flex-direction: column; justify-content: center; align-items: center;
-    background-color: #0f172a;
-    border: 1px dashed #334155;
-    border-radius: 12px;
+.upload-visuals {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    pointer-events: none; /* Let all clicks pass through to the invisible uploader */
     z-index: 1;
-    transition: 0.2s;
-    pointer-events: none; /* Let clicks pass through to the invisible Streamlit uploader */
+    width: 100%;
 }
 
-/* Hover effect targets the custom box */
-[data-testid="stColumn"]:nth-child(1):hover .custom-upload-box {
-    border-color: #0ea5e9;
-    background: rgba(14, 165, 233, 0.1);
-}
-
-.upload-icon { font-size: 45px; margin-bottom: 15px; color: #f8fafc; }
-.upload-title { font-size: 20px; font-weight: 800; color: #f8fafc; text-align: center; line-height: 1.2; margin-bottom: 8px; }
-.upload-sub { color: #94a3b8; font-size: 14px; text-align: center; line-height: 1.5; }
+.upload-icon { font-size: 45px; margin-bottom: 10px; line-height: 1;}
+.upload-title { font-size: 20px; font-weight: 800; color: #f8fafc; line-height: 1.2; margin-bottom: 15px; }
+.upload-sub { font-size: 14px; color: #94a3b8; line-height: 1.5; }
 
 /* =======================================================================
    THE INVISIBLE NATIVE UPLOADER (Functional Overlay)
    ======================================================================= */
-[data-testid="stColumn"]:nth-child(1) > div[data-testid="stVerticalBlock"] {
-    width: 100% !important; height: 100% !important; margin: 0 !important; padding: 0 !important;
-}
-
 [data-testid="stFileUploader"] {
     position: absolute !important;
     top: 0 !important; left: 0 !important;
@@ -99,6 +88,7 @@ st.markdown("""
     z-index: 10 !important;
     opacity: 0 !important; /* COMPLETELY INVISIBLE */
     cursor: pointer !important;
+    margin: 0 !important; padding: 0 !important;
 }
 
 [data-testid="stFileUploadDropzone"] {
@@ -108,18 +98,12 @@ st.markdown("""
 /* =======================================================================
    ACTIVE STATE: WHEN A FILE IS UPLOADED
    ======================================================================= */
-/* Hide the custom visual box so we can see the file details */
-div[data-testid="stColumn"]:nth-child(1):has([data-testid="stUploadedFile"]) .custom-upload-box {
+/* Hide our custom text visuals when a file is processing/uploaded */
+div[data-testid="stColumn"]:nth-child(1):has([data-testid="stUploadedFile"]) .upload-visuals {
     display: none !important;
 }
 
-/* Bring the native uploader back to visibility and give it the dark background */
-div[data-testid="stColumn"]:nth-child(1):has([data-testid="stUploadedFile"]) {
-    background-color: #0f172a !important;
-    border: 1px dashed #334155 !important;
-    padding: 20px !important;
-}
-
+/* Bring the native uploader back to visibility inside the box */
 div[data-testid="stColumn"]:nth-child(1):has([data-testid="stUploadedFile"]) [data-testid="stFileUploader"] {
     position: relative !important;
     opacity: 1 !important; /* VISIBLE AGAIN */
@@ -285,16 +269,16 @@ with col2:
     )
 
 with col1:
-    # 1. Inject our custom visual box 
+    # Our custom visual content sits in the box nicely
     st.markdown("""
-    <div class="custom-upload-box">
-        <span class="upload-icon">📤</span>
+    <div class="upload-visuals">
+        <div class="upload-icon">📤</div>
         <div class="upload-title">Convert file to an<br>interactive notebook</div>
         <div class="upload-sub">Upload a file<br>200MB per file • PPTX, PPT, PDF</div>
     </div>
     """, unsafe_allow_html=True)
 
-    # 2. Add the native Streamlit uploader (The CSS makes it invisible and lays it on top)
+    # The native uploader sits invisibly on top of the visual content
     up = st.file_uploader("Upload", label_visibility="collapsed", type=["pptx", "ppt", "pdf"])
 
     # ==========================================================================
