@@ -21,44 +21,81 @@ st.markdown("""
 <style>
 .stApp { background-color: #000000; }
 
-/* 1. COLUMN WRAPPERS: STRICT 220PX HEIGHT */
+/* Unlock Streamlit Columns */
+[data-testid="stColumn"], [data-testid="column"] { overflow: visible !important; }
+
+/* Nav & Header (RESTORED TO YOUR ORIGINAL) */
+.top-nav { display: flex; justify-content: flex-end; align-items: center; padding: 10px 20px; position: absolute; top: 0; right: 0; width: 100%; z-index: 999; gap: 12px; }
+.guide-btn { color: #94a3b8; text-decoration: none; font-size: 16px; font-weight: bold; font-family: sans-serif; border: 1px solid #475569; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: #1e293b; transition: 0.2s; }
+.guide-btn:hover { color: white; border-color: #0ea5e9; transform: scale(1.1); background: #0ea5e9;}
+.coffee-btn { color: #0ea5e9; text-decoration: none; font-weight: bold; font-size: 12px; border: 1px solid #0ea5e9; padding: 4px 10px; border-radius: 20px; transition: 0.2s; white-space: nowrap; }
+.coffee-btn:hover { background: rgba(14, 165, 233, 0.15); color: #fff; }
+
+.modal-window { position: fixed; background-color: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px); top: 0; right: 0; bottom: 0; left: 0; z-index: 99999; visibility: hidden; opacity: 0; transition: all 0.3s; display: flex; justify-content: center; align-items: center; }
+.modal-window:target { visibility: visible; opacity: 1; }
+.modal-content { background: #0f172a; width: 90%; max-width: 650px; padding: 30px; border-radius: 16px; border: 1px solid #334155; color: #f1f5f9; position: relative; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
+.modal-close { position: absolute; top: 20px; right: 25px; color: #64748b; text-decoration: none; font-size: 28px; font-weight: bold; transition: 0.2s; }
+.modal-close:hover { color: #ef4444; }
+
+/* Modal Content Styling */
+.modal-content h2 { margin-top: 0; color: #4f46e5; font-size: 24px; border-bottom: 1px solid #1e293b; padding-bottom: 10px;}
+.modal-content h4 { color: #0ea5e9; margin-top: 20px; margin-bottom: 10px; font-size: 18px;}
+.modal-content li { margin-bottom: 10px; line-height: 1.5; font-size: 15px; color: #cbd5e1;}
+.pro-tag { color: #10b981; font-weight: bold; } 
+
+.hero { text-align: center; color: white; padding: 10px 0; max-width: 500px; margin: 0 auto; }
+.logo-container { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 0px;}
+.logo-text { font-size: 55px; font-weight: 800; margin: 0; color: #f8fafc;}
+.logo-icon { font-size: 48px; margin: 0;}
+.tagline { font-size: 18px; color: #94a3b8; margin-top: -8px !important; margin-bottom: 8px !important; font-weight: normal; }
+.support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 20px !important; }
+
+/* =======================================================================
+   1. COLUMN WRAPPERS: STRICT 220PX HEIGHT
+   ======================================================================= */
 [data-testid="stColumn"] {
     background-color: #0f172a !important;
     border-radius: 12px !important;
-    height: 220px !important; /* Reverted to your preferred size */
-    padding: 15px !important;
+    height: 220px !important; 
+    padding: 15px 20px !important;
     display: flex !important;
     flex-direction: column !important;
     box-sizing: border-box !important;
 }
 
 [data-testid="stColumn"]:nth-child(1) { border: 1px dashed #334155 !important; }
-[data-testid="stColumn"]:nth-child(2) { border: 1px solid #1e293b !important; }
+[data-testid="stColumn"]:nth-child(2) { border: 1px solid #1e293b !important; transition: 0.2s !important; }
+[data-testid="stColumn"]:nth-child(2):hover { border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; }
 
-/* Internal Flexbox: Distributes space perfectly to avoid sandwiching */
+/* Internal column spacing */
 [data-testid="stColumn"] > div[data-testid="stVerticalBlock"] {
     height: 100% !important;
     display: flex !important;
     flex-direction: column !important;
     justify-content: center !important;
     align-items: center !important;
-    gap: 12px !important; /* Strict gap so file info and download button never touch */
+    gap: 12px !important; /* Prevents sandwiching */
+    width: 100% !important;
 }
+[data-testid="stColumn"] > div[data-testid="stVerticalBlock"] > div { width: 100% !important; }
 
-/* 2. LEFT BOX: HEADING (EMPTY STATE) */
+/* =======================================================================
+   2. LEFT BOX: UPLOAD HEADING (EMPTY STATE)
+   ======================================================================= */
 .upload-heading {
-    font-size: 18px !important; /* Made words smaller */
+    font-size: 20px !important;
     font-weight: 800;
     color: #f8fafc;
-    margin: -10px 0 10px 0 !important; /* Shifted slightly upward */
     text-align: center;
-    line-height: 1.1;
-    width: 100%;
+    line-height: 1.2;
+    margin-bottom: 5px;
 }
 
-/* 3. LEFT BOX: UPLOAD DROPZONE (EMPTY STATE) */
-[data-testid="stFileUploader"] { width: 100% !important; }
+/* =======================================================================
+   3. LEFT BOX: UPLOAD DROPZONE (EMPTY STATE)
+   ======================================================================= */
 [data-testid="stFileUploader"] > label { display: none !important; }
+[data-testid="stFileUploader"] { padding: 0 !important; }
 
 [data-testid="stFileUploadDropzone"] {
     background: transparent !important;
@@ -66,64 +103,80 @@ st.markdown("""
     padding: 0 !important;
     display: flex !important;
     flex-direction: column !important;
-    align-items: center !important; /* Perfect Center */
-    justify-content: center !important; /* Perfect Center */
+    align-items: center !important;
+    justify-content: center !important;
     width: 100% !important;
 }
 
 /* Hide Native SVG and default text */
-[data-testid="stFileUploadDropzone"] > div > svg { display: none !important; }
-[data-testid="stFileUploadDropzone"] > div > div[data-testid="stMarkdownContainer"] { display: none !important; }
-[data-testid="stFileUploadDropzone"] > div { align-items: center !important; width: 100% !important; }
+[data-testid="stFileUploadDropzone"] svg, 
+[data-testid="stFileUploadDropzone"] div[data-testid="stMarkdownContainer"] p {
+    display: none !important;
+}
+
+[data-testid="stFileUploadDropzone"] > div {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    width: 100% !important;
+}
 
 /* Custom Upload Button */
 [data-testid="stFileUploadDropzone"] button {
+    order: 1 !important;
     margin: 0 auto !important;
     background-color: transparent !important;
     border: 1px solid #334155 !important;
     border-radius: 6px !important;
-    width: 120px !important;
-    height: 36px !important;
+    width: 130px !important;
+    height: 38px !important;
     position: relative;
-    color: transparent !important; /* Hides default text */
+    color: transparent !important; 
 }
-[data-testid="stFileUploadDropzone"] button:hover { background-color: rgba(255,255,255,0.05) !important; }
+[data-testid="stFileUploadDropzone"] button:hover { background-color: rgba(255,255,255,0.05) !important; border-color: #94a3b8 !important;}
 [data-testid="stFileUploadDropzone"] button::after {
-    content: "↑ Upload" !important;
+    content: "↑ Upload File" !important;
     position: absolute;
     top: 50%; left: 50%;
     transform: translate(-50%, -50%);
     color: white !important;
     font-size: 14px !important;
-    font-weight: 600 !important;
+    font-weight: bold !important;
 }
 
 /* Limit Text underneath button */
 [data-testid="stFileUploadDropzone"] small {
+    order: 2 !important;
     display: block !important;
     text-align: center !important;
     color: #94a3b8 !important;
     margin-top: 10px !important;
-    font-size: 12px !important;
+    font-size: 13px !important;
 }
 
-/* 4. ACTIVE STATE: FILE UPLOADED */
-/* Hides the heading and dropzone entirely to make room for progress bar & download */
-div[data-testid="stColumn"]:has([data-testid="stUploadedFile"]) .upload-heading,
+/* =======================================================================
+   4. LEFT BOX: ACTIVE STATE (FILE UPLOADED)
+   ======================================================================= */
+/* Hide the Dropzone area once uploaded */
 div[data-testid="stFileUploader"]:has([data-testid="stUploadedFile"]) [data-testid="stFileUploadDropzone"] {
     display: none !important;
 }
 
-/* The Native File Box / Progress Area */
+/* Native Progress Bar Container */
 [data-testid="stUploadedFile"] {
-    background-color: #1e293b !important;
-    border-radius: 8px !important;
+    background: #1e293b !important;
     border: none !important;
+    border-radius: 8px !important;
+    padding: 12px 15px !important;
     width: 100% !important;
-    padding: 10px !important;
 }
+[data-testid="stUploadedFile"] span, [data-testid="stUploadedFile"] small { color: #f8fafc !important; font-size: 14px !important; }
+[data-testid="stUploadedFile"] svg { fill: #f8fafc !important; }
+[data-testid="stUploadedFile"] button { background: transparent !important; border: none !important; margin: 0 !important; width: auto !important; height: auto !important; }
 
-/* 5. THE NEW DOWNLOAD BUTTON (INSIDE LEFT BOX) */
+/* =======================================================================
+   5. DOWNLOAD BUTTON (LEFT BOX)
+   ======================================================================= */
 .final-download-target { width: 100% !important; }
 .final-download-target [data-testid="stDownloadButton"] button {
     width: 100% !important;
@@ -136,48 +189,66 @@ div[data-testid="stFileUploader"]:has([data-testid="stUploadedFile"]) [data-test
     font-weight: bold !important;
     transition: 0.2s;
 }
-.final-download-target [data-testid="stDownloadButton"] button:hover {
-    background: rgba(14, 165, 233, 0.1) !important;
-}
+.final-download-target [data-testid="stDownloadButton"] button:hover { background: rgba(14, 165, 233, 0.1) !important; }
 
-/* 6. RIGHT BOX: BLANK NOTEBOOK */
+/* =======================================================================
+   6. RIGHT BOX: BLANK NOTEBOOK
+   ======================================================================= */
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] { height: 100% !important; width: 100% !important; margin: 0 !important; }
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button {
-    background: transparent !important; border: none !important;
+    background: transparent !important; border: none !important; box-shadow: none !important;
     height: 100% !important; width: 100% !important;
     display: flex !important; flex-direction: row !important; justify-content: center !important; align-items: center !important;
 }
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button * { display: none !important; }
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::before {
-    content: "📓"; font-size: 60px !important; margin-right: 15px !important;
+    content: "📓"; font-size: 65px !important; margin-right: 15px !important;
 }
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::after {
     content: "Create\\A Blank\\A Notebook"; white-space: pre !important; font-size: 24px !important; 
-    font-weight: 800 !important; color: #f8fafc !important; line-height: 1.1 !important; text-align: left !important;
+    font-weight: 800 !important; color: #f8fafc !important; line-height: 1.1 !important; text-align: left !important; letter-spacing: -1px !important;
 }
 
-/* HERO & NAV LOGISTICS */
-.hero { text-align: center; color: white; padding: 10px 0; max-width: 500px; margin: 0 auto; }
-.logo-container { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 0px;}
-.logo-text { font-size: 48px; font-weight: 800; margin: 0; color: #f8fafc;}
-.logo-icon { font-size: 40px; margin: 0;}
-.tagline { font-size: 16px; color: #94a3b8; margin-top: 0 !important; margin-bottom: 8px !important;}
-.support-text { font-size: 12px; color: #475569; margin-bottom: 20px !important; }
-.top-nav { display: flex; justify-content: flex-end; padding: 10px 20px; gap: 12px; position: absolute; top: 0; right: 0; width: 100%; z-index: 999;}
-.coffee-btn { color: #0ea5e9; text-decoration: none; font-weight: bold; font-size: 12px; border: 1px solid #0ea5e9; padding: 4px 10px; border-radius: 20px;}
+@media (max-width: 768px) { .top-nav { position: relative; justify-content: center; padding-top: 20px; } }
+[data-testid="block-container"] { max-width: 800px; padding-top: 3rem; }
 </style>
 
 <div class="top-nav">
-    <a href="https://buymeacoffee.com/jpramirez" target="_blank" class="coffee-btn">☕ Buy me a coffee</a>
+<a href="https://buymeacoffee.com/jpramirez" target="_blank" class="coffee-btn">☕ Buy me a coffee</a>
+<a href="#guide-modal" class="guide-btn" title="App Guide & Features">?</a>
+</div>
+
+<div id="guide-modal" class="modal-window">
+<div class="modal-content">
+<a href="#" class="modal-close" title="Close">&times;</a>
+<h2>📝 Welcome to NoteDump</h2>
+<p>Turning your documents into an interactive notebook.</p>
+
+<h4>✨ NoteDump Features & Guide</h4>
+<ul>
+<li>Providing an HTML based editor that allows for creating seamless interactive notebooks.</li>
+<li>Add pins to images to correctly identify them.</li>
+<li>Add audio or links that will allow a better review.</li>
+<li>Create reviewers with more freedom and specialized tools.</li>
+</ul>
+
+<h4>🚀 Why Use NoteDump?</h4>
+<ul>
+<li><span class="pro-tag">100% Offline Capable:</span> Once downloaded, your interactive notebook is a single HTML file that works perfectly without an internet connection.</li>
+<li><span class="pro-tag">Ultimate Privacy:</span> No accounts, no cloud syncing, no subscriptions. Your notes and files stay locally on your device.</li>
+<li><span class="pro-tag">Limitless Annotation:</span> Draw freely, drop sticky notes, create custom tables, and pin interactive markers directly onto your lecture slides.</li>
+<li><span class="pro-tag">Universal Compatibility:</span> Works natively on any modern device (desktop, tablet, or phone) using just a standard web browser.</li>
+</ul>
+</div>
 </div>
 
 <div class="hero">
-    <div class="logo-container">
-        <span class="logo-icon">📝</span>
-        <span class="logo-text">NoteDump</span>
-    </div>
-    <p class="tagline">Turning your documents into an interactive notebook</p>
-    <p class="support-text">PPTX • PPT • PDF</p>
+<div class="logo-container">
+<span class="logo-icon">📝</span>
+<span class="logo-text">NoteDump</span>
+</div>
+<p class="tagline">Turning your documents into an interactive notebook</p>
+<p class="support-text">PPTX • PPT • PDF</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -211,8 +282,14 @@ with col2:
     )
 
 with col1:
-    st.markdown('<div class="upload-heading">Convert file to<br>interactive notebook</div>', unsafe_allow_html=True)
+    # Python placeholder logic: This GUARANTEES the heading disappears 
+    # instead of relying on buggy CSS selectors.
+    heading_placeholder = st.empty()
     up = st.file_uploader("Upload a document", label_visibility="hidden", type=["pptx", "ppt", "pdf"])
+
+    # If no file is uploaded yet, render the text into the empty container.
+    if not up:
+        heading_placeholder.markdown('<div class="upload-heading">Convert your file to an<br>interactive notebook</div>', unsafe_allow_html=True)
 
     # ==========================================================================
     # SECTION 4: FILE PARSING & PROCESSING
