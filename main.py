@@ -81,7 +81,7 @@ div[data-testid="stColumn"]:has([data-testid="stUploadedFile"]) .upload-heading 
 }
 
 /* =======================================================================
-   UPLOAD DROPZONE (THE CONTAINER FIX)
+   UPLOAD DROPZONE (THE PIXEL PERFECT FIX)
    ======================================================================= */
 [data-testid="stFileUploader"] { 
     padding: 0 !important; 
@@ -89,15 +89,31 @@ div[data-testid="stColumn"]:has([data-testid="stUploadedFile"]) .upload-heading 
 }
 [data-testid="stFileUploader"] > label { display: none !important; }
 
+/* 🔥 ACTUAL WORKING FIX: Center the Dropzone itself */
 [data-testid="stFileUploadDropzone"] {
     background: transparent !important;
     border: none !important;
     padding: 0 !important;
     display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 100% !important;
+}
+
+/* Target the REAL inner wrapper Streamlit uses */
+[data-testid="stFileUploadDropzone"] section {
+    display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
     justify-content: center !important;
-    width: 100% !important;
+    margin: 0 auto !important;
+    width: auto !important;
+}
+
+[data-testid="stFileUploadDropzone"] section > div {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
 }
 
 /* Hide Native SVG and default text */
@@ -106,20 +122,17 @@ div[data-testid="stColumn"]:has([data-testid="stUploadedFile"]) .upload-heading 
     display: none !important;
 }
 
-/* 🔥 THIS IS THE REAL FIX: Shrink container to content and center it */
-[data-testid="stFileUploadDropzone"] > div {
-    width: fit-content !important;
-    margin: 0 auto !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
+/* Force button + text to shrink to content and align */
+[data-testid="stFileUploadDropzone"] button,
+[data-testid="stFileUploadDropzone"] small {
+    display: inline-block !important;
+    text-align: center !important;
 }
 
-/* Custom Upload Button */
+/* Custom Upload Button Details */
 [data-testid="stFileUploadDropzone"] button {
     order: 1 !important;
-    margin: 0 auto !important; /* Dead Center */
-    display: block !important;
+    margin: 0 auto !important; 
     background-color: transparent !important;
     border: 1px solid #334155 !important;
     border-radius: 6px !important;
@@ -142,12 +155,10 @@ div[data-testid="stColumn"]:has([data-testid="stUploadedFile"]) .upload-heading 
 /* Limit Text underneath button */
 [data-testid="stFileUploadDropzone"] small {
     order: 2 !important;
-    text-align: center !important; /* Dead Center */
     margin: 10px auto 0 auto !important; 
     color: #94a3b8 !important;
     font-size: 13px !important;
     width: 100% !important;
-    display: block !important;
 }
 
 /* =======================================================================
