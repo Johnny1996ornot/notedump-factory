@@ -21,102 +21,88 @@ st.markdown("""
 <style>
 .stApp { background-color: #000000; }
 
-/* 1. COLUMN WRAPPERS */
+/* 1. COLUMN WRAPPERS: STRICT HEIGHT & MATCHING BOXES */
 [data-testid="stColumn"] {
-    background-color: #0f172a !important;
+    background-color: #0f172a !important; 
     border-radius: 12px !important;
     height: 240px !important; 
     display: flex !important;
     flex-direction: column !important;
     box-sizing: border-box !important;
+    transition: 0.2s !important;
+    position: relative !important; /* CRITICAL for absolute positioning */
 }
 
-/* RIGHT BOX (Create Blank) */
-[data-testid="stColumn"]:nth-child(2) { 
-    border: 1px solid #1e293b !important; 
-    transition: 0.2s !important; 
-    padding: 20px !important;
-}
-[data-testid="stColumn"]:nth-child(2):hover { 
-    border-color: #0ea5e9 !important; 
-    background: rgba(14, 165, 233, 0.1) !important; 
-}
-[data-testid="stColumn"]:nth-child(2) > div[data-testid="stVerticalBlock"] {
-    height: 100% !important; display: flex !important; flex-direction: column !important;
-    justify-content: center !important; align-items: center !important;
-}
-
-/* LEFT BOX (Uploader Container) */
-[data-testid="stColumn"]:nth-child(1) { 
-    border: 1px dashed #334155 !important; 
-    transition: 0.2s !important; 
-    padding: 0 !important; /* Remove padding so dropzone fills it */
-    overflow: hidden !important;
-}
-[data-testid="stColumn"]:nth-child(1):hover { 
-    border-color: #0ea5e9 !important; 
-    background: rgba(14, 165, 233, 0.1) !important; 
-}
-
-/* =======================================================================
-   THE NATIVE DROPZONE (Styled to be the massive box)
-   ======================================================================= */
-[data-testid="stFileUploader"] { 
-    width: 100% !important; 
-    height: 100% !important; 
-    margin: 0 !important; 
-}
-
-[data-testid="stFileUploadDropzone"] {
-    width: 100% !important; 
-    height: 100% !important; 
-    min-height: 240px !important; /* Match column height */
-    background: transparent !important;
-    border: none !important;
+/* Reset inner padding so we can control it perfectly */
+[data-testid="stColumn"] > div[data-testid="stVerticalBlock"] {
+    padding: 0 !important;
+    gap: 0 !important;
+    height: 100% !important;
+    width: 100% !important;
     display: flex !important;
     flex-direction: column !important;
-    align-items: center !important;
     justify-content: center !important;
+    align-items: center !important;
+}
+
+/* LEFT BOX: Dashed border */
+[data-testid="stColumn"]:nth-child(1) { border: 1px dashed #334155 !important; cursor: pointer; }
+[data-testid="stColumn"]:nth-child(1):hover { border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; }
+
+/* RIGHT BOX: Solid border & padding */
+[data-testid="stColumn"]:nth-child(2) { border: 1px solid #1e293b !important; padding: 20px !important;}
+[data-testid="stColumn"]:nth-child(2):hover { border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; }
+
+/* =======================================================================
+   THE CUSTOM UPLOAD VISUALS (Sits in the background)
+   ======================================================================= */
+.upload-visuals {
+    position: absolute !important;
+    top: 0; left: 0; width: 100%; height: 240px; /* Matches column height */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none; /* Clicks pass right through this to the invisible uploader */
+    z-index: 1;
+}
+
+.upload-icon { font-size: 45px; margin-bottom: 10px; line-height: 1;}
+.upload-title { font-size: 20px; font-weight: 800; color: #f8fafc; text-align: center; line-height: 1.2; margin-bottom: 15px; }
+.upload-sub { font-size: 14px; color: #94a3b8; text-align: center; line-height: 1.5; }
+
+/* =======================================================================
+   THE GHOST UPLOADER (Invisible Overlay that catches clicks & drags)
+   ======================================================================= */
+[data-testid="stFileUploader"] {
+    width: 100% !important; 
+    height: 100% !important; 
+    z-index: 10 !important; /* Keeps it on top */
+}
+
+/* Make the dropzone completely invisible but stretch to fill the 240px box */
+[data-testid="stFileUploadDropzone"] {
+    opacity: 0 !important; /* THE MAGIC BULLET */
+    position: absolute !important;
+    top: 0 !important; left: 0 !important;
+    width: 100% !important; height: 240px !important;
     cursor: pointer !important;
-    padding: 20px !important;
-}
-
-/* Hide Streamlit's default inner junk (but keep the element functional) */
-[data-testid="stFileUploadDropzone"] > div,
-[data-testid="stFileUploadDropzone"] button,
-[data-testid="stFileUploadDropzone"] small {
-    display: none !important;
-}
-
-/* Inject our custom text directly into the native dropzone */
-[data-testid="stFileUploadDropzone"]::before {
-    content: "📤\\A Convert file to an\\A interactive notebook";
-    white-space: pre-wrap !important;
-    text-align: center !important;
-    font-size: 20px !important;
-    font-weight: 800 !important;
-    color: #f8fafc !important;
-    line-height: 1.2 !important;
-    margin-bottom: 15px !important;
-}
-[data-testid="stFileUploadDropzone"]::after {
-    content: "Upload a file\\A 200MB per file • PPTX, PPT, PDF";
-    white-space: pre-wrap !important;
-    text-align: center !important;
-    font-size: 14px !important;
-    color: #94a3b8 !important;
-    line-height: 1.5 !important;
 }
 
 /* =======================================================================
    ACTIVE STATE: WHEN A FILE IS UPLOADED
    ======================================================================= */
-/* When a file is uploaded, give the left column its internal padding back */
-div[data-testid="stColumn"]:nth-child(1):has([data-testid="stUploadedFile"]) {
-    padding: 20px !important;
+/* 1. Hide our background visuals when a file is detected */
+div[data-testid="stColumn"]:nth-child(1):has([data-testid="stUploadedFile"]) .upload-visuals {
+    display: none !important;
 }
 
-/* The Uploaded File Card */
+/* 2. Add padding back to the column so the file card isn't touching the dashed edges */
+div[data-testid="stColumn"]:nth-child(1):has([data-testid="stUploadedFile"]) > div[data-testid="stVerticalBlock"] {
+    padding: 20px !important; 
+}
+
+/* The Uploaded File Card Styling */
 [data-testid="stUploadedFile"] {
     background: #1e293b !important; border: none !important; border-radius: 8px !important;
     padding: 15px 50px 15px 15px !important; width: 100% !important; position: relative !important;
@@ -268,7 +254,16 @@ with col2:
     )
 
 with col1:
-    # This is the actual, native Streamlit uploader
+    # 1. The custom visuals sit in the background
+    st.markdown("""
+    <div class="upload-visuals">
+        <div class="upload-icon">📤</div>
+        <div class="upload-title">Convert file to an<br>interactive notebook</div>
+        <div class="upload-sub">Upload a file<br>200MB per file • PPTX, PPT, PDF</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # 2. The native Streamlit uploader (The CSS makes it invisible and lays it on top)
     up = st.file_uploader("Upload", label_visibility="collapsed", type=["pptx", "ppt", "pdf"])
 
     # ==========================================================================
