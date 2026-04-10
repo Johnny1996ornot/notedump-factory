@@ -23,7 +23,7 @@ st.markdown("""
 
 /* 1. COLUMN WRAPPERS: STRICT HEIGHT & MATCHING BOXES */
 [data-testid="stColumn"] {
-    background-color: #0f172a !important; /* Brings the box background back */
+    background-color: #0f172a !important; 
     border-radius: 12px !important;
     height: 240px !important; 
     padding: 20px !important;
@@ -31,7 +31,7 @@ st.markdown("""
     flex-direction: column !important;
     box-sizing: border-box !important;
     transition: 0.2s !important;
-    position: relative !important; /* CRITICAL: Allows the invisible uploader to stretch */
+    position: relative !important; /* CRITICAL: Anchors the absolute elements */
     overflow: hidden !important; 
 }
 
@@ -64,6 +64,8 @@ st.markdown("""
    THE NEW LEFT UPLOAD TEXT VISUALS (INSIDE THE BOX)
    ======================================================================= */
 .upload-visuals {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -71,7 +73,6 @@ st.markdown("""
     text-align: center;
     pointer-events: none; /* Let all clicks pass through to the invisible uploader */
     z-index: 1;
-    width: 100%;
 }
 
 .upload-icon { font-size: 45px; margin-bottom: 10px; line-height: 1;}
@@ -81,18 +82,28 @@ st.markdown("""
 /* =======================================================================
    THE INVISIBLE NATIVE UPLOADER (Functional Overlay)
    ======================================================================= */
+/* The wrapper holding the uploader */
 [data-testid="stFileUploader"] {
     position: absolute !important;
     top: 0 !important; left: 0 !important;
     width: 100% !important; height: 100% !important;
     z-index: 10 !important;
     opacity: 0 !important; /* COMPLETELY INVISIBLE */
-    cursor: pointer !important;
     margin: 0 !important; padding: 0 !important;
 }
 
+/* FORCE the clickable hit-target to stretch the full height of the box */
 [data-testid="stFileUploadDropzone"] {
-    width: 100% !important; height: 100% !important; padding: 0 !important; cursor: pointer !important;
+    width: 100% !important; 
+    height: 100% !important; 
+    min-height: 240px !important; /* Matches column height */
+    padding: 0 !important; 
+    margin: 0 !important;
+    cursor: pointer !important;
+}
+
+[data-testid="stFileUploadDropzone"] * {
+    cursor: pointer !important; /* Ensure hand cursor shows everywhere */
 }
 
 /* =======================================================================
@@ -112,7 +123,7 @@ div[data-testid="stColumn"]:nth-child(1):has([data-testid="stUploadedFile"]) [da
     justify-content: center !important;
 }
 
-/* Nuke the old inner dropzone elements since we just want the file card */
+/* Nuke the inner dropzone elements since we just want the horizontal file card */
 div[data-testid="stFileUploader"]:has([data-testid="stUploadedFile"]) [data-testid="stFileUploadDropzone"] {
     display: none !important;
 }
@@ -269,7 +280,7 @@ with col2:
     )
 
 with col1:
-    # Our custom visual content sits in the box nicely
+    # 1. Inject our custom visual box 
     st.markdown("""
     <div class="upload-visuals">
         <div class="upload-icon">📤</div>
@@ -278,7 +289,7 @@ with col1:
     </div>
     """, unsafe_allow_html=True)
 
-    # The native uploader sits invisibly on top of the visual content
+    # 2. Add the native Streamlit uploader (The CSS makes it invisible, stretches it, and lays it on top)
     up = st.file_uploader("Upload", label_visibility="collapsed", type=["pptx", "ppt", "pdf"])
 
     # ==========================================================================
