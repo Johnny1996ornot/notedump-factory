@@ -21,7 +21,7 @@ st.markdown("""
 <style>
 .stApp { background-color: #000000; }
 
-/* 1. COLUMN WRAPPERS: STRICT HEIGHT */
+/* 1. COLUMN WRAPPERS: STRICT HEIGHT & MATCHING HOVERS */
 [data-testid="stColumn"] {
     background-color: #0f172a !important;
     border-radius: 12px !important;
@@ -33,14 +33,13 @@ st.markdown("""
     transition: 0.2s !important;
 }
 
-/* Add hover effects to BOTH columns now */
 [data-testid="stColumn"]:nth-child(1) { border: 1px dashed #334155 !important; cursor: pointer; }
 [data-testid="stColumn"]:nth-child(1):hover { border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; }
 
 [data-testid="stColumn"]:nth-child(2) { border: 1px solid #1e293b !important; }
 [data-testid="stColumn"]:nth-child(2):hover { border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; }
 
-/* Vertically center content in BOTH columns */
+/* Vertically center content in BOTH columns perfectly */
 [data-testid="stColumn"] > div[data-testid="stVerticalBlock"] {
     height: 100% !important;
     display: flex !important;
@@ -52,16 +51,13 @@ st.markdown("""
 }
 
 /* =======================================================================
-   THE NEW LEFT UPLOAD BUTTON (ENTIRE COLUMN DROPZONE)
+   THE NEW LEFT UPLOAD BUTTON (ENTIRE COLUMN IS THE DROPZONE)
    ======================================================================= */
 [data-testid="stFileUploader"] { 
     height: 100% !important; 
     width: 100% !important; 
     padding: 0 !important;
     margin: 0 !important;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 [data-testid="stFileUploader"] > label { display: none !important; }
 
@@ -73,32 +69,36 @@ st.markdown("""
     border: none !important;
     padding: 0 !important;
     display: flex !important;
-    flex-direction: row !important;
+    flex-direction: column !important;
     justify-content: center !important;
     align-items: center !important;
 }
 
-/* Hide Streamlit's default upload text and button inside the dropzone */
+/* Nuke Streamlit's default upload text, button, and gray box inside the dropzone */
 [data-testid="stFileUploadDropzone"] > div {
     display: none !important;
 }
 
-/* Create the custom Icon and Text to match the right button */
+/* Rebuild the text natively using CSS so it aligns perfectly without buttons */
 [data-testid="stFileUploadDropzone"]::before {
-    content: "📤" !important; 
-    font-size: 65px !important; 
-    margin-right: 15px !important;
-    display: block !important;
-}
-[data-testid="stFileUploadDropzone"]::after {
-    content: "Upload\\A A Document" !important; 
-    white-space: pre !important; 
-    font-size: 24px !important; 
+    content: "↑\\A Convert file to an\\A interactive notebook"; 
+    white-space: pre-wrap !important; 
+    text-align: center !important;
+    font-size: 20px !important; 
     font-weight: 800 !important; 
     color: #f8fafc !important; 
-    line-height: 1.1 !important; 
-    text-align: left !important;
-    display: block !important;
+    line-height: 1.3 !important; 
+    margin-bottom: 15px !important;
+}
+
+[data-testid="stFileUploadDropzone"]::after {
+    content: "Upload a file\\A 200MB per file • PPTX, PPT, PDF"; 
+    white-space: pre-wrap !important; 
+    text-align: center !important;
+    font-size: 14px !important; 
+    color: #94a3b8 !important; 
+    font-weight: normal !important; 
+    line-height: 1.6 !important; 
 }
 
 /* =======================================================================
@@ -272,7 +272,7 @@ with col2:
     )
 
 with col1:
-    # Removed the text heading, the dropzone IS the button now!
+    # Removed the external heading, the dropzone IS the button now!
     up = st.file_uploader("Upload a document", label_visibility="hidden", type=["pptx", "ppt", "pdf"])
 
     # ==========================================================================
