@@ -106,16 +106,18 @@ div[data-testid="stColumn"]:has([data-testid="stUploadedFile"]) .upload-heading 
     display: none !important;
 }
 
-/* THE FIX: Force EVERY nested container inside the dropzone to center */
-[data-testid="stFileUploadDropzone"],
-[data-testid="stFileUploadDropzone"] > div,
-[data-testid="stFileUploadDropzone"] > section,
-[data-testid="stFileUploadDropzone"] div {
+/* THE NUCLEAR FIX: Force EVERY element inside the dropzone to strictly center */
+[data-testid="stFileUploadDropzone"] * {
+    margin-left: auto !important;
+    margin-right: auto !important;
+    text-align: center !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+[data-testid="stFileUploadDropzone"] > div {
     display: flex !important;
     flex-direction: column !important;
-    align-items: center !important;  
-    justify-content: center !important;
-    text-align: center !important;
     width: 100% !important;
 }
 
