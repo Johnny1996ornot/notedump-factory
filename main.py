@@ -50,181 +50,161 @@ st.markdown("""
 .tagline { font-size: 18px; color: #94a3b8; margin-top: -8px !important; margin-bottom: 8px !important; font-weight: normal; }
 .support-text { font-size: 12px; color: #475569; margin-top: 2px !important; margin-bottom: 20px !important; }
 
-/* =========================================
-   1. MAIN UPLOADER / DROPZONE BOX
-   ========================================= */
-[data-testid="stFileUploader"] > label { display: none !important; }
-[data-testid="stFileUploader"] { width: 100% !important; margin: 0 !important; padding: 0 !important; }
 
-/* The Dropzone Structure */
-[data-testid="stFileUploadDropzone"] {
-    height: 200px !important;
+/* =======================================================================
+   1. COLUMN WRAPPERS (FORCING EQUAL SIZE BOXES)
+   ======================================================================= */
+[data-testid="stColumn"]:nth-child(1),
+[data-testid="stColumn"]:nth-child(2) {
     background-color: #0f172a !important;
-    border: 1px dashed #334155 !important;
     border-radius: 12px !important;
+    height: 220px !important; /* Fixed exactly the same */
+    padding: 20px !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+/* Left Box Border (Upload) */
+[data-testid="stColumn"]:nth-child(1) {
+    border: 1px dashed #334155 !important;
+}
+
+/* Right Box Border (Blank Notebook) */
+[data-testid="stColumn"]:nth-child(2) {
+    border: 1px solid #1e293b !important;
+    transition: 0.2s !important;
+}
+[data-testid="stColumn"]:nth-child(2):hover {
+    border-color: #0ea5e9 !important;
+    background: rgba(14, 165, 233, 0.1) !important;
+}
+
+/* Force contents to stretch full height and vertically center inside boxes */
+[data-testid="stColumn"] > div[data-testid="stVerticalBlock"] {
+    height: 100% !important;
     display: flex !important;
     flex-direction: column !important;
     justify-content: center !important;
     align-items: center !important;
-    padding: 20px !important;
+    width: 100% !important;
+    gap: 0 !important; 
+}
+[data-testid="stColumn"] > div[data-testid="stVerticalBlock"] > div { width: 100% !important; }
+
+
+/* =======================================================================
+   2. RIGHT BOX: BLANK NOTEBOOK
+   ======================================================================= */
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] {
+    height: 100% !important; width: 100% !important; margin: 0 !important;
+}
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button {
+    background: transparent !important; border: none !important; box-shadow: none !important;
+    height: 100% !important; width: 100% !important;
+    display: flex !important; flex-direction: row !important; justify-content: center !important; align-items: center !important;
+}
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button * { display: none !important; }
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::before {
+    content: "📓"; font-size: 70px !important; margin-right: 15px !important;
+}
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::after {
+    content: "Create\\A Blank\\A Notebook"; white-space: pre !important; font-size: 26px !important; 
+    font-weight: 800 !important; color: #f8fafc !important; line-height: 1.1 !important; text-align: left !important; letter-spacing: -1px !important;
 }
 
-/* Hide Streamlit Native SVG and Text to prevent duplicates */
-[data-testid="stFileUploadDropzone"] svg,
+
+/* =======================================================================
+   3. LEFT BOX: DEFAULT STATE (NO FILE)
+   ======================================================================= */
+[data-testid="stFileUploader"] > label { display: none !important; }
+[data-testid="stFileUploader"], [data-testid="stFileUploadDropzone"] {
+    background: transparent !important; border: none !important; padding: 0 !important; min-height: auto !important; height: auto !important; margin: 0 !important;
+}
+
+/* Hide native default visual text */
+[data-testid="stFileUploadDropzone"] svg, 
 [data-testid="stFileUploadDropzone"] div[data-testid="stMarkdownContainer"] p {
     display: none !important;
 }
 
-/* Setup Inner Wrapper for precise flex ordering */
 [data-testid="stFileUploadDropzone"] > div {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
-    width: 100% !important;
+    display: flex !important; flex-direction: column !important; align-items: center !important; width: 100% !important;
 }
-
-/* INJECT CLOUD ICON */
+/* Cloud */
 [data-testid="stFileUploadDropzone"] > div::before {
-    content: "";
-    display: block !important;
-    width: 45px !important;
-    height: 45px !important;
-    margin-bottom: 10px !important;
+    content: ""; display: block !important; width: 45px !important; height: 45px !important; margin-bottom: 10px !important;
     background-image: url('data:image/svg+xml;utf8,<svg fill="%23ffffff" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.36 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>') !important;
-    background-size: contain !important;
-    background-repeat: no-repeat !important;
-    background-position: center !important;
-    order: 1 !important;
+    background-size: contain !important; background-repeat: no-repeat !important; background-position: center !important; order: 1 !important;
 }
-
-/* INJECT "DRAG AND DROP" TEXT */
+/* Drag Text */
 [data-testid="stFileUploadDropzone"] > div::after {
-    content: "Drag and drop file here" !important;
-    display: block !important;
-    font-size: 16px !important;
-    font-weight: bold !important;
-    color: #f8fafc !important;
-    margin-bottom: 5px !important;
-    order: 2 !important;
+    content: "Drag and drop file here" !important; display: block !important; font-size: 16px !important; font-weight: bold !important; color: #f8fafc !important; margin-bottom: 5px !important; order: 2 !important;
 }
-
-/* 200MB LIMIT TEXT */
+/* 200MB Limit */
 [data-testid="stFileUploadDropzone"] small {
-    font-size: 13px !important;
-    color: #94a3b8 !important;
-    margin-bottom: 15px !important;
-    order: 3 !important;
-    display: block !important;
+    order: 3 !important; font-size: 13px !important; color: #94a3b8 !important; margin-bottom: 15px !important; display: block !important; text-align: center !important; width: 100% !important;
 }
-
-/* BROWSE FILES BUTTON */
+/* Browse Button */
 [data-testid="stFileUploadDropzone"] button {
-    background-color: #4f46e5 !important;
-    color: transparent !important; /* Hides native text */
-    border: none !important;
-    border-radius: 6px !important;
-    width: 140px !important;
-    height: 42px !important;
-    position: relative !important;
-    order: 4 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
+    order: 4 !important; background-color: #4f46e5 !important; color: transparent !important; border: none !important; border-radius: 6px !important; width: 140px !important; height: 42px !important; position: relative !important; display: flex !important; align-items: center !important; justify-content: center !important; margin: 0 auto !important;
 }
-[data-testid="stFileUploadDropzone"] button:hover {
-    background-color: #4338ca !important;
-}
+[data-testid="stFileUploadDropzone"] button:hover { background-color: #4338ca !important; }
 [data-testid="stFileUploadDropzone"] button::after {
-    content: "Browse files" !important;
-    position: absolute !important;
-    color: #ffffff !important;
-    font-size: 15px !important;
-    font-weight: bold !important;
+    content: "Browse files" !important; position: absolute !important; color: #ffffff !important; font-size: 15px !important; font-weight: bold !important; left: 0; right: 0; display: flex; align-items: center; justify-content: center;
 }
 
 
-/* =========================================
-   2. "FILE UPLOADED" DYNAMIC STATE 
-   ========================================= */
-
-/* THE MAGIC TRICK: Hide the giant Dropzone entirely if a file is uploaded */
+/* =======================================================================
+   4. LEFT BOX: UPLOADED STATE (FILE ACTIVE & PROGRESS BAR)
+   ======================================================================= */
+/* HIDE the default drag/drop UI completely when a file is uploaded */
 div[data-testid="stFileUploader"]:has([data-testid="stUploadedFile"]) [data-testid="stFileUploadDropzone"] {
     display: none !important;
 }
 
-/* Style the Progress Bar / File Row */
+/* NATIVE Progress Bar Container */
 [data-testid="stUploadedFile"] {
-    background-color: #0f172a !important;
+    background: rgba(30, 41, 59, 0.7) !important;
     border: 1px solid #334155 !important;
-    border-radius: 12px 12px 0 0 !important; /* Top rounded, bottom flat to connect to download */
-    padding: 15px 20px !important;
-    margin-top: 0 !important;
+    border-radius: 8px !important;
+    padding: 10px 15px !important;
+    margin-bottom: 15px !important; 
+    width: 100% !important;
+}
+[data-testid="stUploadedFile"] span, [data-testid="stUploadedFile"] small {
+    color: #f8fafc !important; font-size: 14px !important;
+}
+[data-testid="stUploadedFile"] svg { fill: #f8fafc !important; }
+
+/* The 'X' Button styling (safely contained in stUploadedFile without inheriting Browse text) */
+[data-testid="stUploadedFile"] button {
+    background: transparent !important; border: none !important; margin: 0 !important; width: auto !important; height: auto !important;
 }
 
-/* The Target Container for our Download Button */
+
+/* =======================================================================
+   5. THE NEW DOWNLOAD BUTTON (INSIDE THE LEFT BOX)
+   ======================================================================= */
 .final-download-target {
-    margin-top: -10px; /* Pulls the download button up to connect with the file box */
-    position: relative;
-    z-index: 10;
+    width: 100% !important;
 }
-
-/* Final Download Button (Becomes the primary action) */
 .final-download-target [data-testid="stDownloadButton"] button {
-    width: 100% !important; 
-    height: 55px !important; 
-    background: #1e293b !important; 
-    color: #0ea5e9 !important; 
-    border: 1px solid #334155 !important; 
-    border-top: none !important; /* Merge seamlessly with the file row */
-    border-radius: 0 0 12px 12px !important; /* Bottom rounded */
-    font-size: 16px !important; 
-    font-weight: bold !important; 
+    width: 100% !important;
+    height: 50px !important;
+    background: #1e293b !important;
+    color: #0ea5e9 !important;
+    border: 1px solid #0ea5e9 !important;
+    border-radius: 8px !important;
+    font-size: 16px !important;
+    font-weight: bold !important;
     transition: 0.2s;
 }
-.final-download-target [data-testid="stDownloadButton"] button:hover { 
-    background: #0ea5e9 !important; 
+.final-download-target [data-testid="stDownloadButton"] button:hover {
+    background: #0ea5e9 !important;
     color: white !important;
-    border-color: #0ea5e9 !important;
 }
 
-
-/* =========================================
-   3. CUSTOM INJECTED BLANK NOTEBOOK LAYOUT
-   ========================================= */
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button {
-    height: 200px !important; min-height: 200px !important; width: 100% !important; margin: 0 !important;
-    background-color: #0f172a !important; border: 1px solid #1e293b !important; border-radius: 12px !important;
-    display: flex !important; flex-direction: row !important;
-    justify-content: center !important; align-items: center !important;
-    transition: 0.2s; padding: 0 !important;
-}
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button:hover,
-[data-testid="column"]:nth-child(2) [data-testid="stDownloadButton"] button:hover { 
-    border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; 
-}
-
-/* Hide default wrappers */
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button div,
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button p,
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button span {
-    display: none !important;
-}
-
-/* Inject Giant Icon */
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::before {
-    content: "📓"; font-size: 70px !important; margin-right: 15px !important; line-height: 1 !important; display: block !important;
-}
-
-/* Inject Stacked Text */
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::after {
-    content: "Create\\A Blank\\A Notebook"; white-space: pre !important; font-size: 28px !important; 
-    font-weight: 800 !important; color: #f8fafc !important; line-height: 1.1 !important;
-    text-align: left !important; letter-spacing: -1px !important; display: block !important;
-}
-
-/* Mobile Top Nav Fix */
 @media (max-width: 768px) { .top-nav { position: relative; justify-content: center; padding-top: 20px; } }
 [data-testid="block-container"] { max-width: 800px; padding-top: 3rem; }
 </style>
@@ -497,9 +477,7 @@ with col1:
         if st.session_state.get("error_msg"):
             st.error(st.session_state.error_msg)
             
-        # IMPORTANT: Only render the download button if `up` is still active. 
-        # If the user clicks "X" to delete the file, `up` becomes None, 
-        # the dropzone reappears, and this download button vanishes.
+        # Ensure the download button only renders while the file exists
         elif st.session_state.get("final_html") and up:
             with col1:
                 st.markdown('<div class="final-download-target">', unsafe_allow_html=True)
