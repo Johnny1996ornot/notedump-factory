@@ -34,12 +34,6 @@ st.markdown("""
     position: relative !important; 
 }
 
-/* LEFT BOX: Dashed border by default */
-[data-testid="stColumn"]:nth-child(1) { 
-    border: 1px dashed #334155 !important; 
-    cursor: pointer; 
-}
-
 /* RIGHT BOX: Solid border */
 [data-testid="stColumn"]:nth-child(2) { border: 1px solid #1e293b !important; }
 [data-testid="stColumn"]:nth-child(2):hover { border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; }
@@ -66,10 +60,10 @@ st.markdown("""
     overflow: hidden !important; display: flex !important; align-items: center !important; margin-top: 0 !important;
 }
 
-/* HORIZONTAL PROGRESS BAR ANIMATION */
+/* HORIZONTAL PROGRESS BAR ANIMATION (Triggers when file card appears) */
 [data-testid="stUploadedFile"]::after {
     content: ''; position: absolute; bottom: 0; left: 0; height: 4px; width: 0%;
-    background: #0ea5e9; animation: loadBar 1.2s ease-out forwards;
+    background: #0ea5e9; animation: loadBar 1.5s ease-out forwards;
 }
 @keyframes loadBar { 0% { width: 0%; } 100% { width: 100%; } }
 
@@ -211,79 +205,96 @@ with col2:
     )
 
 with col1:
-    up = st.file_uploader("Upload a document", label_visibility="hidden", type=["pptx", "ppt", "pdf"])
+    up = st.file_uploader("Upload", label_visibility="collapsed", type=["pptx", "ppt", "pdf"])
 
     # STATE 1: NO FILE UPLOADED YET
     if not up:
-        # Render YOUR exact custom text dynamically, but with perfectly layered invisible CSS inputs on top
+        # PURE NATIVE APPROACH: NO overlays, NO opacity hacks. 
+        # Force all containers to 100% and style the dropzone directly.
         st.markdown("""
-        <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; z-index: 1;">
-            <div style="font-size: 45px; margin-bottom: 10px; line-height: 1;">📤</div>
-            <div style="font-size: 20px; font-weight: 800; color: #f8fafc; line-height: 1.2; margin-bottom: 15px; text-align: center;">Convert file to an<br>interactive notebook</div>
-            <div style="font-size: 14px; color: #94a3b8; line-height: 1.5; text-align: center;">Upload a file<br>200MB per file • PPTX, PPT, PDF</div>
-        </div>
         <style>
-            [data-testid="stColumn"]:nth-child(1):hover { border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; }
+            /* Strip the outer column styling so the dropzone IS the box */
+            [data-testid="stColumn"]:nth-child(1) { 
+                padding: 0 !important; 
+                border: none !important; 
+                background: transparent !important;
+            }
             
-            div[data-testid="stFileUploader"] {
-                position: absolute !important;
-                top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important;
-                opacity: 0 !important; z-index: 20 !important; margin: 0 !important; padding: 0 !important;
+            /* 🔥 CRITICAL FIX: Force ALL uploader containers to fill the column perfectly */
+            div[data-testid="stFileUploader"],
+            div[data-testid="stFileUploader"] > div {
+                height: 100% !important;
+                width: 100% !important;
             }
 
-            /* 🔥 CRITICAL FIX: Explicit positioning and pointer-events so clicks actually land */
+            /* Style the native dropzone to match your clean UI */
             [data-testid="stFileUploadDropzone"] {
                 width: 100% !important;
                 height: 100% !important;
                 min-height: 240px !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                opacity: 0 !important;
-                position: absolute !important;
-                top: 0 !important;
-                left: 0 !important;
-                z-index: 20 !important;
-                pointer-events: all !important;
+                background-color: #0f172a !important;
+                border: 1px dashed #334155 !important;
+                border-radius: 12px !important;
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: center !important;
+                align-items: center !important;
+                padding: 20px !important;
+                cursor: pointer !important;
+                transition: 0.2s !important;
             }
 
-            /* 🔥 CRITICAL MOBILE TAP FIX: Stretches the actual HTML input */
-            div[data-testid="stFileUploader"] input {
-                width: 100% !important;
-                height: 100% !important;
-                cursor: pointer !important;
-                position: absolute !important;
-                top: 0 !important;
-                left: 0 !important;
-                z-index: 30 !important;
+            [data-testid="stFileUploadDropzone"]:hover {
+                border-color: #0ea5e9 !important;
+                background-color: rgba(14, 165, 233, 0.1) !important;
+            }
+
+            /* Hide the default Streamlit text, limits, and cloud icon */
+            [data-testid="stFileUploadDropzone"] * {
+                display: none !important;
+            }
+
+            /* Inject your custom UI text cleanly via pseudo-elements */
+            [data-testid="stFileUploadDropzone"]::before {
+                content: "📤";
+                font-size: 45px;
+                line-height: 1;
+                margin-bottom: 10px;
+                display: block;
+                text-align: center;
+            }
+
+            [data-testid="stFileUploadDropzone"]::after {
+                content: "Convert file to an\\A interactive notebook\\A\\A Upload a file • PPTX, PPT, PDF";
+                white-space: pre-wrap;
+                text-align: center;
+                font-size: 16px;
+                font-weight: 800;
+                color: #f8fafc;
+                line-height: 1.4;
+                display: block;
             }
         </style>
         """, unsafe_allow_html=True)
 
-        # Clear cached values so previous files disappear visually
         st.session_state.final_html = None
         st.session_state.error_msg = None
         st.session_state.current_file_key = None
 
     # STATE 2: FILE HAS BEEN UPLOADED
     else:
-        # The custom text is naturally destroyed by Python. 
-        # Apply the correct CSS to collapse the dropzone without breaking the DOM (using opacity: 0 instead of display: none)
+        # Hide the dropzone cleanly, restore the column border for the file card state
         st.markdown("""
         <style>
-            [data-testid="stColumn"]:nth-child(1) { border: 1px solid #1e293b !important; cursor: default !important;}
-            
-            div[data-testid="stFileUploader"] {
-                position: relative !important; opacity: 1 !important; z-index: 1 !important; height: auto !important; margin-bottom: 15px !important;
+            [data-testid="stColumn"]:nth-child(1) { 
+                padding: 20px !important; 
+                border: 1px solid #1e293b !important; 
+                cursor: default !important;
+                background-color: #0f172a !important;
+                border-radius: 12px !important;
             }
-            
             [data-testid="stFileUploadDropzone"] { 
-                opacity: 0 !important; 
-                pointer-events: none !important; 
-                height: 0 !important; 
-                min-height: 0 !important; 
-                padding: 0 !important; 
-                margin: 0 !important; 
-                border: none !important;
+                display: none !important; 
             }
         </style>
         """, unsafe_allow_html=True)
@@ -293,193 +304,194 @@ with col1:
         # ==========================================================================
         file_key = f"{up.name}_{up.size}"
 
-        # Only re-parse the document if it's a completely new file
         if st.session_state.get("current_file_key") != file_key:
             st.session_state.current_file_key = file_key
             st.session_state.final_html = None
             st.session_state.error_msg = None
 
-            try:
-                nav, slides = "", ""
-                file_name = up.name.lower()
-                total_pages = 0
-                unique_storage_id = f"{file_name}_{int(time.time())}"
-                base_w = 816 
-                base_h = 1054
+            # UX Fix: Added a spinner here so the user gets real feedback while Python parses the document
+            with st.spinner(f"Processing {up.name}..."):
+                try:
+                    nav, slides = "", ""
+                    file_name = up.name.lower()
+                    total_pages = 0
+                    unique_storage_id = f"{file_name}_{int(time.time())}"
+                    base_w = 816 
+                    base_h = 1054
 
-                if file_name.endswith(('.pptx', '.ppt')):
-                    ppt = Presentation(up)
-                    total_pages = len(ppt.slides)
-                    slide_width_emu = ppt.slide_width or 9144000
-                    scale_w = base_w / slide_width_emu
+                    if file_name.endswith(('.pptx', '.ppt')):
+                        ppt = Presentation(up)
+                        total_pages = len(ppt.slides)
+                        slide_width_emu = ppt.slide_width or 9144000
+                        scale_w = base_w / slide_width_emu
 
-                    def parse_shapes(shapes):
-                        html_content = ""
-                        for shape in shapes:
-                            try:
-                                if shape.shape_type == 6: 
-                                    html_content += parse_shapes(shape.shapes)
-                                    continue
+                        def parse_shapes(shapes):
+                            html_content = ""
+                            for shape in shapes:
+                                try:
+                                    if shape.shape_type == 6: 
+                                        html_content += parse_shapes(shape.shapes)
+                                        continue
 
-                                top = (shape.top * scale_w) if shape.top else 0
-                                left = (shape.left * scale_w) if shape.left else 0
-                                width = (shape.width * scale_w) if shape.width else 200
-                                height = (shape.height * scale_w) if shape.height else 50
+                                    top = (shape.top * scale_w) if shape.top else 0
+                                    left = (shape.left * scale_w) if shape.left else 0
+                                    width = (shape.width * scale_w) if shape.width else 200
+                                    height = (shape.height * scale_w) if shape.height else 50
 
-                                if shape.shape_type == 13: 
-                                    img_stream = BytesIO(shape.image.blob)
-                                    base64_img = base64.b64encode(img_stream.getvalue()).decode()
-                                    html_content += f'''
-                                    <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; height:{height}px; z-index:10; transform: translate(0px, 0px);">
-                                        <img src="data:image/png;base64,{base64_img}" style="width:100%; height:100%; object-fit:contain;">
-                                    </div>'''
+                                    if shape.shape_type == 13: 
+                                        img_stream = BytesIO(shape.image.blob)
+                                        base64_img = base64.b64encode(img_stream.getvalue()).decode()
+                                        html_content += f'''
+                                        <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; height:{height}px; z-index:10; transform: translate(0px, 0px);">
+                                            <img src="data:image/png;base64,{base64_img}" style="width:100%; height:100%; object-fit:contain;">
+                                        </div>'''
 
-                                elif shape.has_table:
-                                    table_html = "<table style='width:100%; height:100%; border-collapse: collapse; font-size:12px;' border='1'>"
-                                    for row in shape.table.rows:
-                                        table_html += "<tr>"
-                                        for cell in row.cells:
-                                            table_html += f"<td style='padding:5px;'>{html.escape(cell.text)}</td>"
-                                        table_html += "</tr>"
-                                    table_html += "</table>"
-                                    html_content += f'''
-                                    <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; background:rgba(255,255,255,0.9); z-index:15; transform: translate(0px, 0px);">
-                                        <div class="content-area">{table_html}</div>
-                                    </div>'''
+                                    elif shape.has_table:
+                                        table_html = "<table style='width:100%; height:100%; border-collapse: collapse; font-size:12px;' border='1'>"
+                                        for row in shape.table.rows:
+                                            table_html += "<tr>"
+                                            for cell in row.cells:
+                                                table_html += f"<td style='padding:5px;'>{html.escape(cell.text)}</td>"
+                                            table_html += "</tr>"
+                                        table_html += "</table>"
+                                        html_content += f'''
+                                        <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; background:rgba(255,255,255,0.9); z-index:15; transform: translate(0px, 0px);">
+                                            <div class="content-area">{table_html}</div>
+                                        </div>'''
 
-                                elif shape.has_text_frame and shape.text.strip():
-                                    html_text = ""
-                                    for paragraph in shape.text_frame.paragraphs:
-                                        p_text = ""
-                                        for run in paragraph.runs:
-                                            r_txt = html.escape(run.text)
-                                            fs_style = ""
-                                            if hasattr(run.font, 'size') and run.font.size:
-                                                pt_size = run.font.size.pt
-                                                px_size = max(10, int(pt_size * scale_w * 12700 * 1.33))
-                                                fs_style = f"font-size:{px_size}px;"
+                                    elif shape.has_text_frame and shape.text.strip():
+                                        html_text = ""
+                                        for paragraph in shape.text_frame.paragraphs:
+                                            p_text = ""
+                                            for run in paragraph.runs:
+                                                r_txt = html.escape(run.text)
+                                                fs_style = ""
+                                                if hasattr(run.font, 'size') and run.font.size:
+                                                    pt_size = run.font.size.pt
+                                                    px_size = max(10, int(pt_size * scale_w * 12700 * 1.33))
+                                                    fs_style = f"font-size:{px_size}px;"
 
-                                            if getattr(run.font, 'bold', False) == True: r_txt = f"<strong>{r_txt}</strong>"
-                                            if getattr(run.font, 'italic', False) == True: r_txt = f"<em>{r_txt}</em>"
-                                            if getattr(run.font, 'underline', False) == True: r_txt = f"<u>{r_txt}</u>"
+                                                if getattr(run.font, 'bold', False) == True: r_txt = f"<strong>{r_txt}</strong>"
+                                                if getattr(run.font, 'italic', False) == True: r_txt = f"<em>{r_txt}</em>"
+                                                if getattr(run.font, 'underline', False) == True: r_txt = f"<u>{r_txt}</u>"
 
-                                            if fs_style: p_text += f"<span style='{fs_style}'>{r_txt}</span>"
-                                            else: p_text += r_txt
+                                                if fs_style: p_text += f"<span style='{fs_style}'>{r_txt}</span>"
+                                                else: p_text += r_txt
 
-                                        if not p_text.strip(): html_text += "<br>"
-                                        else: html_text += f"<div>{p_text}</div>"
+                                            if not p_text.strip(): html_text += "<br>"
+                                            else: html_text += f"<div>{p_text}</div>"
+
+                                        html_content += f'''
+                                        <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; min-height:{height}px; z-index:20; transform: translate(0px, 0px);">
+                                            <div class="content-area" style="word-wrap: break-word; white-space: pre-wrap; overflow-wrap: break-word;">{html_text}</div>
+                                        </div>'''
+                                except Exception as e:
+                                    continue 
+                            return html_content
+
+                        for i, slide in enumerate(ppt.slides):
+                            title_text = slide.shapes.title.text if slide.shapes.title else f"Slide {i+1}"
+                            nav += f'<div class="nav-link" id="link-{i}" onclick="goTo(\'{i}\')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text">{html.escape(title_text)}</span></div>'
+                            slides += f'<div id="p-{i}" class="page {"active" if i==0 else ""}" data-page-height="{base_h}" style="height:{base_h}px;"> '
+                            slides += parse_shapes(slide.shapes)
+                            slides += '</div>'
+
+                    elif file_name.endswith('.pdf'):
+                        doc = fitz.open(stream=up.read(), filetype="pdf")
+                        total_pages = len(doc)
+
+                        first_page = doc[0]
+                        base_w = 816
+                        p_scale = base_w / first_page.rect.width if first_page.rect.width > 0 else 1
+
+                        for i, page in enumerate(doc):
+                            page_width = page.rect.width
+                            page_height = page.rect.height
+                            p_scale = base_w / page_width if page_width > 0 else 1
+                            scaled_height = max(1054, int(page_height * p_scale))
+
+                            nav += f'<div class="nav-link" id="link-{i}" onclick="goTo(\'{i}\')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text">Page {i+1}</span></div>'
+                            slides += f'<div id="p-{i}" class="page {"active" if i==0 else ""}" data-page-height="{scaled_height}" style="height:{scaled_height}px;"> '
+
+                            blocks = page.get_text("dict")["blocks"]
+                            html_content = ""
+
+                            for b in blocks:
+                                bbox = b["bbox"]
+                                top = bbox[1] * p_scale
+                                left = bbox[0] * p_scale
+                                width = (bbox[2] - bbox[0]) * p_scale
+                                height = (bbox[3] - bbox[1]) * p_scale
+
+                                if b["type"] == 0: 
+                                    text_html = ""
+                                    for line in b["lines"]:
+                                        line_html = ""
+                                        for span in line["spans"]:
+                                            txt = html.escape(span["text"])
+                                            if not txt.strip():
+                                                line_html += " "
+                                                continue
+
+                                            px_size = max(10, int(span["size"] * p_scale))
+                                            fs_style = f"font-size:{px_size}px;"
+
+                                            if span["flags"] & 16: txt = f"<strong>{txt}</strong>"
+                                            if span["flags"] & 2: txt = f"<em>{txt}</em>"
+
+                                            line_html += f"<span style='{fs_style}'>{txt}</span>"
+
+                                        if not line_html.strip(): text_html += "<br>"
+                                        else: text_html += f"<div>{line_html}</div>"
 
                                     html_content += f'''
                                     <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; min-height:{height}px; z-index:20; transform: translate(0px, 0px);">
-                                        <div class="content-area" style="word-wrap: break-word; white-space: pre-wrap; overflow-wrap: break-word;">{html_text}</div>
-                                    </div>'''
-                            except Exception as e:
-                                continue 
-                        return html_content
-
-                    for i, slide in enumerate(ppt.slides):
-                        title_text = slide.shapes.title.text if slide.shapes.title else f"Slide {i+1}"
-                        nav += f'<div class="nav-link" id="link-{i}" onclick="goTo(\'{i}\')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text">{html.escape(title_text)}</span></div>'
-                        slides += f'<div id="p-{i}" class="page {"active" if i==0 else ""}" data-page-height="{base_h}" style="height:{base_h}px;"> '
-                        slides += parse_shapes(slide.shapes)
-                        slides += '</div>'
-
-                elif file_name.endswith('.pdf'):
-                    doc = fitz.open(stream=up.read(), filetype="pdf")
-                    total_pages = len(doc)
-
-                    first_page = doc[0]
-                    base_w = 816
-                    p_scale = base_w / first_page.rect.width if first_page.rect.width > 0 else 1
-
-                    for i, page in enumerate(doc):
-                        page_width = page.rect.width
-                        page_height = page.rect.height
-                        p_scale = base_w / page_width if page_width > 0 else 1
-                        scaled_height = max(1054, int(page_height * p_scale))
-
-                        nav += f'<div class="nav-link" id="link-{i}" onclick="goTo(\'{i}\')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text">Page {i+1}</span></div>'
-                        slides += f'<div id="p-{i}" class="page {"active" if i==0 else ""}" data-page-height="{scaled_height}" style="height:{scaled_height}px;"> '
-
-                        blocks = page.get_text("dict")["blocks"]
-                        html_content = ""
-
-                        for b in blocks:
-                            bbox = b["bbox"]
-                            top = bbox[1] * p_scale
-                            left = bbox[0] * p_scale
-                            width = (bbox[2] - bbox[0]) * p_scale
-                            height = (bbox[3] - bbox[1]) * p_scale
-
-                            if b["type"] == 0: 
-                                text_html = ""
-                                for line in b["lines"]:
-                                    line_html = ""
-                                    for span in line["spans"]:
-                                        txt = html.escape(span["text"])
-                                        if not txt.strip():
-                                            line_html += " "
-                                            continue
-
-                                        px_size = max(10, int(span["size"] * p_scale))
-                                        fs_style = f"font-size:{px_size}px;"
-
-                                        if span["flags"] & 16: txt = f"<strong>{txt}</strong>"
-                                        if span["flags"] & 2: txt = f"<em>{txt}</em>"
-
-                                        line_html += f"<span style='{fs_style}'>{txt}</span>"
-
-                                    if not line_html.strip(): text_html += "<br>"
-                                    else: text_html += f"<div>{line_html}</div>"
-
-                                html_content += f'''
-                                <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; min-height:{height}px; z-index:20; transform: translate(0px, 0px);">
-                                    <div class="content-area" style="word-wrap: break-word; white-space: pre-wrap; overflow-wrap: break-word; font-family: sans-serif;">{text_html}</div>
-                                </div>'''
-
-                            elif b["type"] == 1: 
-                                img_bytes = b.get("image")
-                                if img_bytes:
-                                    base64_img = base64.b64encode(img_bytes).decode()
-                                    html_content += f'''
-                                    <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; height:{height}px; z-index:10; transform: translate(0px, 0px);">
-                                        <img src="data:image/png;base64,{base64_img}" style="width:100%; height:100%; object-fit:contain;">
+                                        <div class="content-area" style="word-wrap: break-word; white-space: pre-wrap; overflow-wrap: break-word; font-family: sans-serif;">{text_html}</div>
                                     </div>'''
 
-                        slides += html_content
-                        slides += '</div>'
+                                elif b["type"] == 1: 
+                                    img_bytes = b.get("image")
+                                    if img_bytes:
+                                        base64_img = base64.b64encode(img_bytes).decode()
+                                        html_content += f'''
+                                        <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; height:{height}px; z-index:10; transform: translate(0px, 0px);">
+                                            <img src="data:image/png;base64,{base64_img}" style="width:100%; height:100%; object-fit:contain;">
+                                        </div>'''
 
-                dimension_script = f"""
-                <script>
-                    document.addEventListener("DOMContentLoaded", function() {{
-                        var cvs = document.getElementById('canvas');
-                        if(cvs) {{
-                            cvs.style.width = '{base_w}px';
-                            cvs.setAttribute('data-width', '{base_w}');
-                            var wInput = document.getElementById('canvas-w-cm');
-                            var hInput = document.getElementById('canvas-h-cm');
-                            if(wInput) wInput.value = (Math.round(({base_w} / 37.795) * 10) / 10).toFixed(1);
-                            if(hInput) hInput.value = (Math.round((parseInt(cvs.style.height) / 37.795) * 10) / 10).toFixed(1);
-                        }}
-                    }});
-                </script>
-                """
+                            slides += html_content
+                            slides += '</div>'
 
-                # Save the final parsed result into session memory
-                st.session_state.final_html = get_template(total_pages)\
-                    .replace("{{NAV_LINKS}}", nav)\
-                    .replace("{{SLIDE_CONTENT}}", dimension_script + slides)\
-                    .replace("{{VISIBLE_TITLE}}", html.escape(up.name))\
-                    .replace("{{STORAGE_ID}}", html.escape(unique_storage_id))
+                    dimension_script = f"""
+                    <script>
+                        document.addEventListener("DOMContentLoaded", function() {{
+                            var cvs = document.getElementById('canvas');
+                            if(cvs) {{
+                                cvs.style.width = '{base_w}px';
+                                cvs.setAttribute('data-width', '{base_w}');
+                                var wInput = document.getElementById('canvas-w-cm');
+                                var hInput = document.getElementById('canvas-h-cm');
+                                if(wInput) wInput.value = (Math.round(({base_w} / 37.795) * 10) / 10).toFixed(1);
+                                if(hInput) hInput.value = (Math.round((parseInt(cvs.style.height) / 37.795) * 10) / 10).toFixed(1);
+                            }}
+                        }});
+                    </script>
+                    """
 
-            except Exception as e:
-                err_msg = str(e).lower()
-                if "not a zip file" in err_msg or "badzipfile" in err_msg:
-                    st.session_state.error_msg = "🚨 FORMAT ERROR: You uploaded an older `.ppt` file. Python-PPTX only supports modern `.pptx` files. Please open your file in PowerPoint, click 'Save As', choose `.pptx`, and upload the new file."
-                elif "has no attribute 'open'" in err_msg:
-                    st.session_state.error_msg = "🚨 REPLIT PACKAGE ERROR: You have the wrong 'fitz' package installed. Please open the Shell tab, run `pip uninstall fitz -y`, then run `pip install PyMuPDF -y` and restart the app."
-                else:
-                    st.session_state.error_msg = f"Error Processing File: {e}"
+                    # Save the final parsed result into session memory
+                    st.session_state.final_html = get_template(total_pages)\
+                        .replace("{{NAV_LINKS}}", nav)\
+                        .replace("{{SLIDE_CONTENT}}", dimension_script + slides)\
+                        .replace("{{VISIBLE_TITLE}}", html.escape(up.name))\
+                        .replace("{{STORAGE_ID}}", html.escape(unique_storage_id))
+
+                except Exception as e:
+                    err_msg = str(e).lower()
+                    if "not a zip file" in err_msg or "badzipfile" in err_msg:
+                        st.session_state.error_msg = "🚨 FORMAT ERROR: You uploaded an older `.ppt` file. Python-PPTX only supports modern `.pptx` files. Please open your file in PowerPoint, click 'Save As', choose `.pptx`, and upload the new file."
+                    elif "has no attribute 'open'" in err_msg:
+                        st.session_state.error_msg = "🚨 REPLIT PACKAGE ERROR: You have the wrong 'fitz' package installed. Please open the Shell tab, run `pip uninstall fitz -y`, then run `pip install PyMuPDF -y` and restart the app."
+                    else:
+                        st.session_state.error_msg = f"Error Processing File: {e}"
 
         # OUTPUT STAGE: Render error or the cached download button
         if st.session_state.get("error_msg"):
