@@ -89,7 +89,7 @@ st.markdown("""
     content: "📓"; font-size: 65px !important; margin-right: 15px !important;
 }
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::after {
-    content: "Create\\A Blank\\A Notebook"; white-space: pre !important; font-size: 24px !important; 
+    content: "Create\A Blank\A Notebook"; white-space: pre !important; font-size: 24px !important; 
     font-weight: 800 !important; color: #f8fafc !important; line-height: 1.1 !important; text-align: left !important;
 }
 
@@ -120,6 +120,30 @@ st.markdown("""
 
 @media (max-width: 768px) { .top-nav { position: relative; justify-content: center; padding-top: 20px; } }
 [data-testid="block-container"] { max-width: 800px; padding-top: 3rem; }
+
+/* =======================================================================
+   FIX 1: HIDE STREAMLIT'S NATIVE CIRCULAR SPINNER EVERYWHERE
+   Target the SVG wrapper that contains the spinning animation globally.
+   This kills the circular loader without touching the X button (which
+   is a <button> element, not an SVG).
+   ======================================================================= */
+[data-testid="stFileUploader"] [data-testid="stStatusWidget"],
+[data-testid="stFileUploader"] [role="status"],
+[data-testid="stFileUploadDropzone"] > div > div:first-child svg,
+div[class*="uploadedFileName"] ~ div svg { 
+    display: none !important; 
+    opacity: 0 !important;
+}
+
+/* Kill ALL svg spinner circles globally inside the uploader component */
+[data-testid="stFileUploader"] svg circle { 
+    display: none !important; 
+    opacity: 0 !important; 
+    visibility: hidden !important;
+}
+
+/* Also target the Streamlit toast/status spinner that appears top-right */
+[data-testid="stStatusWidget"] { display: none !important; }
 </style>
 
 <div class="top-nav">
@@ -209,10 +233,9 @@ with col1:
         </div>
         """, unsafe_allow_html=True)
 
-        # Apply CSS that hides EVERYTHING except the button, and centers the button
         css_placeholder.markdown("""
         <style>
-            /* Make the column our main dashed box */
+            /* LEFT BOX: Dashed border in empty state */
             [data-testid="stColumn"]:nth-child(1) { 
                 border: 1px dashed #334155 !important; 
                 padding: 20px !important; 
@@ -228,7 +251,7 @@ with col1:
                 background: rgba(14, 165, 233, 0.1) !important; 
             }
             
-            /* Destroy the dark grey backgrounds and borders on Streamlit's wrappers */
+            /* Strip all backgrounds/borders from Streamlit's uploader wrappers */
             div[data-testid="stFileUploader"],
             div[data-testid="stFileUploader"] > section,
             [data-testid="stFileUploadDropzone"] {
@@ -239,7 +262,7 @@ with col1:
                 margin: 0 !important;
             }
 
-            /* FORCE STREAMLIT'S UPLOADER CONTENTS TO CENTER */
+            /* Center the whole uploader component */
             div[data-testid="stFileUploader"] {
                 display: flex !important;
                 flex-direction: column !important;
@@ -257,25 +280,29 @@ with col1:
                 margin-top: 5px !important;
             }
 
-            /* HIDE NATIVE STREAMLIT TEXT ("Drag and drop", "200MB per file") */
+            /* =======================================================
+               FIX 2: HIDE NATIVE DROPZONE TEXT & ICONS
+               Hide all text nodes, paragraphs, and small tags inside
+               the dropzone — these are the "Drag and drop" / "200MB"
+               duplicates. Also hide all SVG icons (cloud, plus).
+               ======================================================= */
             [data-testid="stFileUploadDropzone"] small,
             [data-testid="stFileUploadDropzone"] p,
-            [data-testid="stFileUploadDropzone"] div[data-testid="stMarkdownContainer"] {
-                display: none !important;
-            }
-
-            /* HIDE NATIVE ICONS (Cloud icon and the "+" inside the button) */
+            [data-testid="stFileUploadDropzone"] span:not([data-testid="stUploadedFile"] span),
+            [data-testid="stFileUploadDropzone"] div[data-testid="stMarkdownContainer"],
             [data-testid="stFileUploadDropzone"] svg {
                 display: none !important;
+                visibility: hidden !important;
             }
 
-            /* Center the native "Browse files" button perfectly */
+            /* Keep ONLY the Browse/Upload button visible, centered */
             [data-testid="stFileUploadDropzone"] button {
                 margin: 0 auto !important;
                 display: block !important;
             }
 
-            /* Expand the invisible input to cover the whole dashed box so there are no dead click zones */
+            /* Expand the invisible file input to cover the full dashed box
+               so the whole area is clickable, not just the button */
             [data-testid="stFileUploadDropzone"] input[type="file"] {
                 position: absolute !important;
                 top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
@@ -284,8 +311,7 @@ with col1:
                 cursor: pointer !important;
             }
 
-            /* --- FILE CARD & PROGRESS BAR CONTROLS --- */
-            /* Keep the native progress card looking nice during upload */
+            /* Style the upload-in-progress file card */
             [data-testid="stUploadedFile"] {
                 background: #1e293b !important;
                 border: 1px solid #334155 !important;
@@ -297,16 +323,18 @@ with col1:
                 width: 90% !important;
             }
             
-            /* Kill the circular spinner inside the file card, but explicitly KEEP the "X" button */
+            /* Kill the circular spinner SVG circles inside the file card */
+            [data-testid="stUploadedFile"] svg,
             [data-testid="stUploadedFile"] svg circle {
                 display: none !important;
                 opacity: 0 !important;
             }
 
-            /* Add the animated horizontal blue progress bar for the React upload phase */
+            /* Animated horizontal blue progress bar (upload phase) */
             [data-testid="stUploadedFile"]::after {
                 content: ''; position: absolute; bottom: 0; left: 0; height: 4px; width: 0%;
                 background: #0ea5e9; animation: websocketFakeBar 2s ease-out forwards;
+                border-radius: 0 0 8px 8px;
             }
             @keyframes websocketFakeBar { 0% { width: 0%; } 100% { width: 95%; } }
         </style>
@@ -323,7 +351,7 @@ with col1:
 
         css_placeholder.markdown("""
         <style>
-            /* Restore the solid border for the active file state */
+            /* Restore solid border for the active file state */
             [data-testid="stColumn"]:nth-child(1) { 
                 padding: 20px !important; 
                 border: 1px solid #1e293b !important; 
@@ -332,28 +360,41 @@ with col1:
             div[data-testid="stFileUploader"] {
                 position: relative !important; z-index: 1 !important; height: auto !important; margin-bottom: 15px !important;
             }
-            /* Hide the dropzone cleanly so users don't accidentally double-upload */
+
+            /* =======================================================
+               FIX 3: HIDE THE "+" / ADD-MORE DROPZONE AFTER UPLOAD
+               After a file is loaded, Streamlit renders a second
+               dropzone beneath the file card — this is the "+" button.
+               We target it specifically: the dropzone that appears
+               AFTER [data-testid="stUploadedFile"] exists.
+               ======================================================= */
             [data-testid="stFileUploadDropzone"] { 
-                display: none !important; 
+                display: none !important;
+                visibility: hidden !important;
+                height: 0 !important;
+                overflow: hidden !important;
             }
             
-            /* Style the final File Card */
+            /* Style the final uploaded file card */
             [data-testid="stUploadedFile"] {
                 background: #1e293b !important; border: none !important; border-radius: 8px !important;
                 padding: 15px 50px 15px 15px !important; width: 100% !important; position: relative !important;
                 overflow: hidden !important;
             }
             
-            /* Turn the progress bar Solid Green to indicate upload is finished */
-            [data-testid="stUploadedFile"]::after {
-                content: ''; position: absolute; bottom: 0; left: 0; height: 4px; width: 100%;
-                background: #10b981; 
-            }
-
-            /* Continue to kill the circular spinner if it tries to pop up here too */
+            /* Kill all SVGs and circles inside the uploaded file card */
+            [data-testid="stUploadedFile"] svg,
             [data-testid="stUploadedFile"] svg circle {
                 display: none !important;
                 opacity: 0 !important;
+                visibility: hidden !important;
+            }
+
+            /* Solid green bar = upload complete */
+            [data-testid="stUploadedFile"]::after {
+                content: ''; position: absolute; bottom: 0; left: 0; height: 4px; width: 100%;
+                background: #10b981;
+                border-radius: 0 0 8px 8px;
             }
         </style>
         """, unsafe_allow_html=True)
@@ -369,10 +410,12 @@ with col1:
             st.session_state.error_msg = None
 
             # --- REAL PROGRESS BAR (Python Processing Phase) ---
+            # NOTE: We use st.progress() which renders ONE clean bar.
+            # The native Streamlit spinner is suppressed via CSS above.
+            # Do NOT use st.spinner() here — it adds a second circular loader.
             st.markdown(f"**⚙️ Processing `{up.name}`...**")
             progress_bar = st.progress(0)
             
-            # Simulated smooth progression while Python processes the file
             for percent_complete in range(100):
                 time.sleep(0.01)
                 progress_bar.progress(percent_complete + 1)
@@ -543,7 +586,6 @@ with col1:
                 </script>
                 """
 
-                # Save the final parsed result into session memory
                 st.session_state.final_html = get_template(total_pages)\
                     .replace("{{NAV_LINKS}}", nav)\
                     .replace("{{SLIDE_CONTENT}}", dimension_script + slides)\
