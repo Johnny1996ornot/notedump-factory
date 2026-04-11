@@ -23,16 +23,16 @@ st.markdown("""
 
 /* 1. COLUMN WRAPPERS: STRICT HEIGHT & MATCHING BOXES */
 [data-testid="stColumn"] {
-    background-color: #0f172a !important; /* Brings the box background back */
+    background-color: #0f172a !important; 
     border-radius: 12px !important;
-    height: 240px !important; 
+    min-height: 240px !important; /* FIX: Changed to min-height so download button fits */
     padding: 20px !important;
     display: flex !important;
     flex-direction: column !important;
     box-sizing: border-box !important;
     transition: 0.2s !important;
-    position: relative !important; /* CRITICAL: Allows the invisible uploader to stretch */
-    overflow: hidden !important; 
+    position: relative !important; 
+    /* FIX: Removed overflow: hidden so things don't get cut off */
 }
 
 /* LEFT BOX: Dashed border, matching right size */
@@ -83,16 +83,17 @@ st.markdown("""
    ======================================================================= */
 [data-testid="stFileUploader"] {
     position: absolute !important;
-    top: 0 !important; left: 0 !important;
+    top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; /* FIX: Forced to cover entire box */
     width: 100% !important; height: 100% !important;
     z-index: 10 !important;
     opacity: 0 !important; /* COMPLETELY INVISIBLE */
-    cursor: pointer !important;
     margin: 0 !important; padding: 0 !important;
 }
 
+/* FIX: Min-height ensures the clickable area doesn't collapse */
 [data-testid="stFileUploadDropzone"] {
-    width: 100% !important; height: 100% !important; padding: 0 !important; cursor: pointer !important;
+    width: 100% !important; height: 100% !important; min-height: 240px !important; 
+    padding: 0 !important; cursor: pointer !important;
 }
 
 /* =======================================================================
@@ -144,14 +145,14 @@ div[data-testid="stFileUploader"]:has([data-testid="stUploadedFile"]) [data-test
 
 [data-testid="stUploadedFile"] span, [data-testid="stUploadedFile"] small { color: #f8fafc !important; font-size: 14px !important; position: relative; z-index: 2;}
 
-/* Download Button styling inside left column */
-.final-download-target { width: 100% !important; margin-top: auto !important; padding-top: 15px; }
-.final-download-target [data-testid="stDownloadButton"] button {
+/* FIX: Download Button natively styled without broken markdown wrappers */
+[data-testid="stColumn"]:nth-child(1) [data-testid="stDownloadButton"] { width: 100% !important; margin-top: 15px !important; }
+[data-testid="stColumn"]:nth-child(1) [data-testid="stDownloadButton"] button {
     width: 100% !important; background-color: transparent !important;
     border: 1px solid #0ea5e9 !important; color: #0ea5e9 !important; border-radius: 8px !important;
     height: 45px !important; font-size: 15px !important; font-weight: bold !important; transition: 0.2s;
 }
-.final-download-target [data-testid="stDownloadButton"] button:hover { background: rgba(14, 165, 233, 0.1) !important; }
+[data-testid="stColumn"]:nth-child(1) [data-testid="stDownloadButton"] button:hover { background: rgba(14, 165, 233, 0.1) !important; }
 
 /* =======================================================================
    RIGHT BOX: BLANK NOTEBOOK
@@ -382,7 +383,7 @@ with col1:
             st.error(st.session_state.error_msg)
             
         elif st.session_state.get("final_html"):
-            st.markdown('<div class="final-download-target">', unsafe_allow_html=True)
+            # FIX: Removed the buggy st.markdown wrapper. The button renders purely on its own now.
             st.download_button(
                 label="📥 Download Interactive Notebook",
                 data=st.session_state.final_html.encode('utf-8'), 
@@ -390,4 +391,3 @@ with col1:
                 mime="text/html",
                 use_container_width=True
             )
-            st.markdown('</div>', unsafe_allow_html=True)
