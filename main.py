@@ -60,10 +60,10 @@ st.markdown("""
     overflow: hidden !important; display: flex !important; align-items: center !important; margin-top: 0 !important;
 }
 
-/* HORIZONTAL PROGRESS BAR ANIMATION (Triggers when file card appears) */
+/* HORIZONTAL PROGRESS BAR ANIMATION */
 [data-testid="stUploadedFile"]::after {
     content: ''; position: absolute; bottom: 0; left: 0; height: 4px; width: 0%;
-    background: #0ea5e9; animation: loadBar 1.5s ease-out forwards;
+    background: #0ea5e9; animation: loadBar 2s ease-out forwards;
 }
 @keyframes loadBar { 0% { width: 0%; } 100% { width: 100%; } }
 
@@ -209,70 +209,54 @@ with col1:
 
     # STATE 1: NO FILE UPLOADED YET
     if not up:
-        # PURE NATIVE APPROACH: NO overlays, NO opacity hacks. 
-        # Force all containers to 100% and style the dropzone directly.
+        # 1. YOUR ORIGINAL BEAUTIFUL HTML UI (Sits on the bottom layer)
+        st.markdown("""
+        <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; z-index: 1;">
+            <div style="font-size: 45px; margin-bottom: 10px; line-height: 1;">📤</div>
+            <div style="font-size: 20px; font-weight: 800; color: #f8fafc; line-height: 1.2; margin-bottom: 15px; text-align: center;">Convert file to an<br>interactive notebook</div>
+            <div style="font-size: 14px; color: #94a3b8; line-height: 1.5; text-align: center;">Upload a file<br>200MB per file • PPTX, PPT, PDF</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # 2. THE CSS TO FORCE THE INVISIBLE UPLOADER TO COVER IT PERFECTLY
         st.markdown("""
         <style>
-            /* Strip the outer column styling so the dropzone IS the box */
+            /* Make the column look like your dashed box */
             [data-testid="stColumn"]:nth-child(1) { 
-                padding: 0 !important; 
-                border: none !important; 
-                background: transparent !important;
+                border: 1px dashed #334155 !important; 
+                padding: 0 !important; /* Zero padding is critical so uploader hits the edges */
+                position: relative !important;
+                overflow: hidden !important;
+            }
+            [data-testid="stColumn"]:nth-child(1):hover { 
+                border-color: #0ea5e9 !important; 
+                background: rgba(14, 165, 233, 0.1) !important; 
             }
             
-            /* 🔥 CRITICAL FIX: Force ALL uploader containers to fill the column perfectly */
+            /* FORCE ALL INVISIBLE PARENTS TO 100% HEIGHT */
             div[data-testid="stFileUploader"],
+            div[data-testid="stFileUploader"] > section,
             div[data-testid="stFileUploader"] > div {
                 height: 100% !important;
                 width: 100% !important;
             }
 
-            /* Style the native dropzone to match your clean UI */
+            /* Make the Streamlit UI completely transparent but 100% clickable */
+            div[data-testid="stFileUploader"] {
+                position: absolute !important;
+                top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
+                opacity: 0 !important; /* 100% INVISIBLE */
+                z-index: 20 !important; /* SITS ON TOP OF YOUR HTML */
+                margin: 0 !important; padding: 0 !important;
+            }
+
             [data-testid="stFileUploadDropzone"] {
                 width: 100% !important;
                 height: 100% !important;
                 min-height: 240px !important;
-                background-color: #0f172a !important;
-                border: 1px dashed #334155 !important;
-                border-radius: 12px !important;
-                display: flex !important;
-                flex-direction: column !important;
-                justify-content: center !important;
-                align-items: center !important;
-                padding: 20px !important;
+                margin: 0 !important;
+                padding: 0 !important;
                 cursor: pointer !important;
-                transition: 0.2s !important;
-            }
-
-            [data-testid="stFileUploadDropzone"]:hover {
-                border-color: #0ea5e9 !important;
-                background-color: rgba(14, 165, 233, 0.1) !important;
-            }
-
-            /* Hide the default Streamlit text, limits, and cloud icon */
-            [data-testid="stFileUploadDropzone"] * {
-                display: none !important;
-            }
-
-            /* Inject your custom UI text cleanly via pseudo-elements */
-            [data-testid="stFileUploadDropzone"]::before {
-                content: "📤";
-                font-size: 45px;
-                line-height: 1;
-                margin-bottom: 10px;
-                display: block;
-                text-align: center;
-            }
-
-            [data-testid="stFileUploadDropzone"]::after {
-                content: "Convert file to an\\A interactive notebook\\A\\A Upload a file • PPTX, PPT, PDF";
-                white-space: pre-wrap;
-                text-align: center;
-                font-size: 16px;
-                font-weight: 800;
-                color: #f8fafc;
-                line-height: 1.4;
-                display: block;
             }
         </style>
         """, unsafe_allow_html=True)
@@ -283,18 +267,31 @@ with col1:
 
     # STATE 2: FILE HAS BEEN UPLOADED
     else:
-        # Hide the dropzone cleanly, restore the column border for the file card state
+        # Restore the column styling and safely hide the dropzone
         st.markdown("""
         <style>
             [data-testid="stColumn"]:nth-child(1) { 
                 padding: 20px !important; 
                 border: 1px solid #1e293b !important; 
                 cursor: default !important;
-                background-color: #0f172a !important;
-                border-radius: 12px !important;
             }
+            div[data-testid="stFileUploader"] {
+                position: relative !important; 
+                opacity: 1 !important; /* Make file card visible again */
+                z-index: 1 !important; 
+                height: auto !important; 
+                margin-bottom: 15px !important;
+            }
+            /* Hide the dropzone safely without breaking Streamlit's DOM */
             [data-testid="stFileUploadDropzone"] { 
-                display: none !important; 
+                opacity: 0 !important; 
+                height: 0 !important; 
+                min-height: 0 !important; 
+                margin: 0 !important; 
+                padding: 0 !important;
+                pointer-events: none !important;
+                position: static !important;
+                border: none !important;
             }
         </style>
         """, unsafe_allow_html=True)
@@ -309,7 +306,7 @@ with col1:
             st.session_state.final_html = None
             st.session_state.error_msg = None
 
-            # UX Fix: Added a spinner here so the user gets real feedback while Python parses the document
+            # 🧠 CHATGPT SUGGESTION: REAL FEEDBACK SPINNER 
             with st.spinner(f"Processing {up.name}..."):
                 try:
                     nav, slides = "", ""
