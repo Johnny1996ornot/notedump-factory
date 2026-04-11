@@ -53,11 +53,7 @@ st.markdown("""
    ACTIVE STATE GLOBALS: FILE CARD & DOWNLOAD BUTTONS
    ======================================================================= */
 
-/* Hide native spinning circle completely */
-[data-testid="stUploadedFile"] > div:first-child > div:first-child > svg,
-[data-testid="stUploadedFile"] svg[viewBox="0 0 24 24"]:not(:last-child) { display: none !important; }
-
-/* ENLARGED & PERFECTLY CENTERED 'X' BUTTON */
+/* ENLARGED & PERFECTLY CENTERED 'X' BUTTON on Streamlit's Native File Card */
 [data-testid="stUploadedFile"] button {
     background: transparent !important; border: none !important; position: absolute !important;
     right: 15px !important; top: 50% !important; transform: translateY(-50%) scale(1.6) !important;
@@ -195,93 +191,83 @@ with col1:
 
     # STATE 1: NO FILE UPLOADED YET
     if not up:
-        # 1. YOUR ORIGINAL HTML UI 
+        # 1. YOUR ORIGINAL CUSTOM HTML UI (Placed cleanly on the bottom layer)
         st.markdown("""
-        <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; z-index: 1;">
+        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; z-index: 1;">
             <div style="font-size: 45px; margin-bottom: 10px; line-height: 1;">📤</div>
             <div style="font-size: 20px; font-weight: 800; color: #f8fafc; line-height: 1.2; margin-bottom: 15px; text-align: center;">Convert file to an<br>interactive notebook</div>
             <div style="font-size: 14px; color: #94a3b8; line-height: 1.5; text-align: center;">Upload a file<br>200MB per file • PPTX, PPT, PDF</div>
         </div>
         """, unsafe_allow_html=True)
 
-        # 2. CHATGPT'S EXACT CSS SURGERY
+        # 2. THE CSS THAT FIXES THE UPLOADER (Transparent Backgrounds + 100% Stretch)
         st.markdown("""
         <style>
-            /* FIX 1: Remove column padding ONLY for column 1 */
-            [data-testid="stColumn"]:nth-child(1) {
-                padding: 0 !important;
-                overflow: hidden !important;
+            /* FIX 1: Strip padding from the column so the uploader touches the absolute edges */
+            [data-testid="stColumn"]:nth-child(1) { 
+                border: 1px dashed #334155 !important; 
+                padding: 0 !important; 
                 position: relative !important;
-                border: 1px dashed #334155 !important;
-                cursor: pointer !important;
+                overflow: hidden !important;
             }
-            [data-testid="stColumn"]:nth-child(1):hover {
-                border-color: #0ea5e9 !important;
-                background: rgba(14, 165, 233, 0.1) !important;
+            [data-testid="stColumn"]:nth-child(1):hover { 
+                border-color: #0ea5e9 !important; 
+                background: rgba(14, 165, 233, 0.1) !important; 
             }
-
-            /* FIX 2: Force ALL wrappers to full height */
-            [data-testid="stColumn"]:nth-child(1) > div,
-            [data-testid="stColumn"]:nth-child(1) > div > div,
-            [data-testid="stColumn"]:nth-child(1) section {
-                height: 100% !important;
-                width: 100% !important;
-                margin: 0 !important;
-                padding: 0 !important;
-            }
-
-            /* Wrapper must stay to hold the progress card, but stretch it */
+            
+            /* FIX 2: Force the main Streamlit uploader containers to 100% and STRIP BACKGROUNDS */
             div[data-testid="stFileUploader"] {
                 position: absolute !important;
-                inset: 0 !important;
-                z-index: 50 !important;
-                margin: 0 !important;
-                padding: 0 !important;
+                top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
+                width: 100% !important; height: 100% !important;
+                background: transparent !important; background-color: transparent !important;
+                margin: 0 !important; padding: 0 !important; z-index: 10 !important;
+            }
+            
+            div[data-testid="stFileUploader"] > section {
+                width: 100% !important; height: 100% !important; 
+                background: transparent !important; background-color: transparent !important; /* Destroys the dark grey box */
+                border: none !important; padding: 0 !important; margin: 0 !important;
             }
 
-            /* FIX 3: Target the real click layer and hide the grey box with opacity: 0 */
+            /* FIX 3: Hide the native "Upload" text/button completely but keep the zone active */
             [data-testid="stFileUploadDropzone"] {
                 position: absolute !important;
-                inset: 0 !important;
-                width: 100% !important;
-                height: 100% !important;
-                opacity: 0 !important; 
-                z-index: 50 !important;
-                cursor: pointer !important;
-                border: none !important;
+                top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
+                width: 100% !important; height: 100% !important;
+                opacity: 0 !important; /* Hides ONLY the dropzone text/button, NOT the progress card */
+                margin: 0 !important; padding: 0 !important; border: none !important;
+                cursor: pointer !important; z-index: 20 !important;
             }
 
-            /* ACTUAL INPUT (this is what really receives clicks) */
-            [data-testid="stFileUploadDropzone"] input[type="file"] {
-                position: absolute !important;
-                inset: 0 !important;
-                width: 100% !important;
-                height: 100% !important;
-                cursor: pointer !important;
-                z-index: 60 !important;
+            /* FIX 4: Expand the actual invisible HTML input tag so there are ZERO dead zones */
+            [data-testid="stFileUploadDropzone"] input[type="file"],
+            [data-testid="stFileUploadDropzone"] button {
+                position: absolute !important; 
+                top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
+                width: 100% !important; height: 100% !important;
+                cursor: pointer !important; z-index: 30 !important;
             }
 
-            /* FAKE PROGRESS BAR DURING UPLOAD (React Phase) */
+            /* FIX 5: UPLOAD PROGRESS (React Phase). This file card pops up when a file is uploading */
             [data-testid="stUploadedFile"] {
-                opacity: 1 !important;
-                background: #1e293b !important;
-                border: 1px solid #334155 !important;
-                border-radius: 8px !important;
-                padding: 15px !important;
-                width: 90% !important;
-                position: absolute !important;
-                top: 50% !important; left: 50% !important;
+                background: #1e293b !important; border: 1px solid #334155 !important; border-radius: 8px !important;
+                padding: 15px !important; width: 90% !important;
+                position: absolute !important; top: 50% !important; left: 50% !important;
                 transform: translate(-50%, -50%) !important;
-                z-index: 9999 !important;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.8) !important;
+                z-index: 9999 !important; box-shadow: 0 10px 40px rgba(0,0,0,0.9) !important;
                 overflow: hidden !important;
             }
             
+            /* Add a fake, smooth horizontal progress bar animation to simulate network upload */
             [data-testid="stUploadedFile"]::after {
                 content: ''; position: absolute; bottom: 0; left: 0; height: 4px; width: 0%;
-                background: #0ea5e9; animation: uploadFakeBar 2s ease-out forwards;
+                background: #0ea5e9; animation: websocketFakeBar 2s ease-out forwards;
             }
-            @keyframes uploadFakeBar { 0% { width: 0%; } 100% { width: 95%; } }
+            @keyframes websocketFakeBar { 0% { width: 0%; } 100% { width: 95%; } }
+
+            /* Hide the ugly default spinning circle */
+            [data-testid="stUploadedFile"] svg[viewBox="0 0 24 24"]:not(:last-child) { display: none !important; }
         </style>
         """, unsafe_allow_html=True)
 
@@ -293,28 +279,33 @@ with col1:
     else:
         st.markdown("""
         <style>
-            /* Restore column padding and solid border */
+            /* Restore normal padding to the column so the download button has space */
             [data-testid="stColumn"]:nth-child(1) { 
                 padding: 20px !important; 
                 border: 1px solid #1e293b !important; 
                 cursor: default !important;
             }
+            
             div[data-testid="stFileUploader"] {
                 position: relative !important; z-index: 1 !important; height: auto !important; margin-bottom: 15px !important;
             }
-            /* Hide the dropzone safely so user doesn't double-click */
+            
+            /* Destroy the dropzone safely so you don't accidentally double-upload */
             [data-testid="stFileUploadDropzone"] { 
-                opacity: 0 !important; height: 0 !important; pointer-events: none !important; margin: 0 !important; padding: 0 !important; border: none !important;
+                display: none !important; 
             }
             
-            /* Final file card style */
+            /* Style the final File Card */
             [data-testid="stUploadedFile"] {
                 background: #1e293b !important; border: none !important; border-radius: 8px !important;
                 padding: 15px 50px 15px 15px !important; width: 100% !important; position: relative !important;
+                overflow: hidden !important;
             }
+            
+            /* Turn the progress bar Solid Green to indicate upload is 100% finished */
             [data-testid="stUploadedFile"]::after {
                 content: ''; position: absolute; bottom: 0; left: 0; height: 4px; width: 100%;
-                background: #10b981; /* Solid green indicating upload complete */
+                background: #10b981; 
             }
         </style>
         """, unsafe_allow_html=True)
@@ -329,11 +320,11 @@ with col1:
             st.session_state.final_html = None
             st.session_state.error_msg = None
 
-            # --- REAL PROGRESS BAR (Python Phase) ---
+            # --- REAL PROGRESS BAR (Python Processing Phase) ---
             st.markdown(f"**⚙️ Processing `{up.name}`...**")
             progress_bar = st.progress(0)
             
-            # Smooth simulated python progress while conversion happens
+            # Simulated smooth progression while Python processes the file
             for percent_complete in range(100):
                 time.sleep(0.01)
                 progress_bar.progress(percent_complete + 1)
@@ -520,7 +511,7 @@ with col1:
                 else:
                     st.session_state.error_msg = f"Error Processing File: {e}"
 
-            # Clean up the progress elements after it finishes
+            # Clean up the progress bar once finished
             progress_bar.empty()
 
         # OUTPUT STAGE: Render error or the cached download button
