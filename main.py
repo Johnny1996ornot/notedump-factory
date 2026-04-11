@@ -215,7 +215,7 @@ with col1:
 
     # STATE 1: NO FILE UPLOADED YET
     if not up:
-        # Render the custom text dynamically + Force uploader to strictly stretch 100%
+        # Render the custom text dynamically + Add the exact mobile/z-index layering fixes
         st.markdown("""
         <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; z-index: 1;">
             <div style="font-size: 45px; margin-bottom: 10px; line-height: 1;">📤</div>
@@ -230,21 +230,31 @@ with col1:
                 top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important;
                 opacity: 0 !important; z-index: 10 !important; margin: 0 !important; padding: 0 !important;
             }
+
+            /* CHATGPT CRITICAL FIX: explicit positioning and pointer-events */
             [data-testid="stFileUploadDropzone"] {
                 width: 100% !important;
                 height: 100% !important;
                 min-height: 240px !important;
                 margin: 0 !important;
                 padding: 0 !important;
-                opacity: 0 !important;   /* 👈 hide visually BUT KEEP FUNCTION */
-                display: block !important; /* 👈 DO NOT REMOVE */
+                opacity: 0 !important;
+                position: absolute !important;
+                top: 0 !important;
+                left: 0 !important;
+                z-index: 20 !important;
+                pointer-events: all !important;
             }
 
-            /* FORCE the actual input to cover entire box */
+            /* CHATGPT MOBILE TAP FIX */
             div[data-testid="stFileUploader"] input {
                 width: 100% !important;
                 height: 100% !important;
                 cursor: pointer !important;
+                position: absolute !important;
+                top: 0 !important;
+                left: 0 !important;
+                z-index: 30 !important;
             }
         </style>
         """, unsafe_allow_html=True)
@@ -256,8 +266,7 @@ with col1:
 
     # STATE 2: FILE HAS BEEN UPLOADED
     else:
-        # The custom text is naturally destroyed by Python. 
-        # Inject CSS to make the standard file card visible and hide the dropzone without display:none.
+        # Prevent the invisible dropzone from blocking clicks or creating empty space above the file card
         st.markdown("""
         <style>
             [data-testid="stColumn"]:nth-child(1) { border: 1px solid #1e293b !important; cursor: default !important;}
@@ -266,7 +275,7 @@ with col1:
                 position: relative !important; opacity: 1 !important; z-index: 1 !important; height: auto !important; margin-bottom: 15px !important;
             }
             
-            /* Use opacity 0 and collapse height so it doesn't push the file card down */
+            /* Hide dropzone without breaking the DOM */
             [data-testid="stFileUploadDropzone"] { 
                 opacity: 0 !important; 
                 height: 0 !important; 
@@ -274,6 +283,7 @@ with col1:
                 margin: 0 !important; 
                 padding: 0 !important;
                 border: none !important;
+                pointer-events: none !important;
             }
         </style>
         """, unsafe_allow_html=True)
