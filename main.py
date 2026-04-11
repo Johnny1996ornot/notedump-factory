@@ -200,15 +200,16 @@ with col1:
 
     # STATE 1: NO FILE UPLOADED YET
     if not up:
-        # Populate the space ABOVE the uploader with your custom HTML
+        # Populate the space ABOVE the uploader with the full text UI
         ui_top.markdown("""
         <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; margin-top: 10px;">
             <div style="font-size: 45px; margin-bottom: 10px; line-height: 1;">📤</div>
-            <div style="font-size: 20px; font-weight: 800; color: #f8fafc; line-height: 1.2; text-align: center;">Convert file to an<br>interactive notebook</div>
+            <div style="font-size: 20px; font-weight: 800; color: #f8fafc; line-height: 1.2; text-align: center; margin-bottom: 10px;">Convert file to an<br>interactive notebook</div>
+            <div style="font-size: 14px; color: #94a3b8; line-height: 1.5; text-align: center;">Upload a file<br>200MB per file • PPTX, PPT, PDF</div>
         </div>
         """, unsafe_allow_html=True)
 
-        # Apply CSS that specifically forces the native uploader to center itself
+        # Apply CSS that hides everything except the button, and centers the button
         css_placeholder.markdown("""
         <style>
             /* Make the column our main dashed box */
@@ -253,23 +254,21 @@ with col1:
                 align-items: center !important;
                 justify-content: center !important;
                 width: 100% !important;
-                margin-top: 10px !important;
+                margin-top: 15px !important;
             }
 
-            /* Hide Streamlit's native cloud icon */
-            [data-testid="stFileUploadDropzone"] svg {
-                display: none !important;
-            }
+            /* HIDE EVERYTHING EXCEPT THE BUTTON */
+            /* 1. Hides the "Drag and drop" text */
+            [data-testid="stFileUploadDropzone"] span { display: none !important; }
+            /* 2. Hides the "Limit 200MB" text */
+            [data-testid="stFileUploadDropzone"] small { display: none !important; }
+            /* 3. Hides the Cloud Icon and the "+" sign on the button */
+            [data-testid="stFileUploadDropzone"] svg { display: none !important; }
 
-            /* Center the native "Upload" button and "200MB limit" */
+            /* Center the native "Browse files" button perfectly */
             [data-testid="stFileUploadDropzone"] button {
-                margin: 0 auto 10px auto !important;
-                display: block !important;
-            }
-            [data-testid="stFileUploadDropzone"] small {
-                display: block !important;
-                text-align: center !important;
                 margin: 0 auto !important;
+                display: block !important;
             }
 
             /* Expand the invisible input to cover the whole dashed box so there are no dead click zones */
@@ -279,6 +278,12 @@ with col1:
                 width: 100% !important; height: 100% !important;
                 z-index: 9999 !important;
                 cursor: pointer !important;
+            }
+
+            /* --- PROGRESS BAR CONTROLS --- */
+            /* Kill Streamlit's native circular spinning loader completely */
+            [data-testid="stColumn"]:nth-child(1) [data-testid="stSpinner"] {
+                display: none !important;
             }
 
             /* Keep the native progress card looking nice during upload */
@@ -293,13 +298,12 @@ with col1:
                 width: 90% !important;
             }
             
-            /* Add the animated blue progress bar for the React upload phase */
+            /* Add the animated horizontal blue progress bar for the React upload phase */
             [data-testid="stUploadedFile"]::after {
                 content: ''; position: absolute; bottom: 0; left: 0; height: 4px; width: 0%;
                 background: #0ea5e9; animation: websocketFakeBar 2s ease-out forwards;
             }
             @keyframes websocketFakeBar { 0% { width: 0%; } 100% { width: 95%; } }
-            [data-testid="stUploadedFile"] svg[viewBox="0 0 24 24"]:not(:last-child) { display: none !important; }
         </style>
         """, unsafe_allow_html=True)
 
@@ -340,6 +344,11 @@ with col1:
                 content: ''; position: absolute; bottom: 0; left: 0; height: 4px; width: 100%;
                 background: #10b981; 
             }
+
+            /* Kill the circular spinner if it tries to pop up here too */
+            [data-testid="stColumn"]:nth-child(1) [data-testid="stSpinner"] {
+                display: none !important;
+            }
         </style>
         """, unsafe_allow_html=True)
 
@@ -353,7 +362,7 @@ with col1:
             st.session_state.final_html = None
             st.session_state.error_msg = None
 
-            # --- REAL PROGRESS BAR (Python Processing Phase) ---
+            # --- REAL HORIZONTAL PROGRESS BAR (Python Processing Phase) ---
             st.markdown(f"**⚙️ Processing `{up.name}`...**")
             progress_bar = st.progress(0)
             
