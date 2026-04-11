@@ -6,7 +6,7 @@ import time
 from io import BytesIO
 from template import get_template
 
-# Bypassing the Replit Auto-Installer Bug
+# Bypassing the Auto-Installer Bugs
 try:
     import pymupdf as fitz
 except ImportError:
@@ -25,14 +25,13 @@ st.markdown("""
 [data-testid="stColumn"] {
     background-color: #0f172a !important; 
     border-radius: 12px !important;
-    min-height: 240px !important; /* FIX: Changed to min-height so download button fits */
+    min-height: 240px !important; 
     padding: 20px !important;
     display: flex !important;
     flex-direction: column !important;
     box-sizing: border-box !important;
     transition: 0.2s !important;
     position: relative !important; 
-    /* FIX: Removed overflow: hidden so things don't get cut off */
 }
 
 /* LEFT BOX: Dashed border, matching right size */
@@ -63,15 +62,17 @@ st.markdown("""
 /* =======================================================================
    THE NEW LEFT UPLOAD TEXT VISUALS (INSIDE THE BOX)
    ======================================================================= */
+/* Target the exact wrapper Streamlit puts around the markdown */
+div[data-testid="stColumn"]:nth-child(1) div[data-testid="stVerticalBlock"] > div:has(.upload-visuals) {
+    position: absolute !important;
+    top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
+    display: flex !important; flex-direction: column !important;
+    align-items: center !important; justify-content: center !important;
+    z-index: 1 !important; pointer-events: none !important;
+}
+
 .upload-visuals {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    pointer-events: none; /* Let all clicks pass through to the invisible uploader */
-    z-index: 1;
-    width: 100%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; width: 100%;
 }
 
 .upload-icon { font-size: 45px; margin-bottom: 10px; line-height: 1;}
@@ -81,40 +82,49 @@ st.markdown("""
 /* =======================================================================
    THE INVISIBLE NATIVE UPLOADER (Functional Overlay)
    ======================================================================= */
-[data-testid="stFileUploader"] {
+/* Target the exact wrapper Streamlit puts around the uploader */
+div[data-testid="stColumn"]:nth-child(1) div[data-testid="stVerticalBlock"] > div:has([data-testid="stFileUploader"]) {
     position: absolute !important;
-    top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; /* FIX: Forced to cover entire box */
-    width: 100% !important; height: 100% !important;
+    top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
     z-index: 10 !important;
-    opacity: 0 !important; /* COMPLETELY INVISIBLE */
+}
+
+/* Hide Streamlit's label */
+[data-testid="stFileUploader"] > label { display: none !important; }
+
+[data-testid="stFileUploader"] {
+    width: 100% !important; height: 100% !important;
+    opacity: 0 !important; /* COMPLETELY INVISIBLE BUT ACTIVE */
     margin: 0 !important; padding: 0 !important;
 }
 
-/* FIX: Min-height ensures the clickable area doesn't collapse */
 [data-testid="stFileUploadDropzone"] {
-    width: 100% !important; height: 100% !important; min-height: 240px !important; 
-    padding: 0 !important; cursor: pointer !important;
+    width: 100% !important; height: 100% !important; min-height: 240px !important;
+    padding: 0 !important; cursor: pointer !important; border: none !important; background: transparent !important;
 }
 
 /* =======================================================================
    ACTIVE STATE: WHEN A FILE IS UPLOADED
    ======================================================================= */
-/* Hide our custom text visuals when a file is processing/uploaded */
-div[data-testid="stColumn"]:nth-child(1):has([data-testid="stUploadedFile"]) .upload-visuals {
+/* Restore document flow to the uploader wrapper */
+div[data-testid="stColumn"]:nth-child(1) div[data-testid="stVerticalBlock"] > div:has([data-testid="stUploadedFile"]) {
+    position: relative !important;
+    height: auto !important;
+}
+
+/* Hide the custom background text when a file is uploaded */
+div[data-testid="stColumn"]:nth-child(1):has([data-testid="stUploadedFile"]) div[data-testid="stVerticalBlock"] > div:has(.upload-visuals) {
     display: none !important;
 }
 
-/* Bring the native uploader back to visibility inside the box */
-div[data-testid="stColumn"]:nth-child(1):has([data-testid="stUploadedFile"]) [data-testid="stFileUploader"] {
-    position: relative !important;
-    opacity: 1 !important; /* VISIBLE AGAIN */
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
+/* Make the uploader visible again */
+[data-testid="stFileUploader"]:has([data-testid="stUploadedFile"]) {
+    opacity: 1 !important;
+    height: auto !important;
 }
 
-/* Nuke the old inner dropzone elements since we just want the file card */
-div[data-testid="stFileUploader"]:has([data-testid="stUploadedFile"]) [data-testid="stFileUploadDropzone"] {
+/* Hide the dropzone text/icon area */
+[data-testid="stFileUploader"]:has([data-testid="stUploadedFile"]) [data-testid="stFileUploadDropzone"] {
     display: none !important;
 }
 
@@ -145,7 +155,7 @@ div[data-testid="stFileUploader"]:has([data-testid="stUploadedFile"]) [data-test
 
 [data-testid="stUploadedFile"] span, [data-testid="stUploadedFile"] small { color: #f8fafc !important; font-size: 14px !important; position: relative; z-index: 2;}
 
-/* FIX: Download Button natively styled without broken markdown wrappers */
+/* Fix the Download Button styling to sit perfectly below the file card */
 [data-testid="stColumn"]:nth-child(1) [data-testid="stDownloadButton"] { width: 100% !important; margin-top: 15px !important; }
 [data-testid="stColumn"]:nth-child(1) [data-testid="stDownloadButton"] button {
     width: 100% !important; background-color: transparent !important;
@@ -241,11 +251,11 @@ div[data-testid="stFileUploader"]:has([data-testid="stUploadedFile"]) [data-test
 """, unsafe_allow_html=True)
 
 # ==========================================================================
-# SECTION 2: PRE-GENERATE BLANK NOTEBOOK 
+# SECTION 2: PRE-GENERATE BLANK NOTEBOOK (CACHED)
 # ==========================================================================
 if "blank_html" not in st.session_state:
-    blank_nav = '<div class="nav-link active-nav" id="link-0" onclick="goTo(\'0\')"><span class="nav-text">Page 1</span></div>'
-    blank_slides = '<div id="p-0" class="page active" style="width:816px; height:1054px;"></div>'
+    blank_nav = '<div class="nav-link active-nav" id="link-0" onclick="goTo(\'0\')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text">Page 1</span></div>'
+    blank_slides = '<div id="p-0" class="page active" data-page-width="816" data-page-height="1054" style="width:816px; height:1054px;"></div>'
     unique_blank_id = f"New_Notebook_{int(time.time())}"
 
     st.session_state.blank_html = get_template(1)\
@@ -270,7 +280,7 @@ with col2:
     )
 
 with col1:
-    # Our custom visual content sits in the box nicely
+    # Our custom visual content sits in the background of the box
     st.markdown("""
     <div class="upload-visuals">
         <div class="upload-icon">📤</div>
@@ -279,11 +289,11 @@ with col1:
     </div>
     """, unsafe_allow_html=True)
 
-    # The native uploader sits invisibly on top of the visual content
-    up = st.file_uploader("Upload", label_visibility="collapsed", type=["pptx", "ppt", "pdf"])
+    # The native uploader sits perfectly on top of it invisibly
+    up = st.file_uploader("Upload a document", label_visibility="hidden", type=["pptx", "ppt", "pdf"])
 
     # ==========================================================================
-    # SECTION 4: FILE PARSING & PROCESSING
+    # SECTION 4: FILE PARSING & PROCESSING 
     # ==========================================================================
     if up:
         file_key = f"{up.name}_{up.size}"
@@ -304,7 +314,8 @@ with col1:
                 if file_name.endswith(('.pptx', '.ppt')):
                     ppt = Presentation(up)
                     total_pages = len(ppt.slides)
-                    scale_w = base_w / (ppt.slide_width or 9144000)
+                    slide_width_emu = ppt.slide_width or 9144000
+                    scale_w = base_w / slide_width_emu
 
                     def parse_shapes(shapes):
                         html_content = ""
@@ -322,7 +333,10 @@ with col1:
                                 if shape.shape_type == 13: 
                                     img_stream = BytesIO(shape.image.blob)
                                     base64_img = base64.b64encode(img_stream.getvalue()).decode()
-                                    html_content += f'<div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; height:{height}px; z-index:10;"><img src="data:image/png;base64,{base64_img}" style="width:100%; height:100%; object-fit:contain;"></div>'
+                                    html_content += f'''
+                                    <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; height:{height}px; z-index:10; transform: translate(0px, 0px);">
+                                        <img src="data:image/png;base64,{base64_img}" style="width:100%; height:100%; object-fit:contain;">
+                                    </div>'''
 
                                 elif shape.has_table:
                                     table_html = "<table style='width:100%; height:100%; border-collapse: collapse; font-size:12px;' border='1'>"
@@ -332,58 +346,150 @@ with col1:
                                             table_html += f"<td style='padding:5px;'>{html.escape(cell.text)}</td>"
                                         table_html += "</tr>"
                                     table_html += "</table>"
-                                    html_content += f'<div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; background:rgba(255,255,255,0.9); z-index:15;"><div class="content-area">{table_html}</div></div>'
+                                    html_content += f'''
+                                    <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; background:rgba(255,255,255,0.9); z-index:15; transform: translate(0px, 0px);">
+                                        <div class="content-area">{table_html}</div>
+                                    </div>'''
 
                                 elif shape.has_text_frame and shape.text.strip():
                                     html_text = ""
                                     for paragraph in shape.text_frame.paragraphs:
-                                        p_text = "".join([html.escape(run.text) for run in paragraph.runs])
-                                        html_text += f"<div>{p_text}</div>" if p_text.strip() else "<br>"
-                                    html_content += f'<div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; min-height:{height}px; z-index:20;"><div class="content-area" style="word-wrap: break-word; white-space: pre-wrap;">{html_text}</div></div>'
-                            except Exception:
+                                        p_text = ""
+                                        for run in paragraph.runs:
+                                            r_txt = html.escape(run.text)
+                                            fs_style = ""
+                                            if hasattr(run.font, 'size') and run.font.size:
+                                                pt_size = run.font.size.pt
+                                                px_size = max(10, int(pt_size * scale_w * 12700 * 1.33))
+                                                fs_style = f"font-size:{px_size}px;"
+
+                                            if getattr(run.font, 'bold', False) == True: r_txt = f"<strong>{r_txt}</strong>"
+                                            if getattr(run.font, 'italic', False) == True: r_txt = f"<em>{r_txt}</em>"
+                                            if getattr(run.font, 'underline', False) == True: r_txt = f"<u>{r_txt}</u>"
+
+                                            if fs_style: p_text += f"<span style='{fs_style}'>{r_txt}</span>"
+                                            else: p_text += r_txt
+
+                                        if not p_text.strip(): html_text += "<br>"
+                                        else: html_text += f"<div>{p_text}</div>"
+
+                                    html_content += f'''
+                                    <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; min-height:{height}px; z-index:20; transform: translate(0px, 0px);">
+                                        <div class="content-area" style="word-wrap: break-word; white-space: pre-wrap; overflow-wrap: break-word;">{html_text}</div>
+                                    </div>'''
+                            except Exception as e:
                                 continue 
                         return html_content
 
                     for i, slide in enumerate(ppt.slides):
                         title_text = slide.shapes.title.text if slide.shapes.title else f"Slide {i+1}"
-                        nav += f'<div class="nav-link" onclick="goTo(\'{i}\')"><span class="nav-text">{html.escape(title_text)}</span></div>'
-                        slides += f'<div id="p-{i}" class="page {"active" if i==0 else ""}" style="height:{base_h}px;">{parse_shapes(slide.shapes)}</div>'
+                        nav += f'<div class="nav-link" id="link-{i}" onclick="goTo(\'{i}\')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text">{html.escape(title_text)}</span></div>'
+                        slides += f'<div id="p-{i}" class="page {"active" if i==0 else ""}" data-page-height="{base_h}" style="height:{base_h}px;"> '
+                        slides += parse_shapes(slide.shapes)
+                        slides += '</div>'
 
                 elif file_name.endswith('.pdf'):
                     doc = fitz.open(stream=up.read(), filetype="pdf")
                     total_pages = len(doc)
+
+                    first_page = doc[0]
+                    base_w = 816
+                    p_scale = base_w / first_page.rect.width if first_page.rect.width > 0 else 1
+
                     for i, page in enumerate(doc):
-                        p_scale = base_w / page.rect.width if page.rect.width > 0 else 1
-                        scaled_height = max(1054, int(page.rect.height * p_scale))
-                        nav += f'<div class="nav-link" onclick="goTo(\'{i}\')"><span class="nav-text">Page {i+1}</span></div>'
-                        slides += f'<div id="p-{i}" class="page {"active" if i==0 else ""}" style="height:{scaled_height}px;">'
-                        
-                        for b in page.get_text("dict")["blocks"]:
+                        page_width = page.rect.width
+                        page_height = page.rect.height
+                        p_scale = base_w / page_width if page_width > 0 else 1
+                        scaled_height = max(1054, int(page_height * p_scale))
+
+                        nav += f'<div class="nav-link" id="link-{i}" onclick="goTo(\'{i}\')"><i class="fas fa-bars drag-handle"></i> <span class="nav-text">Page {i+1}</span></div>'
+                        slides += f'<div id="p-{i}" class="page {"active" if i==0 else ""}" data-page-height="{scaled_height}" style="height:{scaled_height}px;"> '
+
+                        blocks = page.get_text("dict")["blocks"]
+                        html_content = ""
+
+                        for b in blocks:
                             bbox = b["bbox"]
-                            top, left = bbox[1] * p_scale, bbox[0] * p_scale
-                            width, height = (bbox[2] - bbox[0]) * p_scale, (bbox[3] - bbox[1]) * p_scale
+                            top = bbox[1] * p_scale
+                            left = bbox[0] * p_scale
+                            width = (bbox[2] - bbox[0]) * p_scale
+                            height = (bbox[3] - bbox[1]) * p_scale
 
                             if b["type"] == 0: 
-                                text_html = "".join(["<div>" + "".join([html.escape(span["text"]) for span in line["spans"]]) + "</div>" for line in b["lines"]])
-                                slides += f'<div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; min-height:{height}px; z-index:20;"><div class="content-area" style="word-wrap: break-word; white-space: pre-wrap;">{text_html}</div></div>'
+                                text_html = ""
+                                for line in b["lines"]:
+                                    line_html = ""
+                                    for span in line["spans"]:
+                                        txt = html.escape(span["text"])
+                                        if not txt.strip():
+                                            line_html += " "
+                                            continue
+
+                                        px_size = max(10, int(span["size"] * p_scale))
+                                        fs_style = f"font-size:{px_size}px;"
+
+                                        if span["flags"] & 16: txt = f"<strong>{txt}</strong>"
+                                        if span["flags"] & 2: txt = f"<em>{txt}</em>"
+
+                                        line_html += f"<span style='{fs_style}'>{txt}</span>"
+
+                                    if not line_html.strip(): text_html += "<br>"
+                                    else: text_html += f"<div>{line_html}</div>"
+
+                                html_content += f'''
+                                <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; min-height:{height}px; z-index:20; transform: translate(0px, 0px);">
+                                    <div class="content-area" style="word-wrap: break-word; white-space: pre-wrap; overflow-wrap: break-word; font-family: sans-serif;">{text_html}</div>
+                                </div>'''
+
                             elif b["type"] == 1: 
                                 img_bytes = b.get("image")
                                 if img_bytes:
                                     base64_img = base64.b64encode(img_bytes).decode()
-                                    slides += f'<div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; height:{height}px; z-index:10;"><img src="data:image/png;base64,{base64_img}" style="width:100%; height:100%; object-fit:contain;"></div>'
+                                    html_content += f'''
+                                    <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; height:{height}px; z-index:10; transform: translate(0px, 0px);">
+                                        <img src="data:image/png;base64,{base64_img}" style="width:100%; height:100%; object-fit:contain;">
+                                    </div>'''
+
+                        slides += html_content
                         slides += '</div>'
 
-                st.session_state.final_html = get_template(total_pages).replace("{{NAV_LINKS}}", nav).replace("{{SLIDE_CONTENT}}", slides).replace("{{VISIBLE_TITLE}}", html.escape(up.name)).replace("{{STORAGE_ID}}", html.escape(unique_storage_id))
+                dimension_script = f"""
+                <script>
+                    document.addEventListener("DOMContentLoaded", function() {{
+                        var cvs = document.getElementById('canvas');
+                        if(cvs) {{
+                            cvs.style.width = '{base_w}px';
+                            cvs.setAttribute('data-width', '{base_w}');
+                            var wInput = document.getElementById('canvas-w-cm');
+                            var hInput = document.getElementById('canvas-h-cm');
+                            if(wInput) wInput.value = (Math.round(({base_w} / 37.795) * 10) / 10).toFixed(1);
+                            if(hInput) hInput.value = (Math.round((parseInt(cvs.style.height) / 37.795) * 10) / 10).toFixed(1);
+                        }}
+                    }});
+                </script>
+                """
+
+                # Save the final parsed result into session memory
+                st.session_state.final_html = get_template(total_pages)\
+                    .replace("{{NAV_LINKS}}", nav)\
+                    .replace("{{SLIDE_CONTENT}}", dimension_script + slides)\
+                    .replace("{{VISIBLE_TITLE}}", html.escape(up.name))\
+                    .replace("{{STORAGE_ID}}", html.escape(unique_storage_id))
 
             except Exception as e:
-                st.session_state.error_msg = f"Error: {e}"
+                err_msg = str(e).lower()
+                if "not a zip file" in err_msg or "badzipfile" in err_msg:
+                    st.session_state.error_msg = "🚨 FORMAT ERROR: You uploaded an older `.ppt` file. Python-PPTX only supports modern `.pptx` files. Please open your file in PowerPoint, click 'Save As', choose `.pptx`, and upload the new file."
+                elif "has no attribute 'open'" in err_msg:
+                    st.session_state.error_msg = "🚨 REPLIT PACKAGE ERROR: You have the wrong 'fitz' package installed. Please open the Shell tab, run `pip uninstall fitz -y`, then run `pip install PyMuPDF -y` and restart the app."
+                else:
+                    st.session_state.error_msg = f"Error Processing File: {e}"
 
-        # Render Error OR Download Button
+        # OUTPUT STAGE: Render error or the cached download button below the upload card
         if st.session_state.get("error_msg"):
             st.error(st.session_state.error_msg)
             
         elif st.session_state.get("final_html"):
-            # FIX: Removed the buggy st.markdown wrapper. The button renders purely on its own now.
             st.download_button(
                 label="📥 Download Interactive Notebook",
                 data=st.session_state.final_html.encode('utf-8'), 
