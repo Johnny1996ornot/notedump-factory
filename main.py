@@ -21,22 +21,29 @@ st.markdown("""
 <style>
 .stApp { background-color: #000000; }
 
-/* 1. COLUMN WRAPPERS: MATCHING BOXES */
+/* 1. COLUMN WRAPPERS: STRICT HEIGHT & MATCHING BOXES */
 [data-testid="stColumn"] {
-    background-color: #0f172a !important; 
+    background-color: #0f172a !important; /* Brings the box background back */
     border-radius: 12px !important;
-    min-height: 240px !important; /* Swapped to min-height so the download button isn't cut off */
+    height: 240px !important; 
     padding: 20px !important;
     display: flex !important;
     flex-direction: column !important;
     box-sizing: border-box !important;
     transition: 0.2s !important;
-    position: relative !important; 
+    position: relative !important; /* CRITICAL: Allows the invisible uploader to stretch */
+    overflow: hidden !important; 
 }
 
-/* LEFT BOX: Dashed border */
-[data-testid="stColumn"]:nth-child(1) { border: 1px dashed #334155 !important; }
-[data-testid="stColumn"]:nth-child(1):hover { border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; }
+/* LEFT BOX: Dashed border, matching right size */
+[data-testid="stColumn"]:nth-child(1) { 
+    border: 1px dashed #334155 !important; 
+    cursor: pointer; 
+}
+[data-testid="stColumn"]:nth-child(1):hover { 
+    border-color: #0ea5e9 !important; 
+    background: rgba(14, 165, 233, 0.1) !important; 
+}
 
 /* RIGHT BOX: Solid border */
 [data-testid="stColumn"]:nth-child(2) { border: 1px solid #1e293b !important; }
@@ -54,7 +61,7 @@ st.markdown("""
 }
 
 /* =======================================================================
-   THE CUSTOM UPLOAD VISUALS 
+   THE NEW LEFT UPLOAD TEXT VISUALS (INSIDE THE BOX)
    ======================================================================= */
 .upload-visuals {
     display: flex;
@@ -62,7 +69,7 @@ st.markdown("""
     align-items: center;
     justify-content: center;
     text-align: center;
-    pointer-events: none; /* Let all clicks pass through */
+    pointer-events: none; /* Let all clicks pass through to the invisible uploader */
     z-index: 1;
     width: 100%;
 }
@@ -72,15 +79,52 @@ st.markdown("""
 .upload-sub { font-size: 14px; color: #94a3b8; line-height: 1.5; }
 
 /* =======================================================================
-   THE FILE CARD (Once uploaded)
+   THE INVISIBLE NATIVE UPLOADER (Functional Overlay)
    ======================================================================= */
+[data-testid="stFileUploader"] {
+    position: absolute !important;
+    top: 0 !important; left: 0 !important;
+    width: 100% !important; height: 100% !important;
+    z-index: 10 !important;
+    opacity: 0 !important; /* COMPLETELY INVISIBLE */
+    cursor: pointer !important;
+    margin: 0 !important; padding: 0 !important;
+}
+
+[data-testid="stFileUploadDropzone"] {
+    width: 100% !important; height: 100% !important; padding: 0 !important; cursor: pointer !important;
+}
+
+/* =======================================================================
+   ACTIVE STATE: WHEN A FILE IS UPLOADED
+   ======================================================================= */
+/* Hide our custom text visuals when a file is processing/uploaded */
+div[data-testid="stColumn"]:nth-child(1):has([data-testid="stUploadedFile"]) .upload-visuals {
+    display: none !important;
+}
+
+/* Bring the native uploader back to visibility inside the box */
+div[data-testid="stColumn"]:nth-child(1):has([data-testid="stUploadedFile"]) [data-testid="stFileUploader"] {
+    position: relative !important;
+    opacity: 1 !important; /* VISIBLE AGAIN */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+/* Nuke the old inner dropzone elements since we just want the file card */
+div[data-testid="stFileUploader"]:has([data-testid="stUploadedFile"]) [data-testid="stFileUploadDropzone"] {
+    display: none !important;
+}
+
+/* The Uploaded File Container */
 [data-testid="stUploadedFile"] {
     background: #1e293b !important; border: none !important; border-radius: 8px !important;
     padding: 15px 50px 15px 15px !important; width: 100% !important; position: relative !important;
     overflow: hidden !important; display: flex !important; align-items: center !important; margin-top: 0 !important;
 }
 
-/* Horizontal Progress Bar */
+/* HORIZONTAL PROGRESS BAR ANIMATION */
 [data-testid="stUploadedFile"]::after {
     content: ''; position: absolute; bottom: 0; left: 0; height: 4px; width: 0%;
     background: #0ea5e9; animation: loadBar 1.2s ease-out forwards;
@@ -91,7 +135,7 @@ st.markdown("""
 [data-testid="stUploadedFile"] > div:first-child > div:first-child > svg,
 [data-testid="stUploadedFile"] svg[viewBox="0 0 24 24"]:not(:last-child) { display: none !important; }
 
-/* Enlarged X Button */
+/* ENLARGED & PERFECTLY CENTERED 'X' BUTTON */
 [data-testid="stUploadedFile"] button {
     background: transparent !important; border: none !important; position: absolute !important;
     right: 15px !important; top: 50% !important; transform: translateY(-50%) scale(1.6) !important;
@@ -100,19 +144,18 @@ st.markdown("""
 
 [data-testid="stUploadedFile"] span, [data-testid="stUploadedFile"] small { color: #f8fafc !important; font-size: 14px !important; position: relative; z-index: 2;}
 
-/* =======================================================================
-   DOWNLOAD BUTTONS
-   ======================================================================= */
-/* Left Box Download Button */
-[data-testid="stColumn"]:nth-child(1) [data-testid="stDownloadButton"] { width: 100% !important; margin-top: 15px !important; }
-[data-testid="stColumn"]:nth-child(1) [data-testid="stDownloadButton"] button {
+/* Download Button styling inside left column */
+.final-download-target { width: 100% !important; margin-top: auto !important; padding-top: 15px; }
+.final-download-target [data-testid="stDownloadButton"] button {
     width: 100% !important; background-color: transparent !important;
     border: 1px solid #0ea5e9 !important; color: #0ea5e9 !important; border-radius: 8px !important;
     height: 45px !important; font-size: 15px !important; font-weight: bold !important; transition: 0.2s;
 }
-[data-testid="stColumn"]:nth-child(1) [data-testid="stDownloadButton"] button:hover { background: rgba(14, 165, 233, 0.1) !important; }
+.final-download-target [data-testid="stDownloadButton"] button:hover { background: rgba(14, 165, 233, 0.1) !important; }
 
-/* Right Box Blank Notebook Button */
+/* =======================================================================
+   RIGHT BOX: BLANK NOTEBOOK
+   ======================================================================= */
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] { height: 100% !important; width: 100% !important; margin: 0 !important; }
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button {
     background: transparent !important; border: none !important; box-shadow: none !important;
@@ -120,13 +163,15 @@ st.markdown("""
     justify-content: center !important; align-items: center !important;
 }
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button * { display: none !important; }
-[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::before { content: "📓"; font-size: 65px !important; margin-right: 15px !important; }
+[data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::before {
+    content: "📓"; font-size: 65px !important; margin-right: 15px !important;
+}
 [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button::after {
     content: "Create\\A Blank\\A Notebook"; white-space: pre !important; font-size: 24px !important; 
     font-weight: 800 !important; color: #f8fafc !important; line-height: 1.1 !important; text-align: left !important;
 }
 
-/* Header & Modals */
+/* Nav & Header */
 .top-nav { display: flex; justify-content: flex-end; align-items: center; padding: 10px 20px; position: absolute; top: 0; right: 0; width: 100%; z-index: 999; gap: 12px; }
 .guide-btn { color: #94a3b8; text-decoration: none; font-size: 16px; font-weight: bold; font-family: sans-serif; border: 1px solid #475569; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: #1e293b; transition: 0.2s; }
 .guide-btn:hover { color: white; border-color: #0ea5e9; transform: scale(1.1); background: #0ea5e9;}
@@ -224,45 +269,17 @@ with col2:
     )
 
 with col1:
-    # 1. Setup a placeholder for our custom text and dynamic CSS
-    visuals_placeholder = st.empty()
+    # Our custom visual content sits in the box nicely
+    st.markdown("""
+    <div class="upload-visuals">
+        <div class="upload-icon">📤</div>
+        <div class="upload-title">Convert file to an<br>interactive notebook</div>
+        <div class="upload-sub">Upload a file<br>200MB per file • PPTX, PPT, PDF</div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    # 2. Native Uploader
+    # The native uploader sits invisibly on top of the visual content
     up = st.file_uploader("Upload", label_visibility="collapsed", type=["pptx", "ppt", "pdf"])
-
-    # 3. Python conditionally handles the CSS and Visuals to ensure NO OVERLAPS
-    if up is None:
-        # State 1: No file. Make uploader invisible over the text.
-        visuals_placeholder.markdown("""
-        <style>
-        [data-testid="stColumn"]:nth-child(1) [data-testid="stFileUploader"] {
-            position: absolute !important; top: 0 !important; left: 0 !important;
-            width: 100% !important; height: 100% !important; z-index: 10 !important;
-            opacity: 0 !important; margin: 0 !important; padding: 0 !important;
-        }
-        [data-testid="stColumn"]:nth-child(1) [data-testid="stFileUploadDropzone"] {
-            width: 100% !important; height: 100% !important; min-height: 240px !important;
-            cursor: pointer !important; padding: 0 !important; margin: 0 !important;
-        }
-        </style>
-        <div class="upload-visuals">
-            <div class="upload-icon">📤</div>
-            <div class="upload-title">Convert file to an<br>interactive notebook</div>
-            <div class="upload-sub">Upload a file<br>200MB per file • PPTX, PPT, PDF</div>
-        </div>
-        """, unsafe_allow_html=True)
-    else:
-        # State 2: File uploaded. ERASE the text, bring uploader back to normal flow.
-        visuals_placeholder.markdown("""
-        <style>
-        [data-testid="stColumn"]:nth-child(1) [data-testid="stFileUploader"] {
-            position: relative !important; opacity: 1 !important; height: auto !important; margin-bottom: 0 !important;
-        }
-        [data-testid="stColumn"]:nth-child(1) [data-testid="stFileUploadDropzone"] {
-            display: none !important;
-        }
-        </style>
-        """, unsafe_allow_html=True)
 
     # ==========================================================================
     # SECTION 4: FILE PARSING & PROCESSING
@@ -365,6 +382,7 @@ with col1:
             st.error(st.session_state.error_msg)
             
         elif st.session_state.get("final_html"):
+            st.markdown('<div class="final-download-target">', unsafe_allow_html=True)
             st.download_button(
                 label="📥 Download Interactive Notebook",
                 data=st.session_state.final_html.encode('utf-8'), 
@@ -372,3 +390,4 @@ with col1:
                 mime="text/html",
                 use_container_width=True
             )
+            st.markdown('</div>', unsafe_allow_html=True)
