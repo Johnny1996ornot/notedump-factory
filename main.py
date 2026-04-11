@@ -191,28 +191,36 @@ with col2:
     )
 
 with col1:
+    # PRE-ALLOCATE SPACE ABOVE THE NATIVE UPLOADER TO GUARANTEE IT RENDERS ON TOP
+    ui_top = st.empty()
+    css_placeholder = st.empty()
+    
+    # Render Streamlit's native uploader directly beneath the empty block
     up = st.file_uploader("Upload", label_visibility="collapsed", type=["pptx", "ppt", "pdf"])
 
     # STATE 1: NO FILE UPLOADED YET
     if not up:
-        # 1. YOUR CLEAN HTML UI (Removed the bottom text so the native uploader can sit there)
-        st.markdown("""
-        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; margin-top: 15px;">
+        # Populate the space ABOVE the uploader with your custom HTML
+        ui_top.markdown("""
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; margin-top: 10px;">
             <div style="font-size: 45px; margin-bottom: 10px; line-height: 1;">📤</div>
             <div style="font-size: 20px; font-weight: 800; color: #f8fafc; line-height: 1.2; text-align: center;">Convert file to an<br>interactive notebook</div>
         </div>
         """, unsafe_allow_html=True)
 
-        # 2. THE CSS TO SEAMLESSLY BLEND AND STRETCH THE NATIVE UPLOADER
-        st.markdown("""
+        # Apply CSS that specifically forces the native uploader to center itself
+        css_placeholder.markdown("""
         <style>
             /* Make the column our main dashed box */
             [data-testid="stColumn"]:nth-child(1) { 
                 border: 1px dashed #334155 !important; 
                 padding: 20px !important; 
-                position: relative !important; /* CRITICAL: Traps the absolute input tag */
+                position: relative !important; 
                 overflow: hidden !important;
-                cursor: pointer !important;
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: center !important;
+                align-items: center !important;
             }
             [data-testid="stColumn"]:nth-child(1):hover { 
                 border-color: #0ea5e9 !important; 
@@ -223,28 +231,48 @@ with col1:
             div[data-testid="stFileUploader"],
             div[data-testid="stFileUploader"] > section,
             [data-testid="stFileUploadDropzone"] {
-                position: static !important; /* Lets the invisible input escape out to the column bounds */
                 background: transparent !important;
                 background-color: transparent !important;
                 border: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
             }
 
-            /* Center the native "Upload" button and "200MB limit" perfectly below your custom HTML */
+            /* FORCE STREAMLIT'S UPLOADER CONTENTS TO CENTER */
+            div[data-testid="stFileUploader"] {
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: center !important;
+                width: 100% !important;
+            }
+
             [data-testid="stFileUploadDropzone"] {
                 display: flex !important;
                 flex-direction: column !important;
                 align-items: center !important;
                 justify-content: center !important;
-                padding: 0 !important;
-                margin-top: 15px !important;
+                width: 100% !important;
+                margin-top: 10px !important;
             }
 
-            /* Hide Streamlit's native cloud icon so it doesn't clash with your emoji */
+            /* Hide Streamlit's native cloud icon */
             [data-testid="stFileUploadDropzone"] svg {
                 display: none !important;
             }
 
-            /* THE MAGIC CLICK EXPANDER: Forces the literal invisible input to stretch over the entire column */
+            /* Center the native "Upload" button and "200MB limit" */
+            [data-testid="stFileUploadDropzone"] button {
+                margin: 0 auto 10px auto !important;
+                display: block !important;
+            }
+            [data-testid="stFileUploadDropzone"] small {
+                display: block !important;
+                text-align: center !important;
+                margin: 0 auto !important;
+            }
+
+            /* Expand the invisible input to cover the whole dashed box so there are no dead click zones */
             [data-testid="stFileUploadDropzone"] input[type="file"] {
                 position: absolute !important;
                 top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
@@ -262,6 +290,7 @@ with col1:
                 z-index: 100 !important;
                 position: relative !important;
                 margin-top: 15px !important;
+                width: 90% !important;
             }
             
             /* Add the animated blue progress bar for the React upload phase */
@@ -280,7 +309,10 @@ with col1:
 
     # STATE 2: FILE HAS BEEN UPLOADED (Python wakes up)
     else:
-        st.markdown("""
+        # Clear the top UI elements since the file is now actively loaded
+        ui_top.empty()
+
+        css_placeholder.markdown("""
         <style>
             /* Restore the solid border for the active file state */
             [data-testid="stColumn"]:nth-child(1) { 
