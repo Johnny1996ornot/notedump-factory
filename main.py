@@ -6,7 +6,7 @@ import time
 from io import BytesIO
 from template import get_template
 
-# Bypassing the Auto-Installer Bugs
+# Bypassing the Replit Auto-Installer Bug
 try:
     import pymupdf as fitz
 except ImportError:
@@ -15,7 +15,7 @@ except ImportError:
 st.set_page_config(page_title="NoteDump", layout="centered", initial_sidebar_state="collapsed")
 
 # ==========================================================================
-# SECTION 1: UI STYLING & MODAL CONTENT
+# SECTION 1: GLOBAL UI STYLING & MODAL CONTENT
 # ==========================================================================
 st.markdown("""
 <style>
@@ -34,14 +34,10 @@ st.markdown("""
     position: relative !important; 
 }
 
-/* LEFT BOX: Dashed border, matching right size */
+/* LEFT BOX: Dashed border by default */
 [data-testid="stColumn"]:nth-child(1) { 
     border: 1px dashed #334155 !important; 
     cursor: pointer; 
-}
-[data-testid="stColumn"]:nth-child(1):hover { 
-    border-color: #0ea5e9 !important; 
-    background: rgba(14, 165, 233, 0.1) !important; 
 }
 
 /* RIGHT BOX: Solid border */
@@ -60,73 +56,8 @@ st.markdown("""
 }
 
 /* =======================================================================
-   THE NEW LEFT UPLOAD TEXT VISUALS (INSIDE THE BOX)
+   ACTIVE STATE GLOBALS: FILE CARD & DOWNLOAD BUTTONS
    ======================================================================= */
-/* Target the exact wrapper Streamlit puts around the markdown */
-div[data-testid="stColumn"]:nth-child(1) div[data-testid="stVerticalBlock"] > div:has(.upload-visuals) {
-    position: absolute !important;
-    top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
-    display: flex !important; flex-direction: column !important;
-    align-items: center !important; justify-content: center !important;
-    z-index: 1 !important; pointer-events: none !important;
-}
-
-.upload-visuals {
-    display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; width: 100%;
-}
-
-.upload-icon { font-size: 45px; margin-bottom: 10px; line-height: 1;}
-.upload-title { font-size: 20px; font-weight: 800; color: #f8fafc; line-height: 1.2; margin-bottom: 15px; }
-.upload-sub { font-size: 14px; color: #94a3b8; line-height: 1.5; }
-
-/* =======================================================================
-   THE INVISIBLE NATIVE UPLOADER (Functional Overlay)
-   ======================================================================= */
-/* Target the exact wrapper Streamlit puts around the uploader */
-div[data-testid="stColumn"]:nth-child(1) div[data-testid="stVerticalBlock"] > div:has([data-testid="stFileUploader"]) {
-    position: absolute !important;
-    top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
-    z-index: 10 !important;
-}
-
-/* Hide Streamlit's label */
-[data-testid="stFileUploader"] > label { display: none !important; }
-
-[data-testid="stFileUploader"] {
-    width: 100% !important; height: 100% !important;
-    opacity: 0 !important; /* COMPLETELY INVISIBLE BUT ACTIVE */
-    margin: 0 !important; padding: 0 !important;
-}
-
-[data-testid="stFileUploadDropzone"] {
-    width: 100% !important; height: 100% !important; min-height: 240px !important;
-    padding: 0 !important; cursor: pointer !important; border: none !important; background: transparent !important;
-}
-
-/* =======================================================================
-   ACTIVE STATE: WHEN A FILE IS UPLOADED
-   ======================================================================= */
-/* Restore document flow to the uploader wrapper */
-div[data-testid="stColumn"]:nth-child(1) div[data-testid="stVerticalBlock"] > div:has([data-testid="stUploadedFile"]) {
-    position: relative !important;
-    height: auto !important;
-}
-
-/* Hide the custom background text when a file is uploaded */
-div[data-testid="stColumn"]:nth-child(1):has([data-testid="stUploadedFile"]) div[data-testid="stVerticalBlock"] > div:has(.upload-visuals) {
-    display: none !important;
-}
-
-/* Make the uploader visible again */
-[data-testid="stFileUploader"]:has([data-testid="stUploadedFile"]) {
-    opacity: 1 !important;
-    height: auto !important;
-}
-
-/* Hide the dropzone text/icon area */
-[data-testid="stFileUploader"]:has([data-testid="stUploadedFile"]) [data-testid="stFileUploadDropzone"] {
-    display: none !important;
-}
 
 /* The Uploaded File Container */
 [data-testid="stUploadedFile"] {
@@ -155,7 +86,7 @@ div[data-testid="stColumn"]:nth-child(1):has([data-testid="stUploadedFile"]) div
 
 [data-testid="stUploadedFile"] span, [data-testid="stUploadedFile"] small { color: #f8fafc !important; font-size: 14px !important; position: relative; z-index: 2;}
 
-/* Fix the Download Button styling to sit perfectly below the file card */
+/* Download Button inside Column 1 */
 [data-testid="stColumn"]:nth-child(1) [data-testid="stDownloadButton"] { width: 100% !important; margin-top: 15px !important; }
 [data-testid="stColumn"]:nth-child(1) [data-testid="stDownloadButton"] button {
     width: 100% !important; background-color: transparent !important;
@@ -280,24 +211,57 @@ with col2:
     )
 
 with col1:
-    # Our custom visual content sits in the background of the box
-    st.markdown("""
-    <div class="upload-visuals">
-        <div class="upload-icon">📤</div>
-        <div class="upload-title">Convert file to an<br>interactive notebook</div>
-        <div class="upload-sub">Upload a file<br>200MB per file • PPTX, PPT, PDF</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # The native uploader sits perfectly on top of it invisibly
     up = st.file_uploader("Upload a document", label_visibility="hidden", type=["pptx", "ppt", "pdf"])
 
-    # ==========================================================================
-    # SECTION 4: FILE PARSING & PROCESSING 
-    # ==========================================================================
-    if up:
+    # STATE 1: NO FILE UPLOADED YET
+    if not up:
+        # Render the custom text dynamically + Force uploader to strictly stretch 100%
+        st.markdown("""
+        <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; z-index: 1;">
+            <div style="font-size: 45px; margin-bottom: 10px; line-height: 1;">📤</div>
+            <div style="font-size: 20px; font-weight: 800; color: #f8fafc; line-height: 1.2; margin-bottom: 15px; text-align: center;">Convert file to an<br>interactive notebook</div>
+            <div style="font-size: 14px; color: #94a3b8; line-height: 1.5; text-align: center;">Upload a file<br>200MB per file • PPTX, PPT, PDF</div>
+        </div>
+        <style>
+            [data-testid="stColumn"]:nth-child(1):hover { border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; }
+            
+            div[data-testid="stFileUploader"] {
+                position: absolute !important;
+                top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important;
+                opacity: 0 !important; z-index: 10 !important; margin: 0 !important; padding: 0 !important;
+            }
+            [data-testid="stFileUploadDropzone"] {
+                width: 100% !important; height: 100% !important; min-height: 240px !important; margin: 0 !important; padding: 0 !important;
+            }
+        </style>
+        """, unsafe_allow_html=True)
+
+        # Clear cached values so previous files disappear visually
+        st.session_state.final_html = None
+        st.session_state.error_msg = None
+        st.session_state.current_file_key = None
+
+    # STATE 2: FILE HAS BEEN UPLOADED
+    else:
+        # The custom text is naturally destroyed by Python. 
+        # Inject CSS to make the standard file card visible and hide the dropzone.
+        st.markdown("""
+        <style>
+            [data-testid="stColumn"]:nth-child(1) { border: 1px solid #1e293b !important; cursor: default !important;}
+            
+            div[data-testid="stFileUploader"] {
+                position: relative !important; opacity: 1 !important; z-index: 1 !important; height: auto !important; margin-bottom: 15px !important;
+            }
+            [data-testid="stFileUploadDropzone"] { display: none !important; }
+        </style>
+        """, unsafe_allow_html=True)
+
+        # ==========================================================================
+        # SECTION 4: FILE PARSING & PROCESSING
+        # ==========================================================================
         file_key = f"{up.name}_{up.size}"
 
+        # Only re-parse the document if it's a completely new file
         if st.session_state.get("current_file_key") != file_key:
             st.session_state.current_file_key = file_key
             st.session_state.final_html = None
@@ -485,7 +449,7 @@ with col1:
                 else:
                     st.session_state.error_msg = f"Error Processing File: {e}"
 
-        # OUTPUT STAGE: Render error or the cached download button below the upload card
+        # OUTPUT STAGE: Render error or the cached download button
         if st.session_state.get("error_msg"):
             st.error(st.session_state.error_msg)
             
