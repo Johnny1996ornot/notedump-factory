@@ -205,11 +205,11 @@ with col1:
         <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; margin-top: 10px;">
             <div style="font-size: 45px; margin-bottom: 10px; line-height: 1;">📤</div>
             <div style="font-size: 20px; font-weight: 800; color: #f8fafc; line-height: 1.2; text-align: center; margin-bottom: 10px;">Convert file to an<br>interactive notebook</div>
-            <div style="font-size: 14px; color: #94a3b8; line-height: 1.5; text-align: center;">Upload a file<br>200MB per file • PPTX, PPT, PDF</div>
+            <div style="font-size: 14px; color: #94a3b8; line-height: 1.5; text-align: center; margin-bottom: 5px;">Upload a file<br>200MB per file • PPTX, PPT, PDF</div>
         </div>
         """, unsafe_allow_html=True)
 
-        # Apply CSS that hides everything except the button, and centers the button
+        # Apply CSS that hides EVERYTHING except the button, and centers the button
         css_placeholder.markdown("""
         <style>
             /* Make the column our main dashed box */
@@ -254,16 +254,20 @@ with col1:
                 align-items: center !important;
                 justify-content: center !important;
                 width: 100% !important;
-                margin-top: 15px !important;
+                margin-top: 5px !important;
             }
 
-            /* HIDE EVERYTHING EXCEPT THE BUTTON */
-            /* 1. Hides the "Drag and drop" text */
-            [data-testid="stFileUploadDropzone"] span { display: none !important; }
-            /* 2. Hides the "Limit 200MB" text */
-            [data-testid="stFileUploadDropzone"] small { display: none !important; }
-            /* 3. Hides the Cloud Icon and the "+" sign on the button */
-            [data-testid="stFileUploadDropzone"] svg { display: none !important; }
+            /* HIDE NATIVE STREAMLIT TEXT ("Drag and drop", "200MB per file") */
+            [data-testid="stFileUploadDropzone"] small,
+            [data-testid="stFileUploadDropzone"] p,
+            [data-testid="stFileUploadDropzone"] div[data-testid="stMarkdownContainer"] {
+                display: none !important;
+            }
+
+            /* HIDE NATIVE ICONS (Cloud icon and the "+" inside the button) */
+            [data-testid="stFileUploadDropzone"] svg {
+                display: none !important;
+            }
 
             /* Center the native "Browse files" button perfectly */
             [data-testid="stFileUploadDropzone"] button {
@@ -280,12 +284,7 @@ with col1:
                 cursor: pointer !important;
             }
 
-            /* --- PROGRESS BAR CONTROLS --- */
-            /* Kill Streamlit's native circular spinning loader completely */
-            [data-testid="stColumn"]:nth-child(1) [data-testid="stSpinner"] {
-                display: none !important;
-            }
-
+            /* --- FILE CARD & PROGRESS BAR CONTROLS --- */
             /* Keep the native progress card looking nice during upload */
             [data-testid="stUploadedFile"] {
                 background: #1e293b !important;
@@ -298,6 +297,12 @@ with col1:
                 width: 90% !important;
             }
             
+            /* Kill the circular spinner inside the file card, but explicitly KEEP the "X" button */
+            [data-testid="stUploadedFile"] svg circle {
+                display: none !important;
+                opacity: 0 !important;
+            }
+
             /* Add the animated horizontal blue progress bar for the React upload phase */
             [data-testid="stUploadedFile"]::after {
                 content: ''; position: absolute; bottom: 0; left: 0; height: 4px; width: 0%;
@@ -345,9 +350,10 @@ with col1:
                 background: #10b981; 
             }
 
-            /* Kill the circular spinner if it tries to pop up here too */
-            [data-testid="stColumn"]:nth-child(1) [data-testid="stSpinner"] {
+            /* Continue to kill the circular spinner if it tries to pop up here too */
+            [data-testid="stUploadedFile"] svg circle {
                 display: none !important;
+                opacity: 0 !important;
             }
         </style>
         """, unsafe_allow_html=True)
@@ -362,7 +368,7 @@ with col1:
             st.session_state.final_html = None
             st.session_state.error_msg = None
 
-            # --- REAL HORIZONTAL PROGRESS BAR (Python Processing Phase) ---
+            # --- REAL PROGRESS BAR (Python Processing Phase) ---
             st.markdown(f"**⚙️ Processing `{up.name}`...**")
             progress_bar = st.progress(0)
             
