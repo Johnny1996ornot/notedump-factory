@@ -21,141 +21,132 @@ st.markdown("""
 <style>
 .stApp { background-color: #000000; }
 
-/* 1. COLUMN WRAPPERS */
+/* 1. COLUMN WRAPPERS: MATCHING BOXES */
 [data-testid="stColumn"] {
     background-color: #0f172a !important; 
     border-radius: 12px !important;
-    height: 240px !important; 
+    min-height: 240px !important; 
+    padding: 20px !important;
     display: flex !important;
     flex-direction: column !important;
     box-sizing: border-box !important;
     transition: 0.2s !important;
-    position: relative !important; /* CRITICAL for absolute positioning */
+}
+
+/* Vertically center content inside columns */
+[data-testid="stColumn"] > div[data-testid="stVerticalBlock"] {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    height: 100% !important;
+    gap: 10px !important; /* Space between elements */
 }
 
 /* LEFT BOX: Dashed border */
-[data-testid="stColumn"]:nth-child(1) { border: 1px dashed #334155 !important; cursor: pointer; }
-[data-testid="stColumn"]:nth-child(1):hover { border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; }
+[data-testid="stColumn"]:nth-child(1) { border: 1px dashed #334155 !important; }
 
-/* RIGHT BOX: Solid border & padding */
-[data-testid="stColumn"]:nth-child(2) { border: 1px solid #1e293b !important; padding: 20px !important;}
-[data-testid="stColumn"]:nth-child(2):hover { border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; }
+/* RIGHT BOX: Solid border */
+[data-testid="stColumn"]:nth-child(2) { border: 1px solid #1e293b !important; }
 
-/* Reset inner padding for the left box so the overlay can stretch perfectly */
-[data-testid="stColumn"]:nth-child(1) > div[data-testid="stVerticalBlock"] {
-    padding: 0 !important;
-    gap: 0 !important;
-    height: 100% !important;
-    width: 100% !important;
-    position: relative !important;
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-}
-
-/* Keep right box vertically centered */
-[data-testid="stColumn"]:nth-child(2) > div[data-testid="stVerticalBlock"] {
-    height: 100% !important; display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important;
+/* =======================================================================
+   THE CUSTOM TEXT (Rendered via Python)
+   ======================================================================= */
+.upload-box-title {
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+    margin-bottom: 5px;
+    line-height: 1.3;
 }
 
 /* =======================================================================
-   THE CUSTOM UPLOAD VISUALS (Sits in the background)
+   THE NATIVE UPLOADER RE-STYLED TO MATCH YOUR DIAGRAM
    ======================================================================= */
-.upload-visuals {
-    position: absolute !important;
-    top: 0; left: 0; right: 0; bottom: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none; /* Clicks pass right through this to the invisible uploader */
-    z-index: 1;
-}
-
-.upload-icon { font-size: 45px; margin-bottom: 10px; line-height: 1;}
-.upload-title { font-size: 20px; font-weight: 800; color: #f8fafc; text-align: center; line-height: 1.2; margin-bottom: 15px; }
-.upload-sub { font-size: 14px; color: #94a3b8; text-align: center; line-height: 1.5; }
-
-/* =======================================================================
-   THE GHOST UPLOADER (Invisible Overlay that catches clicks & drags)
-   ======================================================================= */
-/* The outer container of the uploader */
-[data-testid="stFileUploader"] {
-    position: absolute !important;
-    top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
-    width: 100% !important; height: 100% !important;
-    z-index: 10 !important; /* Keeps it on top */
-    opacity: 0 !important; /* THE MAGIC BULLET - 100% INVISIBLE */
-    margin: 0 !important; padding: 0 !important;
-}
-
-/* Make the internal dropzone stretch to fill the 240px box */
+/* Strip the ugly default gray box */
 [data-testid="stFileUploadDropzone"] {
-    width: 100% !important; height: 100% !important; min-height: 240px !important;
-    cursor: pointer !important; padding: 0 !important; margin: 0 !important;
+    background-color: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    min-height: 0 !important;
+}
+
+/* Hide the cloud icon, 'drag and drop' text, and default limit text */
+[data-testid="stFileUploadDropzone"] svg,
+[data-testid="stFileUploadDropzone"] div[data-testid="stMarkdownContainer"],
+[data-testid="stFileUploadDropzone"] small {
+    display: none !important;
+}
+
+/* Re-style the native 'Browse files' button into your 'Upload File' button */
+[data-testid="stFileUploadDropzone"] button {
+    width: 100% !important;
+    background-color: transparent !important;
+    border: 1px solid #0ea5e9 !important;
+    color: transparent !important; /* Hides native text */
+    border-radius: 8px !important;
+    padding: 10px !important;
+    position: relative;
+    height: 45px !important;
+    margin: 0 !important;
+    cursor: pointer !important;
+}
+
+/* Inject 'Upload File' text */
+[data-testid="stFileUploadDropzone"] button::after {
+    content: "Upload File";
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    color: #0ea5e9 !important;
+    font-size: 15px !important;
+    font-weight: bold !important;
+}
+
+[data-testid="stFileUploadDropzone"] button:hover {
+    background: rgba(14, 165, 233, 0.1) !important;
 }
 
 /* =======================================================================
-   ACTIVE STATE: WHEN A FILE IS UPLOADED
+   ACTIVE STATE: UPLOADED FILE CARD (Native Streamlit)
    ======================================================================= */
-/* 1. Hide our background visuals entirely */
-div[data-testid="stColumn"]:nth-child(1):has([data-testid="stUploadedFile"]) .upload-visuals {
-    display: none !important;
-}
-
-/* 2. Add padding back to the column block so the file card isn't touching the edges */
-div[data-testid="stColumn"]:nth-child(1):has([data-testid="stUploadedFile"]) > div[data-testid="stVerticalBlock"] {
-    padding: 20px !important; 
-}
-
-/* 3. Bring the uploader back into standard document flow, make it visible, give it a bottom margin */
-div[data-testid="stColumn"]:nth-child(1):has([data-testid="stUploadedFile"]) [data-testid="stFileUploader"] {
-    position: relative !important;
-    opacity: 1 !important; 
-    height: auto !important;
-    margin-bottom: 15px !important;
-}
-
-/* 4. Hide the default dropzone junk since we only want the file card */
-div[data-testid="stFileUploader"]:has([data-testid="stUploadedFile"]) [data-testid="stFileUploadDropzone"] {
-    display: none !important;
-}
-
-/* The Uploaded File Card Styling */
+/* Make the file card look clean */
 [data-testid="stUploadedFile"] {
-    background: #1e293b !important; border: none !important; border-radius: 8px !important;
-    padding: 15px 50px 15px 15px !important; width: 100% !important; position: relative !important;
-    overflow: hidden !important; display: flex !important; align-items: center !important; margin-top: 0 !important;
+    background-color: #1e293b !important;
+    border: 1px solid #334155 !important;
+    border-radius: 8px !important;
+    padding: 10px 15px !important;
+    margin-bottom: 0 !important;
 }
 
-/* HORIZONTAL PROGRESS BAR ANIMATION */
-[data-testid="stUploadedFile"]::after {
-    content: ''; position: absolute; bottom: 0; left: 0; height: 4px; width: 0%;
-    background: #0ea5e9; animation: loadBar 1.2s ease-out forwards;
-}
-@keyframes loadBar { 0% { width: 0%; } 100% { width: 100%; } }
-
-/* Hide native spinning circle completely */
-[data-testid="stUploadedFile"] > div:first-child > div:first-child > svg,
-[data-testid="stUploadedFile"] svg[viewBox="0 0 24 24"]:not(:last-child) { display: none !important; }
-
-/* ENLARGED & PERFECTLY CENTERED 'X' BUTTON */
-[data-testid="stUploadedFile"] button {
-    background: transparent !important; border: none !important; position: absolute !important;
-    right: 15px !important; top: 50% !important; transform: translateY(-50%) scale(1.6) !important;
-    margin: 0 !important; padding: 0 !important; z-index: 10 !important;
+/* Ensure text and icons on the file card are white */
+[data-testid="stUploadedFile"] div,
+[data-testid="stUploadedFile"] span,
+[data-testid="stUploadedFile"] small,
+[data-testid="stUploadedFile"] svg {
+    color: white !important;
+    fill: white !important;
 }
 
-[data-testid="stUploadedFile"] span, [data-testid="stUploadedFile"] small { color: #f8fafc !important; font-size: 14px !important; position: relative; z-index: 2;}
-
-/* Download Button styling */
-.final-download-target { width: 100% !important; }
-.final-download-target [data-testid="stDownloadButton"] button {
-    width: 100% !important; background-color: transparent !important;
-    border: 1px solid #0ea5e9 !important; color: #0ea5e9 !important; border-radius: 8px !important;
-    height: 45px !important; font-size: 15px !important; font-weight: bold !important; transition: 0.2s;
+/* =======================================================================
+   DOWNLOAD BUTTON
+   ======================================================================= */
+/* Style for Left Box */
+[data-testid="stColumn"]:nth-child(1) [data-testid="stDownloadButton"] button {
+    width: 100% !important;
+    background-color: transparent !important;
+    border: 1px solid #0ea5e9 !important;
+    color: #0ea5e9 !important;
+    border-radius: 8px !important;
+    height: 45px !important;
+    font-size: 15px !important;
+    font-weight: bold !important;
+    transition: 0.2s;
+    margin-top: 5px !important;
 }
-.final-download-target [data-testid="stDownloadButton"] button:hover { background: rgba(14, 165, 233, 0.1) !important; }
+[data-testid="stColumn"]:nth-child(1) [data-testid="stDownloadButton"] button:hover { 
+    background: rgba(14, 165, 233, 0.1) !important; 
+}
 
 /* =======================================================================
    RIGHT BOX: BLANK NOTEBOOK
@@ -273,17 +264,22 @@ with col2:
     )
 
 with col1:
-    # 1. Background Visuals
-    st.markdown("""
-    <div class="upload-visuals">
-        <div class="upload-icon">📤</div>
-        <div class="upload-title">Convert file to an<br>interactive notebook</div>
-        <div class="upload-sub">Upload a file<br>200MB per file • PPTX, PPT, PDF</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # 2. Ghost Overlay Uploader
+    # 1. Create a placeholder that we can cleanly delete later
+    text_placeholder = st.empty()
+    
+    # 2. Native Uploader (Styled via CSS to look like your 'Upload File' button)
     up = st.file_uploader("Upload", label_visibility="collapsed", type=["pptx", "ppt", "pdf"])
+
+    # 3. Python handles the state switch cleanly (NO CSS HACKS)
+    if not up:
+        # State 1: No file. Show the text.
+        text_placeholder.markdown("""
+            <div class="upload-box-title">Convert your file to an<br>interactive notebook</div>
+            <div style="text-align: center; color: #94a3b8; font-size: 13px; margin-bottom: 10px;">200MB per file • PPTX, PPT, PDF</div>
+        """, unsafe_allow_html=True)
+    else:
+        # State 2: File exists. OBLITERATE the text so it never overlaps.
+        text_placeholder.empty()
 
     # ==========================================================================
     # SECTION 4: FILE PARSING & PROCESSING
@@ -386,12 +382,11 @@ with col1:
             st.error(st.session_state.error_msg)
             
         elif st.session_state.get("final_html"):
-            st.markdown('<div class="final-download-target">', unsafe_allow_html=True)
+            # Renders below the file card automatically
             st.download_button(
-                label="📥 Download Interactive Notebook",
+                label="Download file", # Matches diagram exactly
                 data=st.session_state.final_html.encode('utf-8'), 
                 file_name=f"NoteDump_{up.name}.html", 
                 mime="text/html",
                 use_container_width=True
             )
-            st.markdown('</div>', unsafe_allow_html=True)
