@@ -34,12 +34,6 @@ st.markdown("""
     position: relative !important; 
 }
 
-/* LEFT BOX: Dashed border by default */
-[data-testid="stColumn"]:nth-child(1) { 
-    border: 1px dashed #334155 !important; 
-    cursor: pointer; 
-}
-
 /* RIGHT BOX: Solid border */
 [data-testid="stColumn"]:nth-child(2) { border: 1px solid #1e293b !important; }
 [data-testid="stColumn"]:nth-child(2):hover { border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; }
@@ -211,54 +205,78 @@ with col2:
     )
 
 with col1:
-    up = st.file_uploader("Upload a document", label_visibility="hidden", type=["pptx", "ppt", "pdf"])
+    up = st.file_uploader(
+        "Convert file to an interactive notebook",
+        type=["pptx", "ppt", "pdf"],
+        label_visibility="collapsed"
+    )
 
-    # STATE 1: NO FILE UPLOADED YET
-    if not up:
-        # Render the custom text dynamically + Force uploader to strictly stretch 100%
-        st.markdown("""
-        <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; z-index: 1;">
-            <div style="font-size: 45px; margin-bottom: 10px; line-height: 1;">📤</div>
-            <div style="font-size: 20px; font-weight: 800; color: #f8fafc; line-height: 1.2; margin-bottom: 15px; text-align: center;">Convert file to an<br>interactive notebook</div>
-            <div style="font-size: 14px; color: #94a3b8; line-height: 1.5; text-align: center;">Upload a file<br>200MB per file • PPTX, PPT, PDF</div>
-        </div>
-        <style>
-            [data-testid="stColumn"]:nth-child(1):hover { border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.1) !important; }
-            
-            div[data-testid="stFileUploader"] {
-                position: absolute !important;
-                top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important;
-                opacity: 0 !important; z-index: 10 !important; margin: 0 !important; padding: 0 !important;
-            }
-            [data-testid="stFileUploadDropzone"] {
-                width: 100% !important; height: 100% !important; min-height: 240px !important; margin: 0 !important; padding: 0 !important;
-            }
-        </style>
-        """, unsafe_allow_html=True)
+    # VISUALLY BEND THE NATIVE UPLOADER
+    st.markdown("""
+    <style>
+    /* 1. Remove the dashed border from the parent column since the dropzone will have it */
+    [data-testid="stColumn"]:nth-child(1) { border: none !important; padding: 0 !important; background: transparent !important;}
 
-        # Clear cached values so previous files disappear visually
-        st.session_state.final_html = None
-        st.session_state.error_msg = None
-        st.session_state.current_file_key = None
+    /* 2. MAKE UPLOADER THE BIG BOX */
+    div[data-testid="stFileUploader"] {
+        width: 100% !important;
+        height: 240px !important;
+        margin-bottom: 15px !important;
+    }
 
-    # STATE 2: FILE HAS BEEN UPLOADED
-    else:
-        # The custom text is naturally destroyed by Python. 
-        # Inject CSS to make the standard file card visible and hide the dropzone.
-        st.markdown("""
-        <style>
-            [data-testid="stColumn"]:nth-child(1) { border: 1px solid #1e293b !important; cursor: default !important;}
-            
-            div[data-testid="stFileUploader"] {
-                position: relative !important; opacity: 1 !important; z-index: 1 !important; height: auto !important; margin-bottom: 15px !important;
-            }
-            [data-testid="stFileUploadDropzone"] { display: none !important; }
-        </style>
-        """, unsafe_allow_html=True)
+    [data-testid="stFileUploadDropzone"] {
+        height: 240px !important;
+        border: 1px dashed #334155 !important;
+        border-radius: 12px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        align-items: center !important;
+        background: #0f172a !important;
+        cursor: pointer !important;
+        transition: 0.2s !important;
+    }
 
-        # ==========================================================================
-        # SECTION 4: FILE PARSING & PROCESSING
-        # ==========================================================================
+    [data-testid="stFileUploadDropzone"]:hover {
+        border-color: #0ea5e9 !important;
+        background: rgba(14,165,233,0.05) !important;
+    }
+
+    /* 3. REMOVE DEFAULT CONTENT SAFELY */
+    [data-testid="stFileUploadDropzone"] * {
+        display: none !important;
+    }
+
+    /* 4. CUSTOM TEXT VIA PSEUDO-ELEMENTS */
+    [data-testid="stFileUploadDropzone"]::before {
+        content: "📤";
+        font-size: 45px;
+        margin-bottom: 10px;
+        display: block;
+    }
+
+    [data-testid="stFileUploadDropzone"]::after {
+        content: "Convert file to an\\Ainteractive notebook\\A\\AUpload a file • PPTX, PPT, PDF";
+        white-space: pre;
+        text-align: center;
+        color: #f8fafc;
+        font-weight: 800;
+        font-size: 16px;
+        line-height: 1.2;
+        display: block;
+    }
+    
+    /* Slight color tweak for the subtext line */
+    [data-testid="stFileUploadDropzone"]::after {
+        color: #94a3b8; /* Fades the whole text slightly, you can't multi-color pseudo elements easily, but this looks clean */
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    # ==========================================================================
+    # SECTION 4: FILE PARSING & PROCESSING
+    # ==========================================================================
+    if up:
         file_key = f"{up.name}_{up.size}"
 
         # Only re-parse the document if it's a completely new file
