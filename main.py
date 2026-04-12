@@ -10,6 +10,9 @@ from template import get_template
 
 app = Flask(__name__)
 
+# CRITICAL FIX FOR RENDER: Tell Flask to accept uploads up to 250 MB
+app.config['MAX_CONTENT_LENGTH'] = 250 * 1024 * 1024 
+
 # --- HTML FRONTEND (Mimics your old NoteDump UI) ---
 FRONTEND_HTML = """
 <!DOCTYPE html>
@@ -22,27 +25,50 @@ FRONTEND_HTML = """
         .hero { text-align: center; margin-bottom: 30px; }
         .logo-text { font-size: 55px; font-weight: 800; color: #f8fafc; margin: 0;}
         .tagline { color: #94a3b8; font-size: 18px; margin-top: -5px;}
-        .upload-box { background-color: #0f172a; border: 1px dashed #334155; border-radius: 12px; padding: 40px; text-align: center; width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        input[type="file"] { margin-bottom: 20px; color: #e2e8f0; font-weight: bold; }
-        button { background-color: #4f46e5; color: white; border: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 16px; width: 100%; transition: 0.2s;}
-        button:hover { background-color: #4338ca; }
-        .blank-btn { background-color: #1e293b; border: 1px solid #334155; margin-top: 15px;}
+        .upload-box { background-color: #0f172a; border: 1px dashed #334155; border-radius: 12px; padding: 40px; text-align: center; width: 450px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        
+        /* New prominent button style to replace everything in the form */
+        .primary-btn { 
+            display: inline-block;
+            background-color: #4f46e5; 
+            color: white; 
+            border: none; 
+            padding: 16px 28px; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            font-size: 16px; 
+            width: 100%; 
+            transition: 0.2s;
+            text-align: center;
+            box-sizing: border-box;
+        }
+        .primary-btn:hover { background-color: #4338ca; }
+        .primary-btn span { color: #c7d2fe; font-size: 14px; display: block; margin-top: 4px; font-weight: normal;}
+
+        .blank-btn { background-color: #1e293b; border: 1px solid #334155; margin-top: 20px;}
         .blank-btn:hover { background-color: #334155; }
+        
+        /* Error message style */
+        .error-message { color: #ef4444; background-color: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 6px; padding: 10px; margin-top: 20px; font-size: 14px; }
     </style>
 </head>
 <body>
     <div class="hero">
         <h1 class="logo-text">📝 NoteDump</h1>
         <p class="tagline">Turning your documents into an interactive notebook</p>
-        <p style="color: #475569; font-size: 12px;">PPTX • PPT • PDF</p>
     </div>
     <div class="upload-box">
-        <form action="/convert" method="POST" enctype="multipart/form-data">
-            <input type="file" name="file" accept=".pdf,.pptx,.ppt" required>
-            <button type="submit">📥 Generate & Download Notebook</button>
+        <form id="convert-form" action="/convert" method="POST" enctype="multipart/form-data">
+            <input type="file" id="file" name="file" accept=".pdf,.pptx,.ppt" required style="display: none;" onchange="document.getElementById('convert-form').submit();">
+            <label for="file" class="primary-btn">
+                📥 convert existing file<br>
+                <span>200 mb pdf pdx ppt</span>
+            </label>
         </form>
+
         <form action="/blank" method="GET">
-            <button type="submit" class="blank-btn">📓 Create Blank Notebook</button>
+            <button type="submit" class="primary-btn blank-btn">📓 Create Blank Notebook</button>
         </form>
     </div>
 </body>
@@ -75,11 +101,11 @@ def create_blank():
 @app.route("/convert", methods=["POST"])
 def convert_file():
     if 'file' not in request.files:
-        return "No file uploaded", 400
+        return '<div class="error-message">Error: No file part uploaded</div>', 400
     
     file = request.files['file']
     if file.filename == '':
-        return "No selected file", 400
+        return '<div class="error-message">Error: No selected file</div>', 400
         
     file_name = file.filename.lower()
     file_bytes = file.read()
@@ -263,8 +289,7 @@ def convert_file():
         )
 
     except Exception as e:
-        return f"<h1>Error processing file</h1><p>{str(e)}</p>", 500
+        return f'<div class="error-message">Error processing file: {html.escape(str(e))}</div>', 500
 
-# Required for Vercel serverless to map the app correctly
 if __name__ == "__main__":
     app.run(debug=True)
