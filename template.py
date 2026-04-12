@@ -1,22 +1,20 @@
 import os
 
 def get_template(total_pages):
-    # Fix: Get the absolute path of the directory this script is inside
+    # Find the absolute path to the main folder
     base_dir = os.path.dirname(os.path.abspath(__file__))
     
     try:
-        css_path = os.path.join(base_dir, "style.css")
-        with open(css_path, "r", encoding="utf-8") as f:
+        with open(os.path.join(base_dir, "style.css"), "r", encoding="utf-8") as f:
             css_content = f.read()
-    except Exception as e:
-        css_content = f"/* Warning: style.css not found. Error: {e} */"
+    except Exception:
+        css_content = "/* Warning: style.css not found */"
 
     try:
-        js_path = os.path.join(base_dir, "engine.js")
-        with open(js_path, "r", encoding="utf-8") as f:
+        with open(os.path.join(base_dir, "engine.js"), "r", encoding="utf-8") as f:
             js_content = f.read()
-    except Exception as e:
-        js_content = f"/* Warning: engine.js not found. Error: {e} */"
+    except Exception:
+        js_content = "/* Warning: engine.js not found */"
 
     html_template = """
 <!DOCTYPE html>
