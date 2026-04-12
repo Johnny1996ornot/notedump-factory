@@ -13,7 +13,7 @@ app = Flask(__name__)
 # CRITICAL FIX FOR RENDER: Tell Flask to accept uploads up to 250 MB
 app.config['MAX_CONTENT_LENGTH'] = 250 * 1024 * 1024 
 
-# --- HTML FRONTEND ---
+# --- HTML FRONTEND (Restored with your Top Nav, Guide, and Loading States) ---
 FRONTEND_HTML = """
 <!DOCTYPE html>
 <html lang="en">
@@ -22,51 +22,116 @@ FRONTEND_HTML = """
     <title>NoteDump</title>
     <style>
         body { background-color: #000000; color: white; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        
+        /* Nav & Header Restored */
+        .top-nav { display: flex; justify-content: flex-end; align-items: center; padding: 15px 25px; position: absolute; top: 0; right: 0; width: 100%; z-index: 999; gap: 12px; box-sizing: border-box;}
+        .guide-btn { color: #94a3b8; text-decoration: none; font-size: 16px; font-weight: bold; font-family: sans-serif; border: 1px solid #475569; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: #1e293b; transition: 0.2s; }
+        .guide-btn:hover { color: white; border-color: #0ea5e9; transform: scale(1.1); background: #0ea5e9;}
+        .coffee-btn { color: #0ea5e9; text-decoration: none; font-weight: bold; font-size: 13px; border: 1px solid #0ea5e9; padding: 6px 14px; border-radius: 20px; transition: 0.2s; white-space: nowrap; }
+        .coffee-btn:hover { background: rgba(14, 165, 233, 0.15); color: #fff; }
+
+        /* Modal Restored */
+        .modal-window { position: fixed; background-color: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px); top: 0; right: 0; bottom: 0; left: 0; z-index: 99999; visibility: hidden; opacity: 0; transition: all 0.3s; display: flex; justify-content: center; align-items: center; }
+        .modal-window:target { visibility: visible; opacity: 1; }
+        .modal-content { background: #0f172a; width: 90%; max-width: 650px; padding: 30px; border-radius: 16px; border: 1px solid #334155; color: #f1f5f9; position: relative; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.8); text-align: left;}
+        .modal-close { position: absolute; top: 20px; right: 25px; color: #64748b; text-decoration: none; font-size: 28px; font-weight: bold; transition: 0.2s; }
+        .modal-close:hover { color: #ef4444; }
+        .modal-content h2 { margin-top: 0; color: #4f46e5; font-size: 24px; border-bottom: 1px solid #1e293b; padding-bottom: 10px;}
+        .modal-content h4 { color: #0ea5e9; margin-top: 20px; margin-bottom: 10px; font-size: 18px;}
+        .modal-content li { margin-bottom: 10px; line-height: 1.5; font-size: 15px; color: #cbd5e1;}
+        .pro-tag { color: #10b981; font-weight: bold; } 
+
         .hero { text-align: center; margin-bottom: 30px; }
         .logo-text { font-size: 55px; font-weight: 800; color: #f8fafc; margin: 0;}
         .tagline { color: #94a3b8; font-size: 18px; margin-top: -5px;}
         .upload-box { background-color: #0f172a; border: 1px dashed #334155; border-radius: 12px; padding: 40px; text-align: center; width: 450px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         
-        .primary-btn { 
-            display: inline-block;
-            background-color: #4f46e5; 
-            color: white; 
-            border: none; 
-            padding: 16px 28px; 
-            border-radius: 8px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            font-size: 16px; 
-            width: 100%; 
-            transition: 0.2s;
-            text-align: center;
-            box-sizing: border-box;
-        }
+        .primary-btn { display: inline-block; background-color: #4f46e5; color: white; border: none; padding: 16px 28px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; width: 100%; transition: 0.2s; text-align: center; box-sizing: border-box; }
         .primary-btn:hover { background-color: #4338ca; }
         .primary-btn span { color: #c7d2fe; font-size: 14px; display: block; margin-top: 4px; font-weight: normal;}
 
         .blank-btn { background-color: #1e293b; border: 1px solid #334155; margin-top: 20px;}
         .blank-btn:hover { background-color: #334155; }
-        
         .error-message { color: #ef4444; background-color: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 6px; padding: 10px; margin-top: 20px; font-size: 14px; }
+
+        /* New Loading Overlay */
+        #loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 100000; flex-direction: column; align-items: center; justify-content: center; color: white; text-align: center;}
+        .spinner { border: 6px solid #1e293b; border-top: 6px solid #4f46e5; border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
+    <script>
+        function handleUpload() {
+            // Show the loading screen when a file is selected
+            document.getElementById('loading-overlay').style.display = 'flex';
+            document.getElementById('convert-form').submit();
+        }
+
+        function handleBlank(event) {
+            // Change button text and disable it to prevent multiple downloads
+            var btn = document.getElementById('blank-btn');
+            btn.innerHTML = '⏳ Generating...';
+            btn.style.pointerEvents = 'none';
+            btn.style.opacity = '0.7';
+            
+            // Re-enable after 3 seconds
+            setTimeout(function() {
+                btn.innerHTML = '📓 Create Blank Notebook';
+                btn.style.pointerEvents = 'auto';
+                btn.style.opacity = '1';
+            }, 3000);
+        }
+    </script>
 </head>
 <body>
+    
+    <div class="top-nav">
+        <a href="https://buymeacoffee.com/jpramirez" target="_blank" class="coffee-btn">☕ Buy me a coffee</a>
+        <a href="#guide-modal" class="guide-btn" title="App Guide & Features">?</a>
+    </div>
+
+    <div id="guide-modal" class="modal-window">
+        <div class="modal-content">
+            <a href="#" class="modal-close" title="Close">&times;</a>
+            <h2>📝 Welcome to NoteDump</h2>
+            <p>Turning your documents into an interactive notebook.</p>
+            <h4>✨ NoteDump Features & Guide</h4>
+            <ul>
+                <li>Providing an HTML based editor that allows for creating seamless interactive notebooks.</li>
+                <li>Add pins to images to correctly identify them.</li>
+                <li>Add audio or links that will allow a better review.</li>
+                <li>Create reviewers with more freedom and specialized tools.</li>
+            </ul>
+            <h4>🚀 Why Use NoteDump?</h4>
+            <ul>
+                <li><span class="pro-tag">100% Offline Capable:</span> Once downloaded, your interactive notebook is a single HTML file that works perfectly without an internet connection.</li>
+                <li><span class="pro-tag">Ultimate Privacy:</span> No accounts, no cloud syncing, no subscriptions. Your notes and files stay locally on your device.</li>
+                <li><span class="pro-tag">Limitless Annotation:</span> Draw freely, drop sticky notes, create custom tables, and pin interactive markers directly onto your lecture slides.</li>
+                <li><span class="pro-tag">Universal Compatibility:</span> Works natively on any modern device (desktop, tablet, or phone) using just a standard web browser.</li>
+            </ul>
+        </div>
+    </div>
+
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <h2>Uploading & Processing...</h2>
+        <p style="color: #94a3b8; font-size: 14px;">This might take a minute depending on file size.</p>
+    </div>
+
     <div class="hero">
         <h1 class="logo-text">📝 NoteDump</h1>
         <p class="tagline">Turning your documents into an interactive notebook</p>
     </div>
     <div class="upload-box">
         <form id="convert-form" action="/convert" method="POST" enctype="multipart/form-data">
-            <input type="file" id="file" name="file" accept=".pdf,.pptx,.ppt" required style="display: none;" onchange="document.getElementById('convert-form').submit();">
+            <input type="file" id="file" name="file" accept=".pdf,.pptx,.ppt" required style="display: none;" onchange="handleUpload();">
             <label for="file" class="primary-btn">
                 📥 convert existing file<br>
                 <span>200 mb pdf pdx ppt</span>
             </label>
         </form>
 
-        <form action="/blank" method="GET">
-            <button type="submit" class="primary-btn blank-btn">📓 Create Blank Notebook</button>
+        <form action="/blank" method="GET" onsubmit="handleBlank(event)">
+            <button type="submit" id="blank-btn" class="primary-btn blank-btn">📓 Create Blank Notebook</button>
         </form>
     </div>
 </body>
