@@ -1,1 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NoteDump</title>
+    <link rel="stylesheet" href="style.css"> 
+    <style>
+        /* This perfectly centers everything and removes all grey boxes */
+        body {
+            background-color: #000000;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: sans-serif;
+        }
+        .upload-container {
+            border: 1px dashed #334155;
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+            background-color: #0f172a;
+            width: 100%;
+            max-width: 400px;
+            transition: 0.2s;
+        }
+        .upload-container:hover {
+            border-color: #0ea5e9;
+            background: rgba(14, 165, 233, 0.1);
+        }
+        .icon { font-size: 45px; margin-bottom: 10px; }
+        h2 { margin: 0 0 10px 0; font-size: 20px; color: #f8fafc; font-weight: 800; }
+        p.subtext { color: #94a3b8; font-size: 14px; margin-bottom: 20px; }
+        
+        /* The native uploader perfectly centered */
+        input[type="file"] {
+            display: block;
+            margin: 0 auto 20px auto;
+            color: #94a3b8;
+        }
+        
+        /* The custom button */
+        button {
+            background-color: transparent;
+            color: #0ea5e9;
+            border: 1px solid #0ea5e9;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            font-size: 16px;
+            transition: 0.2s;
+        }
+        button:hover { background-color: rgba(14, 165, 233, 0.1); }
+        
+        /* The Horizontal Progress Bar */
+        .progress-bar-container {
+            width: 100%; height: 4px; background: #334155;
+            margin-top: 20px; border-radius: 2px; overflow: hidden;
+            display: none;
+        }
+        .progress-fill {
+            height: 100%; width: 0%; background: #0ea5e9;
+            transition: width 0.4s ease;
+        }
+        #statusMessage { margin-top: 15px; font-weight: bold; display: none; font-size: 14px; }
+    </style>
+</head>
+<body>
 
+    <div class="upload-container">
+        <div class="icon">📤</div>
+        <h2>Convert file to an<br>interactive notebook</h2>
+        <p class="subtext">Upload a file • 200MB limit • PPTX, PPT, PDF</p>
+
+        <input type="file" id="fileInput" accept=".pptx,.ppt,.pdf">
+        
+        <button id="uploadButton">Upload File</button>
+
+        <div class="progress-bar-container" id="progressContainer">
+            <div class="progress-fill" id="progressBar"></div>
+        </div>
+        <p id="statusMessage">Uploading and processing...</p>
+    </div>
+
+    <script>
+        document.getElementById('uploadButton').addEventListener('click', async () => {
+            const fileInput = document.getElementById('fileInput');
+            if (fileInput.files.length === 0) {
+                alert('Please select a file first.');
+                return;
+            }
+
+            // Show the progress bar and status text
+            const statusMessage = document.getElementById('statusMessage');
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('progressBar');
+
+            statusMessage.style.display = 'block';
+            statusMessage.innerText = '⚙️ Processing file...';
+            statusMessage.style.color = '#0ea5e9';
+            progressContainer.style.display = 'block';
+            
+            // Start moving the horizontal progress bar smoothly
+            let progress = 0;
+            progressBar.style.width = '0%';
+            const loaderInterval = setInterval(() => {
+                progress += 5;
+                if (progress <= 90) progressBar.style.width = progress + '%';
+            }, 300);
+
+            // Package the file
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            try {
+                // Send it to your Python engine!
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                clearInterval(loaderInterval);
+                progressBar.style.width = '100%';
+
+                if (response.ok) {
+                    // It worked! Trigger the file download
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `NoteDump_${fileInput.files[0].name}.html`;
+                    document.body.appendChild(a);
+                    a.click();
+                    
+                    statusMessage.innerText = '✅ Done! File downloaded.';
+                    statusMessage.style.color = '#10b981'; // Solid green
+                    progressBar.style.background = '#10b981';
+                } else {
+                    const errorText = await response.text();
+                    statusMessage.innerText = '🚨 Error: ' + errorText;
+                    statusMessage.style.color = '#ef4444'; // Red
+                    progressBar.style.background = '#ef4444';
+                }
+            } catch (err) {
+                clearInterval(loaderInterval);
+                statusMessage.innerText = '🚨 Network error. Try again.';
+                statusMessage.style.color = '#ef4444';
+                progressBar.style.background = '#ef4444';
+            }
+        });
+    </script>
+</body>
+</html>
