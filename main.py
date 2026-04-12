@@ -23,14 +23,14 @@ FRONTEND_HTML = """
     <style>
         body { background-color: #000000; color: white; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; position: relative; }
         
-        /* Nav & Header Restored and Forced to Top Right */
+        /* Nav & Header */
         .top-nav { display: flex; justify-content: flex-end; align-items: center; padding: 20px 30px; position: absolute; top: 0; right: 0; width: 100%; z-index: 9999; gap: 12px; box-sizing: border-box; }
         .guide-btn { color: #94a3b8; text-decoration: none; font-size: 16px; font-weight: bold; font-family: sans-serif; border: 1px solid #475569; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: #1e293b; transition: 0.2s; }
         .guide-btn:hover { color: white; border-color: #0ea5e9; transform: scale(1.1); background: #0ea5e9;}
         .coffee-btn { color: #0ea5e9; text-decoration: none; font-weight: bold; font-size: 14px; border: 1px solid #0ea5e9; padding: 8px 16px; border-radius: 20px; transition: 0.2s; white-space: nowrap; background: transparent; }
         .coffee-btn:hover { background: rgba(14, 165, 233, 0.15); color: #fff; }
 
-        /* Modal Restored */
+        /* Modal */
         .modal-window { position: fixed; background-color: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px); top: 0; right: 0; bottom: 0; left: 0; z-index: 99999; visibility: hidden; opacity: 0; transition: all 0.3s; display: flex; justify-content: center; align-items: center; }
         .modal-window:target { visibility: visible; opacity: 1; }
         .modal-content { background: #0f172a; width: 90%; max-width: 650px; padding: 30px; border-radius: 16px; border: 1px solid #334155; color: #f1f5f9; position: relative; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.8); text-align: left;}
@@ -56,13 +56,16 @@ FRONTEND_HTML = """
         
         .error-box { display: none; color: #ef4444; background-color: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 6px; padding: 10px; margin-top: 20px; font-size: 14px; }
 
-        /* Animation for loading state */
+        /* Progress Bar Styles */
+        .progress-container { width: 100%; background-color: #1e293b; border-radius: 4px; overflow: hidden; margin-bottom: 8px; height: 10px; display: none; }
+        .progress-fill { width: 0%; height: 100%; background-color: #10b981; transition: width 0.2s ease-out; }
+        .status-text { color: #c7d2fe; font-size: 14px; font-weight: bold; display: none; }
+        
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-        .loading-state { animation: pulse 1.5s infinite; background-color: #312e81 !important; pointer-events: none; }
+        .processing-pulse { animation: pulse 1.5s infinite; color: #fcd34d !important; }
     </style>
     <script>
-        // Use Javascript fetch to upload without locking the screen
-        async function handleUpload(event) {
+        function handleUpload(event) {
             const fileInput = event.target;
             if (!fileInput.files.length) return;
 
@@ -70,26 +73,57 @@ FRONTEND_HTML = """
             const btnLabel = document.getElementById('upload-label');
             const errorBox = document.getElementById('error-box');
             
-            // Save original button HTML to restore later
-            const originalHtml = btnLabel.innerHTML;
+            // Save original button HTML to restore later safely
+            const originalHtml = `
+                📥 convert existing file<br>
+                <span>200 mb pdf pdx ppt</span>
+            `;
             
-            // Change button to loading state
-            btnLabel.classList.add('loading-state');
-            btnLabel.innerHTML = '⏳ Uploading & Processing...<br><span style="color:#a5b4fc;">Please wait, large files take time.</span>';
+            // Transform UI for Progress Tracking
+            btnLabel.style.pointerEvents = 'none';
+            btnLabel.style.backgroundColor = '#312e81';
+            btnLabel.innerHTML = `
+                <div class="progress-container" id="prog-container" style="display: block;">
+                    <div class="progress-fill" id="prog-fill"></div>
+                </div>
+                <div class="status-text" id="stat-text" style="display: block;">Uploading: 0%</div>
+            `;
             errorBox.style.display = 'none';
 
             const formData = new FormData();
             formData.append('file', file);
 
-            try {
-                const response = await fetch('/convert', {
-                    method: 'POST',
-                    body: formData
-                });
+            // Use XMLHttpRequest instead of fetch for real progress events
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/convert', true);
+            xhr.responseType = 'blob';
 
-                if (response.ok) {
-                    // Success! Convert response to a blob and trigger download
-                    const blob = await response.blob();
+            // 1. Upload Progress Phase
+            xhr.upload.onprogress = function(e) {
+                if (e.lengthComputable) {
+                    const percentComplete = Math.round((e.loaded / e.total) * 100);
+                    document.getElementById('prog-fill').style.width = percentComplete + '%';
+                    document.getElementById('stat-text').innerText = 'Uploading: ' + percentComplete + '%';
+                    
+                    if (percentComplete >= 100) {
+                        // 2. Processing Phase (Server side parsing)
+                        document.getElementById('stat-text').innerHTML = 'Processing Document...<br><span style="font-size: 12px; font-weight: normal;">(This may take a minute for large files)</span>';
+                        document.getElementById('stat-text').classList.add('processing-pulse');
+                    }
+                }
+            };
+
+            // 3. Completion / Error Handling Phase
+            xhr.onload = function() {
+                // Hard reset the button UI
+                btnLabel.style.backgroundColor = '';
+                btnLabel.style.pointerEvents = 'auto';
+                btnLabel.innerHTML = originalHtml;
+                fileInput.value = '';
+
+                if (xhr.status === 200) {
+                    // Success Download
+                    const blob = xhr.response;
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.style.display = 'none';
@@ -99,21 +133,28 @@ FRONTEND_HTML = """
                     a.click();
                     window.URL.revokeObjectURL(url);
                 } else {
-                    // Server returned an error
-                    const errText = await response.text();
-                    errorBox.innerHTML = errText;
-                    errorBox.style.display = 'block';
+                    // Handle Server Error Returns
+                    const reader = new FileReader();
+                    reader.onload = function() {
+                        errorBox.innerHTML = "Server Error: " + reader.result;
+                        errorBox.style.display = 'block';
+                    };
+                    reader.readAsText(xhr.response);
                 }
-            } catch (err) {
-                // Network error
-                errorBox.innerHTML = "Network error occurred during upload. The file might be too large for the connection.";
-                errorBox.style.display = 'block';
-            }
+            };
 
-            // Restore UI back to normal
-            btnLabel.classList.remove('loading-state');
-            btnLabel.innerHTML = originalHtml;
-            fileInput.value = ''; // clear input so user can upload same file again if needed
+            // 4. Catastrophic Network Failure / Timeout
+            xhr.onerror = function() {
+                btnLabel.style.backgroundColor = '';
+                btnLabel.style.pointerEvents = 'auto';
+                btnLabel.innerHTML = originalHtml;
+                fileInput.value = '';
+                
+                errorBox.innerHTML = "🚨 Network or Server Timeout. If your file is massive, Render's free server may have killed the process before it could finish.";
+                errorBox.style.display = 'block';
+            };
+
+            xhr.send(formData);
         }
 
         async function handleBlank(event) {
@@ -121,7 +162,8 @@ FRONTEND_HTML = """
             const btn = document.getElementById('blank-btn');
             const originalHtml = btn.innerHTML;
             
-            btn.classList.add('loading-state');
+            btn.style.pointerEvents = 'none';
+            btn.style.opacity = '0.7';
             btn.innerHTML = '⏳ Generating...';
 
             try {
@@ -141,7 +183,8 @@ FRONTEND_HTML = """
                 console.error(e);
             }
 
-            btn.classList.remove('loading-state');
+            btn.style.pointerEvents = 'auto';
+            btn.style.opacity = '1';
             btn.innerHTML = originalHtml;
         }
     </script>
