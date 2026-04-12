@@ -1,7 +1,6 @@
 import os
 
 def get_template(total_pages):
-    # Find the absolute path to the main folder
     base_dir = os.path.dirname(os.path.abspath(__file__))
     
     try:
