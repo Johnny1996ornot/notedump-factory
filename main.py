@@ -13,7 +13,7 @@ app = Flask(__name__)
 # CRITICAL FIX FOR RENDER: Tell Flask to accept uploads up to 250 MB
 app.config['MAX_CONTENT_LENGTH'] = 250 * 1024 * 1024 
 
-# --- HTML FRONTEND (Restored with your Top Nav, Guide, and Loading States) ---
+# --- HTML FRONTEND ---
 FRONTEND_HTML = """
 <!DOCTYPE html>
 <html lang="en">
@@ -21,13 +21,13 @@ FRONTEND_HTML = """
     <meta charset="UTF-8">
     <title>NoteDump</title>
     <style>
-        body { background-color: #000000; color: white; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        body { background-color: #000000; color: white; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; position: relative; }
         
-        /* Nav & Header Restored */
-        .top-nav { display: flex; justify-content: flex-end; align-items: center; padding: 15px 25px; position: absolute; top: 0; right: 0; width: 100%; z-index: 999; gap: 12px; box-sizing: border-box;}
-        .guide-btn { color: #94a3b8; text-decoration: none; font-size: 16px; font-weight: bold; font-family: sans-serif; border: 1px solid #475569; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: #1e293b; transition: 0.2s; }
+        /* Nav & Header Restored and Forced to Top Right */
+        .top-nav { display: flex; justify-content: flex-end; align-items: center; padding: 20px 30px; position: absolute; top: 0; right: 0; width: 100%; z-index: 9999; gap: 12px; box-sizing: border-box; }
+        .guide-btn { color: #94a3b8; text-decoration: none; font-size: 16px; font-weight: bold; font-family: sans-serif; border: 1px solid #475569; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: #1e293b; transition: 0.2s; }
         .guide-btn:hover { color: white; border-color: #0ea5e9; transform: scale(1.1); background: #0ea5e9;}
-        .coffee-btn { color: #0ea5e9; text-decoration: none; font-weight: bold; font-size: 13px; border: 1px solid #0ea5e9; padding: 6px 14px; border-radius: 20px; transition: 0.2s; white-space: nowrap; }
+        .coffee-btn { color: #0ea5e9; text-decoration: none; font-weight: bold; font-size: 14px; border: 1px solid #0ea5e9; padding: 8px 16px; border-radius: 20px; transition: 0.2s; white-space: nowrap; background: transparent; }
         .coffee-btn:hover { background: rgba(14, 165, 233, 0.15); color: #fff; }
 
         /* Modal Restored */
@@ -41,6 +41,7 @@ FRONTEND_HTML = """
         .modal-content li { margin-bottom: 10px; line-height: 1.5; font-size: 15px; color: #cbd5e1;}
         .pro-tag { color: #10b981; font-weight: bold; } 
 
+        /* Main UI */
         .hero { text-align: center; margin-bottom: 30px; }
         .logo-text { font-size: 55px; font-weight: 800; color: #f8fafc; margin: 0;}
         .tagline { color: #94a3b8; font-size: 18px; margin-top: -5px;}
@@ -52,33 +53,96 @@ FRONTEND_HTML = """
 
         .blank-btn { background-color: #1e293b; border: 1px solid #334155; margin-top: 20px;}
         .blank-btn:hover { background-color: #334155; }
-        .error-message { color: #ef4444; background-color: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 6px; padding: 10px; margin-top: 20px; font-size: 14px; }
+        
+        .error-box { display: none; color: #ef4444; background-color: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 6px; padding: 10px; margin-top: 20px; font-size: 14px; }
 
-        /* New Loading Overlay */
-        #loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 100000; flex-direction: column; align-items: center; justify-content: center; color: white; text-align: center;}
-        .spinner { border: 6px solid #1e293b; border-top: 6px solid #4f46e5; border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite; margin-bottom: 20px; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* Animation for loading state */
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        .loading-state { animation: pulse 1.5s infinite; background-color: #312e81 !important; pointer-events: none; }
     </style>
     <script>
-        function handleUpload() {
-            // Show the loading screen when a file is selected
-            document.getElementById('loading-overlay').style.display = 'flex';
-            document.getElementById('convert-form').submit();
+        // Use Javascript fetch to upload without locking the screen
+        async function handleUpload(event) {
+            const fileInput = event.target;
+            if (!fileInput.files.length) return;
+
+            const file = fileInput.files[0];
+            const btnLabel = document.getElementById('upload-label');
+            const errorBox = document.getElementById('error-box');
+            
+            // Save original button HTML to restore later
+            const originalHtml = btnLabel.innerHTML;
+            
+            // Change button to loading state
+            btnLabel.classList.add('loading-state');
+            btnLabel.innerHTML = '⏳ Uploading & Processing...<br><span style="color:#a5b4fc;">Please wait, large files take time.</span>';
+            errorBox.style.display = 'none';
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/convert', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    // Success! Convert response to a blob and trigger download
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = `NoteDump_${file.name}.html`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    // Server returned an error
+                    const errText = await response.text();
+                    errorBox.innerHTML = errText;
+                    errorBox.style.display = 'block';
+                }
+            } catch (err) {
+                // Network error
+                errorBox.innerHTML = "Network error occurred during upload. The file might be too large for the connection.";
+                errorBox.style.display = 'block';
+            }
+
+            // Restore UI back to normal
+            btnLabel.classList.remove('loading-state');
+            btnLabel.innerHTML = originalHtml;
+            fileInput.value = ''; // clear input so user can upload same file again if needed
         }
 
-        function handleBlank(event) {
-            // Change button text and disable it to prevent multiple downloads
-            var btn = document.getElementById('blank-btn');
-            btn.innerHTML = '⏳ Generating...';
-            btn.style.pointerEvents = 'none';
-            btn.style.opacity = '0.7';
+        async function handleBlank(event) {
+            event.preventDefault();
+            const btn = document.getElementById('blank-btn');
+            const originalHtml = btn.innerHTML;
             
-            // Re-enable after 3 seconds
-            setTimeout(function() {
-                btn.innerHTML = '📓 Create Blank Notebook';
-                btn.style.pointerEvents = 'auto';
-                btn.style.opacity = '1';
-            }, 3000);
+            btn.classList.add('loading-state');
+            btn.innerHTML = '⏳ Generating...';
+
+            try {
+                const response = await fetch('/blank');
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = `NoteDump_Blank.html`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                }
+            } catch(e) {
+                console.error(e);
+            }
+
+            btn.classList.remove('loading-state');
+            btn.innerHTML = originalHtml;
         }
     </script>
 </head>
@@ -111,29 +175,23 @@ FRONTEND_HTML = """
         </div>
     </div>
 
-    <div id="loading-overlay">
-        <div class="spinner"></div>
-        <h2>Uploading & Processing...</h2>
-        <p style="color: #94a3b8; font-size: 14px;">This might take a minute depending on file size.</p>
-    </div>
-
     <div class="hero">
         <h1 class="logo-text">📝 NoteDump</h1>
         <p class="tagline">Turning your documents into an interactive notebook</p>
     </div>
+    
     <div class="upload-box">
-        <form id="convert-form" action="/convert" method="POST" enctype="multipart/form-data">
-            <input type="file" id="file" name="file" accept=".pdf,.pptx,.ppt" required style="display: none;" onchange="handleUpload();">
-            <label for="file" class="primary-btn">
-                📥 convert existing file<br>
-                <span>200 mb pdf pdx ppt</span>
-            </label>
-        </form>
+        <input type="file" id="file" accept=".pdf,.pptx,.ppt" style="display: none;" onchange="handleUpload(event);">
+        <label id="upload-label" for="file" class="primary-btn">
+            📥 convert existing file<br>
+            <span>200 mb pdf pdx ppt</span>
+        </label>
 
-        <form action="/blank" method="GET" onsubmit="handleBlank(event)">
-            <button type="submit" id="blank-btn" class="primary-btn blank-btn">📓 Create Blank Notebook</button>
-        </form>
+        <button id="blank-btn" class="primary-btn blank-btn" onclick="handleBlank(event)">📓 Create Blank Notebook</button>
+
+        <div id="error-box" class="error-box"></div>
     </div>
+
 </body>
 </html>
 """
@@ -164,11 +222,11 @@ def create_blank():
 @app.route("/convert", methods=["POST"])
 def convert_file():
     if 'file' not in request.files:
-        return '<div class="error-message">Error: No file part uploaded</div>', 400
+        return "Error: No file part uploaded", 400
     
     file = request.files['file']
     if file.filename == '':
-        return '<div class="error-message">Error: No selected file</div>', 400
+        return "Error: No selected file", 400
         
     file_name = file.filename.lower()
     file_bytes = file.read()
@@ -302,57 +360,4 @@ def convert_file():
 
                                 line_html += f"<span style='{fs_style}'>{txt}</span>"
 
-                            if not line_html.strip(): text_html += "<br>"
-                            else: text_html += f"<div>{line_html}</div>"
-
-                        html_content += f'''
-                        <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; min-height:{height}px; z-index:20; transform: translate(0px, 0px);">
-                            <div class="content-area" style="word-wrap: break-word; white-space: pre-wrap; overflow-wrap: break-word; font-family: sans-serif;">{text_html}</div>
-                        </div>'''
-
-                    elif b["type"] == 1: 
-                        img_bytes = b.get("image")
-                        if img_bytes:
-                            base64_img = base64.b64encode(img_bytes).decode()
-                            html_content += f'''
-                            <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; height:{height}px; z-index:10; transform: translate(0px, 0px);">
-                                <img src="data:image/png;base64,{base64_img}" style="width:100%; height:100%; object-fit:contain;">
-                            </div>'''
-
-                slides += html_content
-                slides += '</div>'
-
-        dimension_script = f"""
-        <script>
-            document.addEventListener("DOMContentLoaded", function() {{
-                var cvs = document.getElementById('canvas');
-                if(cvs) {{
-                    cvs.style.width = '{base_w}px';
-                    cvs.setAttribute('data-width', '{base_w}');
-                    var wInput = document.getElementById('canvas-w-cm');
-                    var hInput = document.getElementById('canvas-h-cm');
-                    if(wInput) wInput.value = (Math.round(({base_w} / 37.795) * 10) / 10).toFixed(1);
-                    if(hInput) hInput.value = (Math.round((parseInt(cvs.style.height) / 37.795) * 10) / 10).toFixed(1);
-                }}
-            }});
-        </script>
-        """
-
-        final_html = get_template(total_pages)\
-            .replace("{{NAV_LINKS}}", nav)\
-            .replace("{{SLIDE_CONTENT}}", dimension_script + slides)\
-            .replace("{{VISIBLE_TITLE}}", html.escape(file.filename))\
-            .replace("{{STORAGE_ID}}", html.escape(unique_storage_id))
-            
-        return send_file(
-            BytesIO(final_html.encode('utf-8')),
-            mimetype="text/html",
-            as_attachment=True,
-            download_name=f"NoteDump_{file.filename}.html"
-        )
-
-    except Exception as e:
-        return f'<div class="error-message">Error processing file: {html.escape(str(e))}</div>', 500
-
-if __name__ == "__main__":
-    app.run(debug=True)
+                            if not line_html.
