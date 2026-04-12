@@ -360,4 +360,57 @@ def convert_file():
 
                                 line_html += f"<span style='{fs_style}'>{txt}</span>"
 
-                            if not line_html.
+                            if not line_html.strip(): text_html += "<br>"
+                            else: text_html += f"<div>{line_html}</div>"
+
+                        html_content += f'''
+                        <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; min-height:{height}px; z-index:20; transform: translate(0px, 0px);">
+                            <div class="content-area" style="word-wrap: break-word; white-space: pre-wrap; overflow-wrap: break-word; font-family: sans-serif;">{text_html}</div>
+                        </div>'''
+
+                    elif b["type"] == 1: 
+                        img_bytes = b.get("image")
+                        if img_bytes:
+                            base64_img = base64.b64encode(img_bytes).decode()
+                            html_content += f'''
+                            <div class="canvas-box" style="top:{top}px; left:{left}px; width:{width}px; height:{height}px; z-index:10; transform: translate(0px, 0px);">
+                                <img src="data:image/png;base64,{base64_img}" style="width:100%; height:100%; object-fit:contain;">
+                            </div>'''
+
+                slides += html_content
+                slides += '</div>'
+
+        dimension_script = f"""
+        <script>
+            document.addEventListener("DOMContentLoaded", function() {{
+                var cvs = document.getElementById('canvas');
+                if(cvs) {{
+                    cvs.style.width = '{base_w}px';
+                    cvs.setAttribute('data-width', '{base_w}');
+                    var wInput = document.getElementById('canvas-w-cm');
+                    var hInput = document.getElementById('canvas-h-cm');
+                    if(wInput) wInput.value = (Math.round(({base_w} / 37.795) * 10) / 10).toFixed(1);
+                    if(hInput) hInput.value = (Math.round((parseInt(cvs.style.height) / 37.795) * 10) / 10).toFixed(1);
+                }}
+            }});
+        </script>
+        """
+
+        final_html = get_template(total_pages)\
+            .replace("{{NAV_LINKS}}", nav)\
+            .replace("{{SLIDE_CONTENT}}", dimension_script + slides)\
+            .replace("{{VISIBLE_TITLE}}", html.escape(file.filename))\
+            .replace("{{STORAGE_ID}}", html.escape(unique_storage_id))
+            
+        return send_file(
+            BytesIO(final_html.encode('utf-8')),
+            mimetype="text/html",
+            as_attachment=True,
+            download_name=f"NoteDump_{file.filename}.html"
+        )
+
+    except Exception as e:
+        return f"Error processing file: {html.escape(str(e))}", 500
+
+if __name__ == "__main__":
+    app.run(debug=True)
