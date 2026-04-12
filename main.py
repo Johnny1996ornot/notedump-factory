@@ -13,7 +13,7 @@ app = Flask(__name__)
 # CRITICAL FIX FOR RENDER: Tell Flask to accept uploads up to 250 MB
 app.config['MAX_CONTENT_LENGTH'] = 250 * 1024 * 1024 
 
-# --- HTML FRONTEND (Mimics your old NoteDump UI) ---
+# --- HTML FRONTEND ---
 FRONTEND_HTML = """
 <!DOCTYPE html>
 <html lang="en">
@@ -27,7 +27,6 @@ FRONTEND_HTML = """
         .tagline { color: #94a3b8; font-size: 18px; margin-top: -5px;}
         .upload-box { background-color: #0f172a; border: 1px dashed #334155; border-radius: 12px; padding: 40px; text-align: center; width: 450px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         
-        /* New prominent button style to replace everything in the form */
         .primary-btn { 
             display: inline-block;
             background-color: #4f46e5; 
@@ -49,7 +48,6 @@ FRONTEND_HTML = """
         .blank-btn { background-color: #1e293b; border: 1px solid #334155; margin-top: 20px;}
         .blank-btn:hover { background-color: #334155; }
         
-        /* Error message style */
         .error-message { color: #ef4444; background-color: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 6px; padding: 10px; margin-top: 20px; font-size: 14px; }
     </style>
 </head>
