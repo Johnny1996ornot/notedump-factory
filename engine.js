@@ -124,6 +124,31 @@ function format(command, value = null) {
 
 function applyFontSize(size) {
     saveHistory(); 
+
+    // OVERRIDE: If table cells are explicitly selected, loop through them and natively highlight/format
+    let $cells = $('.selected-cell');
+    if ($cells.length > 0) {
+        $cells.each(function() {
+            let range = document.createRange();
+            range.selectNodeContents(this);
+            let sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+            
+            document.execCommand("fontSize", false, "7");
+            let fontElements = this.getElementsByTagName("font");
+            for (let i = 0, len = fontElements.length; i < len; ++i) {
+                if (fontElements[i].size == "7") {
+                    fontElements[i].removeAttribute("size");
+                    fontElements[i].style.fontSize = size + "px";
+                    $(fontElements[i]).find('*').css('font-size', '');
+                }
+            }
+        });
+        window.getSelection().removeAllRanges();
+        return;
+    }
+
     restoreSelection();
     document.execCommand("fontSize", false, "7");
     let fontElements = document.getElementsByTagName("font");
@@ -319,7 +344,7 @@ async function restoreFromBrowser() {
             $('#nav-list-container').html(savedNav);
             if (savedTitle) {
                 $('#lecture-title').text(savedTitle);
-                document.title = savedTitle; // Restore live title on load
+                document.title = savedTitle; 
             }
             if (savedWidth) {
                 $('#canvas').attr('data-width', savedWidth);
@@ -412,7 +437,6 @@ function saveNotebookToFile() {
     let documentClone = document.documentElement.cloneNode(true);
     let $clone = $(documentClone);
 
-    // FIX: Update the actual <title> tag inside the HTML file before downloading
     let title = $('#lecture-title').text().trim() || "NoteDump_Saved";
     $clone.find('title').text(title);
 
@@ -445,8 +469,6 @@ function saveReadOnlyNotebook() {
 
     let currentTitle = $('#lecture-title').text().trim() || "NoteDump_Saved";
     $clone.find('#lecture-title').text(currentTitle + " (Read Only)");
-    
-    // FIX: Update the actual <title> tag inside the HTML file before downloading
     $clone.find('title').text(currentTitle + " - Read Only");
 
     let fullHtml = "<!DOCTYPE html>\n" + documentClone.outerHTML;
@@ -1107,9 +1129,7 @@ function updateContextMenu() {
             $('.menu-table-tools').css('display', 'flex');
             $('.menu-img-tools').hide(); 
             $('.menu-text-tools').css('display', 'flex'); 
-            $('.menu-text-tools span').html('Text<br>Color');
             $('.menu-bg-tools').css('display', 'flex'); 
-            $('.menu-bg-tools span').html('Background<br>Color');
         } else if (hasImage) {
             $('.menu-table-tools').hide();
             $('.menu-text-tools').hide(); 
@@ -1119,16 +1139,21 @@ function updateContextMenu() {
             $('.menu-table-tools').hide();
             $('.menu-img-tools').hide();
             $('.menu-text-tools').css('display', 'flex'); 
-            $('.menu-text-tools span').html('Player<br>BG');
             $('.menu-bg-tools').css('display', 'flex'); 
-            $('.menu-bg-tools span').html('Button<br>Color');
         } else {
             $('.menu-table-tools').hide();
             $('.menu-img-tools').hide();
             $('.menu-text-tools').css('display', 'flex'); 
-            $('.menu-text-tools span').html('Text<br>Color');
             $('.menu-bg-tools').css('display', 'flex'); 
-            $('.menu-bg-tools span').html('Background<br>Color');
+        }
+
+        // --- FIX: Safely rename only the color labels, without destroying dropdown text ---
+        if (hasAudio && $activeCell.length === 0) {
+            $('.menu-text-tools').find('.color-swatch').first().parent().prev('div').html('<span>Player<br>BG</span>');
+            $('.menu-bg-tools').find('.color-swatch').first().parent().prev('div').html('<span>Button<br>Color</span>');
+        } else {
+            $('.menu-text-tools').find('.color-swatch').first().parent().prev('div').html('<span>Text<br>Color</span>');
+            $('.menu-bg-tools').find('.color-swatch').first().parent().prev('div').html('<span>Background<br>Color</span>');
         }
 
         let currentOp = 1;
@@ -1355,132 +1380,152 @@ function selectTableCol() {
     updateContextMenu();
 }
 
-function addTableRow() {
-    saveHistory();
-    let $cell = $('.selected-cell').first();
-    if($cell.length === 0) return showToast("Click a cell first!");
-    let $row = $cell.closest('tr');
-    let cols = $row.children('td, th').length;
-    let newTr = `<tr>`;
-    for(let i=0; i<cols; i++) newTr += `<td style="border: 1px solid #cbd5e1; padding: 4px 6px; word-break: break-word; white-space: pre-wrap; vertical-align: top; overflow:hidden;"><br></td>`;
-    newTr += `</tr>`;
-    $row.after(newTr);
-    equalizeTable();
+// --- FIX: Add Debouncer to prevent double-firing from inline HTML onClick attributes ---
+let tableActionLock = false;
+function executeTableAction(actionFn) {
+    if (tableActionLock) return;
+    tableActionLock = true;
+    setTimeout(() => { tableActionLock = false; }, 100);
+    actionFn();
 }
 
-function addTableCol() {
-    saveHistory();
-    let $cell = $('.selected-cell').first();
-    if($cell.length === 0) return showToast("Click a cell first!");
-    let idx = $cell[0].cellIndex;
-    let $table = $cell.closest('table');
-    $table.find('tr').each(function() {
-        $(this).children().eq(idx).after(`<td style="border: 1px solid #cbd5e1; padding: 4px 6px; word-break: break-word; white-space: pre-wrap; vertical-align: top; overflow:hidden;"><br></td>`);
+window.addTableRow = function() {
+    executeTableAction(() => {
+        saveHistory();
+        let $cell = $('.selected-cell').first();
+        if($cell.length === 0) return showToast("Click a cell first!");
+        let $row = $cell.closest('tr');
+        let cols = $row.children('td, th').length;
+        let newTr = `<tr>`;
+        for(let i=0; i<cols; i++) newTr += `<td style="border: 1px solid #cbd5e1; padding: 4px 6px; word-break: break-word; white-space: pre-wrap; vertical-align: top; overflow:hidden;"><br></td>`;
+        newTr += `</tr>`;
+        $row.after(newTr);
+        equalizeTable();
     });
-    equalizeTable();
-}
+};
 
-function delTableRow() {
-    saveHistory();
-    let $cell = $('.selected-cell').first();
-    if($cell.length === 0) return showToast("Click a cell first!");
-    $cell.closest('tr').remove();
-    equalizeTable();
-    updateContextMenu();
-}
-
-function delTableCol() {
-    saveHistory();
-    let $cell = $('.selected-cell').first();
-    if($cell.length === 0) return showToast("Click a cell first!");
-    let idx = $cell[0].cellIndex;
-    let $table = $cell.closest('table');
-    $table.find('col').eq(idx).remove();
-    $table.find('tr').each(function() {
-        $(this).children().eq(idx).remove();
-    });
-    equalizeTable();
-    updateContextMenu();
-}
-
-function equalizeTable() {
-    saveHistory();
-    let $box = $('.selected-box').first();
-    let $table = $box.find('table');
-    if($table.length === 0) return;
-
-    let maxCols = 0;
-    let numRows = $table.find('tr').length;
-
-    $table.find('tr').each(function() {
-        let cols = 0;
-        $(this).children('td, th').each(function() {
-            cols += parseInt($(this).attr('colspan')) || 1;
+window.addTableCol = function() {
+    executeTableAction(() => {
+        saveHistory();
+        let $cell = $('.selected-cell').first();
+        if($cell.length === 0) return showToast("Click a cell first!");
+        let idx = $cell[0].cellIndex;
+        let $table = $cell.closest('table');
+        $table.find('tr').each(function() {
+            $(this).children().eq(idx).after(`<td style="border: 1px solid #cbd5e1; padding: 4px 6px; word-break: break-word; white-space: pre-wrap; vertical-align: top; overflow:hidden;"><br></td>`);
         });
-        if(cols > maxCols) maxCols = cols;
+        equalizeTable();
     });
+};
 
-    if (maxCols === 0 || numRows === 0) return;
-
-    let percW = (100 / maxCols).toFixed(4) + '%';
-
-    $table.removeAttr('style').css({
-        'table-layout': 'fixed', 'width': '100%', 'height': '100%',
-        'border-collapse': 'collapse', 'font-size': '12px', 'margin': '0', 'padding': '0'
+window.delTableRow = function() {
+    executeTableAction(() => {
+        saveHistory();
+        let $cell = $('.selected-cell').first();
+        if($cell.length === 0) return showToast("Click a cell first!");
+        $cell.closest('tr').remove();
+        equalizeTable();
+        updateContextMenu();
     });
+};
 
-    let colgroupHtml = "";
-    for(let c=0; c<maxCols; c++) colgroupHtml += `<col style="width:${percW};">`;
-
-    $table.find('colgroup').remove();
-    $table.prepend(`<colgroup>${colgroupHtml}</colgroup>`);
-
-    $table.find('td, th').each(function() {
-        $(this).css({
-            'border': '1px solid #cbd5e1', 'padding': '4px 6px',
-            'word-break': 'break-word', 'white-space': 'pre-wrap', 'vertical-align': 'top',
-            'overflow': 'hidden', 'position': 'relative'
+window.delTableCol = function() {
+    executeTableAction(() => {
+        saveHistory();
+        let $cell = $('.selected-cell').first();
+        if($cell.length === 0) return showToast("Click a cell first!");
+        let idx = $cell[0].cellIndex;
+        let $table = $cell.closest('table');
+        $table.find('col').eq(idx).remove();
+        $table.find('tr').each(function() {
+            $(this).children().eq(idx).remove();
         });
+        equalizeTable();
+        updateContextMenu();
     });
+};
 
-    showToast("Table dimensions updated & equalized!");
-}
+window.equalizeTable = function() {
+    executeTableAction(() => {
+        saveHistory();
+        let $box = $('.selected-box').first();
+        let $table = $box.find('table');
+        if($table.length === 0) return;
 
-function mergeTableCells() {
-    saveHistory();
-    let $cells = $('.selected-cell');
-    if($cells.length < 2) return showToast("Select at least 2 cells to merge (Drag to select cells)");
+        let maxCols = 0;
+        let numRows = $table.find('tr').length;
 
-    let $table = $cells.first().closest('table');
-    let minR = 9999, maxR = -1, minC = 9999, maxC = -1;
+        $table.find('tr').each(function() {
+            let cols = 0;
+            $(this).children('td, th').each(function() {
+                cols += parseInt($(this).attr('colspan')) || 1;
+            });
+            if(cols > maxCols) maxCols = cols;
+        });
 
-    $cells.each(function() {
-        let r = $(this).closest('tr')[0].rowIndex;
-        let c = $(this)[0].cellIndex;
-        let rSpan = parseInt($(this).attr('rowspan')) || 1;
-        let cSpan = parseInt($(this).attr('colspan')) || 1;
-        if(r < minR) minR = r;
-        if(r + rSpan - 1 > maxR) maxR = r + rSpan - 1;
-        if(c < minC) minC = c;
-        if(c + cSpan - 1 > maxC) maxC = c + cSpan - 1;
+        if (maxCols === 0 || numRows === 0) return;
+
+        let percW = (100 / maxCols).toFixed(4) + '%';
+
+        $table.removeAttr('style').css({
+            'table-layout': 'fixed', 'width': '100%', 'height': '100%',
+            'border-collapse': 'collapse', 'font-size': '12px', 'margin': '0', 'padding': '0'
+        });
+
+        let colgroupHtml = "";
+        for(let c=0; c<maxCols; c++) colgroupHtml += `<col style="width:${percW};">`;
+
+        $table.find('colgroup').remove();
+        $table.prepend(`<colgroup>${colgroupHtml}</colgroup>`);
+
+        $table.find('td, th').each(function() {
+            $(this).css({
+                'border': '1px solid #cbd5e1', 'padding': '4px 6px',
+                'word-break': 'break-word', 'white-space': 'pre-wrap', 'vertical-align': 'top',
+                'overflow': 'hidden', 'position': 'relative'
+            });
+        });
+        showToast("Table dimensions updated & equalized!");
     });
+};
 
-    let targetRspan = maxR - minR + 1;
-    let targetCspan = maxC - minC + 1;
-    let $targetCell = $table.find('tr').eq(minR).children().eq(minC);
+window.mergeTableCells = function() {
+    executeTableAction(() => {
+        saveHistory();
+        let $cells = $('.selected-cell');
+        if($cells.length < 2) return showToast("Select at least 2 cells to merge (Drag to select cells)");
 
-    let combinedHtml = "";
-    $cells.each(function() {
-        let html = $(this).html();
-        if(html && html !== "<br>") combinedHtml += "<div>" + html + "</div>";
-        if($(this)[0] !== $targetCell[0]) $(this).remove();
+        let $table = $cells.first().closest('table');
+        let minR = 9999, maxR = -1, minC = 9999, maxC = -1;
+
+        $cells.each(function() {
+            let r = $(this).closest('tr')[0].rowIndex;
+            let c = $(this)[0].cellIndex;
+            let rSpan = parseInt($(this).attr('rowspan')) || 1;
+            let cSpan = parseInt($(this).attr('colspan')) || 1;
+            if(r < minR) minR = r;
+            if(r + rSpan - 1 > maxR) maxR = r + rSpan - 1;
+            if(c < minC) minC = c;
+            if(c + cSpan - 1 > maxC) maxC = c + cSpan - 1;
+        });
+
+        let targetRspan = maxR - minR + 1;
+        let targetCspan = maxC - minC + 1;
+        let $targetCell = $table.find('tr').eq(minR).children().eq(minC);
+
+        let combinedHtml = "";
+        $cells.each(function() {
+            let html = $(this).html();
+            if(html && html !== "<br>") combinedHtml += "<div>" + html + "</div>";
+            if($(this)[0] !== $targetCell[0]) $(this).remove();
+        });
+
+        $targetCell.attr('rowspan', targetRspan).attr('colspan', targetCspan).html(combinedHtml || "");
+        $cells.removeClass('selected-cell');
+        $targetCell.addClass('selected-cell');
+        showToast("Cells merged!");
     });
-
-    $targetCell.attr('rowspan', targetRspan).attr('colspan', targetCspan).html(combinedHtml || "");
-    $cells.removeClass('selected-cell');
-    $targetCell.addClass('selected-cell');
-    showToast("Cells merged!");
-}
+};
 
 function addImgCenter() { 
     let i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; 
@@ -2338,7 +2383,6 @@ function processCustomPaste(pastedText) {
 
 $(document).ready(async function() {
     
-    // --- NEW: Live Title Update Listener ---
     let $lectureTitle = $('#lecture-title');
     if ($lectureTitle.length) {
         $lectureTitle.on('input', function() {
@@ -2353,41 +2397,26 @@ $(document).ready(async function() {
         if(!$(this).is('select') && !$(this).is('input')) e.preventDefault(); 
     });
 
-    // --- UPDATED: Text Formatting Interceptor ---
+    // --- OVERRIDE: Cell Text Formatting Interceptor ---
     $(document).on('click', '.ctx-btn[data-cmd]', function(e) {
         e.preventDefault();
         let cmd = $(this).attr('data-cmd');
         let $cells = $('.selected-cell');
 
-        // Check if we are formatting table cells instead of highlighted text
         if ($cells.length > 0) {
-            if (cmd === 'bold') {
-                let isBold = $cells.first().css('font-weight') === '700' || $cells.first().css('font-weight') === 'bold';
-                $cells.css('font-weight', isBold ? 'normal' : 'bold');
-                $cells.find('*').css('font-weight', isBold ? 'normal' : 'bold');
-            } else if (cmd === 'italic') {
-                let isItalic = $cells.first().css('font-style') === 'italic';
-                $cells.css('font-style', isItalic ? 'normal' : 'italic');
-                $cells.find('*').css('font-style', isItalic ? 'normal' : 'italic');
-            } else if (cmd === 'underline') {
-                let isUnderlined = $cells.first().css('text-decoration').includes('underline');
-                $cells.css('text-decoration', isUnderlined ? 'none' : 'underline');
-                $cells.find('*').css('text-decoration', isUnderlined ? 'none' : 'underline');
-            } else if (cmd === 'justifyLeft') {
-                $cells.css('text-align', 'left');
-                $cells.find('*').css('text-align', 'left');
-            } else if (cmd === 'justifyCenter') {
-                $cells.css('text-align', 'center');
-                $cells.find('*').css('text-align', 'center');
-            } else if (cmd === 'justifyRight') {
-                $cells.css('text-align', 'right');
-                $cells.find('*').css('text-align', 'right');
-            }
+            $cells.each(function() {
+                let range = document.createRange();
+                range.selectNodeContents(this);
+                let sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
+                document.execCommand(cmd, false, null);
+            });
+            window.getSelection().removeAllRanges();
             saveHistory();
-            return; // Skip normal execCommand
+            return; 
         }
 
-        // Fallback to normal text editing
         document.execCommand(cmd, false, null);
         saveHistory();
     });
@@ -2395,9 +2424,17 @@ $(document).ready(async function() {
     $(document).on('change', 'select[data-cmd="fontName"]', function() {
         let val = $(this).val();
         let $cells = $('.selected-cell');
+        
         if ($cells.length > 0) {
-            $cells.css('font-family', val);
-            $cells.find('*').css('font-family', val);
+            $cells.each(function() {
+                let range = document.createRange();
+                range.selectNodeContents(this);
+                let sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
+                document.execCommand('fontName', false, val);
+            });
+            window.getSelection().removeAllRanges();
             saveHistory();
             return;
         }
@@ -2406,14 +2443,6 @@ $(document).ready(async function() {
     });
 
     $(document).on('change', 'select[data-cmd="fontSize"]', function() {
-        let val = $(this).val() + 'px';
-        let $cells = $('.selected-cell');
-        if ($cells.length > 0) {
-            $cells.css('font-size', val);
-            $cells.find('*').css('font-size', val);
-            saveHistory();
-            return;
-        }
         applyFontSize($(this).val());
     });
 
@@ -2427,19 +2456,84 @@ $(document).ready(async function() {
     $(document).on('input', '#transparency-slider', function() { liveUpdateOpacity($(this).val()); });
     $(document).on('change', '#transparency-slider', function() { commitOpacity(); });
 
-    $(document).on('click', '.menu-table-tools button, .menu-table-tools .ctx-btn', function(e) {
-        e.preventDefault();
-        let txt = $(this).text().replace(/\s+/g, '').toUpperCase();
-        let html = $(this).html();
+    let colorHtml = "";
+    COLORS.forEach(c => { colorHtml += `<div class="color-swatch" style="background:${c};" data-color="${c}" onmousedown="event.preventDefault();"></div>`; });
 
-        if (txt.includes('ROW') && !txt.includes('+') && !txt.includes('-')) selectTableRow();
-        else if (txt.includes('COL') && !txt.includes('+') && !txt.includes('-')) selectTableCol();
-        else if (txt.includes('=+R') || txt === '+R' || html.includes('fa-plus')) addTableRow();
-        else if (txt.includes('||+C') || txt === '+C') addTableCol();
-        else if (txt.includes('-R') || html.includes('fa-trash')) delTableRow();
-        else if (txt.includes('-C')) delTableCol();
-        else if (txt === '=' || html.includes('fa-equals')) equalizeTable();
-        else if (html.includes('fa-compress')) mergeTableCells();
+    $('#text-color-grid, #bg-color-grid').html(colorHtml);
+    $('.menu-text-tools > div').each(function() {
+        if ($(this).text().includes('Color')) $(this).next('div').html(colorHtml);
+    });
+    $('.menu-bg-tools > div').each(function() {
+        if ($(this).text().includes('Color')) $(this).next('div').html(colorHtml);
+    });
+
+    // --- OVERRIDE: Cell Text Color Interceptor ---
+    $(document).on('click', '.menu-text-tools .color-swatch', function(e) { 
+        e.preventDefault();
+        let hex = $(this).attr('data-color');
+        let $cells = $('.selected-cell');
+
+        let $box = $('.selected-box');
+        let $audio = $box.find('.custom-audio-player');
+
+        if ($audio.length > 0) {
+            let r = parseInt(hex.slice(1, 3), 16);
+            let g = parseInt(hex.slice(3, 5), 16);
+            let b = parseInt(hex.slice(5, 7), 16);
+            let currentOp = $('#transparency-slider').val() || 1;
+            $audio.css('background-color', `rgba(${r},${g},${b},${currentOp})`);
+            $box.attr('data-player-bg', `${r},${g},${b}`);
+            saveHistory();
+            return;
+        }
+
+        if ($cells.length > 0) {
+            $cells.each(function() {
+                let range = document.createRange();
+                range.selectNodeContents(this);
+                let sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
+                document.execCommand('styleWithCSS', false, true);
+                document.execCommand('foreColor', false, hex);
+            });
+            window.getSelection().removeAllRanges();
+            saveHistory();
+            return;
+        }
+
+        restoreSelection();
+        document.execCommand('styleWithCSS', false, true);
+        document.execCommand('foreColor', false, hex);
+        saveHistory();
+    });
+
+    $(document).on('click', '.menu-bg-tools .color-swatch', function(e) { 
+        e.preventDefault();
+        let hex = $(this).attr('data-color');
+        let r = parseInt(hex.slice(1, 3), 16);
+        let g = parseInt(hex.slice(3, 5), 16);
+        let b = parseInt(hex.slice(5, 7), 16);
+
+        let currentOp = $('#transparency-slider').val() || 1;
+        if (currentOp == 0) { currentOp = 1; $('#transparency-slider').val(1); }
+
+        saveHistory();
+        let $cells = $('.selected-cell');
+        if ($cells.length > 0) {
+            $cells.attr('data-bg-rgb', `${r},${g},${b}`);
+            $cells.css('background-color', `rgba(${r},${g},${b},${currentOp})`);
+        } else {
+            let $box = $('.selected-box');
+            let $audio = $box.find('.custom-audio-player');
+            if ($audio.length > 0) {
+                $audio.find('.audio-play-btn, .audio-progress').css('background-color', `rgba(${r},${g},${b},${currentOp})`);
+                $box.attr('data-bg-rgb', `${r},${g},${b}`); 
+            } else {
+                $box.attr('data-bg-rgb', `${r},${g},${b}`);
+                changeBoxStyle('background-color', `rgba(${r},${g},${b},${currentOp})`);
+            }
+        }
     });
 
     interact('.fa-arrows-alt, .drag-handle-btn, .menu-text-tools button:first-child').draggable({
@@ -2462,7 +2556,6 @@ $(document).ready(async function() {
         }
     });
 
-    // Handle Eraser swiping
     $(document).on('mousemove touchmove', '.drawn-path', function(e) {
         if (isEraserMode && (e.buttons === 1 || e.type === 'touchmove')) {
             saveHistory();
@@ -2547,7 +2640,6 @@ $(document).ready(async function() {
         if ($(e.target).closest('.canvas-box').length > 0) {
             let $box = $(e.target).closest('.canvas-box');
             
-            // Only clear table selection if we didn't just click inside a table
             if ($(e.target).closest('table').length === 0) {
                 $('.canvas-box table td, .canvas-box table th').removeClass('selected-cell');
             }
@@ -2804,9 +2896,6 @@ $(document).ready(async function() {
         }
     });
 
-    // ==========================================================================
-    // SPREADSHEET MANAGER (Replaces old buggy table logic)
-    // ==========================================================================
     let tblMgr = { 
         active: false, isRow: false, isCol: false, 
         start: 0, $c1: null, $c2: null, $row: null, 
@@ -2855,7 +2944,6 @@ $(document).ready(async function() {
         }
     });
 
-    // --- NEW SMART CELL SELECTION LOGIC ---
     let tblDrag = {
         active: false,
         startX: 0, startY: 0,
@@ -2867,7 +2955,6 @@ $(document).ready(async function() {
     $(document).on('mousedown', '.canvas-box table td, .canvas-box table th', function(e) {
         if (!isEditing) return;
         
-        // Let the resizing module handle it if we clicked an edge
         if ($(this).hasClass('res-c') || $(this).hasClass('res-r')) {
             let $t = $(this).closest('table');
             if ($(this).hasClass('res-c')) {
@@ -2892,7 +2979,6 @@ $(document).ready(async function() {
             }
         }
 
-        // Setup for smart cell dragging
         tblDrag.startX = e.clientX;
         tblDrag.startY = e.clientY;
         tblDrag.startCell = this;
@@ -2908,7 +2994,6 @@ $(document).ready(async function() {
     });
 
     $(document).on('mousemove', function(e) {
-        // Handle Edge Resizing
         if (tblMgr.active) {
             if (tblMgr.isCol) {
                 let dx = ((e.clientX - tblMgr.start) / tblMgr.tW) * 100;
@@ -2925,14 +3010,11 @@ $(document).ready(async function() {
             return;
         }
 
-        // Handle Smart Dragging over cells
         if (isEditing && tblDrag.startCell) {
             if (!tblDrag.active) {
-                // Wait until they drag 5 pixels before blocking text editing
                 let dist = Math.hypot(e.clientX - tblDrag.startX, e.clientY - tblDrag.startY);
                 if (dist > 5) {
                     tblDrag.active = true;
-                    // KILL text bleeding
                     tblDrag.$contentArea.attr('contenteditable', 'false');
                     if (window.getSelection) window.getSelection().removeAllRanges();
                 }
@@ -2976,7 +3058,6 @@ $(document).ready(async function() {
 
         if (tblDrag.startCell) {
             if (tblDrag.active) {
-                // Restore text editing abilities after you let go of the mouse
                 tblDrag.$contentArea.attr('contenteditable', 'true');
             }
             tblDrag.startCell = null;
@@ -2984,83 +3065,6 @@ $(document).ready(async function() {
             tblDrag.$table = null;
             tblDrag.$contentArea = null;
             updateContextMenu();
-        }
-    });
-
-    // --- END SMART CELL LOGIC ---
-
-
-    let colorHtml = "";
-    COLORS.forEach(c => { colorHtml += `<div class="color-swatch" style="background:${c};" data-color="${c}" onmousedown="event.preventDefault();"></div>`; });
-
-    $('#text-color-grid, #bg-color-grid').html(colorHtml);
-    $('.menu-text-tools > div').each(function() {
-        if ($(this).text().includes('Color')) $(this).next('div').html(colorHtml);
-    });
-    $('.menu-bg-tools > div').each(function() {
-        if ($(this).text().includes('Color')) $(this).next('div').html(colorHtml);
-    });
-
-    // --- UPDATED: Text Color Interceptor ---
-    $(document).on('click', '.menu-text-tools .color-swatch', function(e) { 
-        e.preventDefault();
-        let hex = $(this).attr('data-color');
-
-        let $box = $('.selected-box');
-        let $audio = $box.find('.custom-audio-player');
-
-        if ($audio.length > 0) {
-            let r = parseInt(hex.slice(1, 3), 16);
-            let g = parseInt(hex.slice(3, 5), 16);
-            let b = parseInt(hex.slice(5, 7), 16);
-            let currentOp = $('#transparency-slider').val() || 1;
-            $audio.css('background-color', `rgba(${r},${g},${b},${currentOp})`);
-            $box.attr('data-player-bg', `${r},${g},${b}`);
-            saveHistory();
-            return;
-        }
-
-        // Apply direct to cells if we are formatting a table
-        let $cells = $('.selected-cell');
-        if ($cells.length > 0) {
-            $cells.css('color', hex);
-            $cells.find('*').css('color', hex); // Target any inner divs
-            saveHistory();
-            return;
-        }
-
-        // Fallback to normal text editing
-        restoreSelection();
-        document.execCommand('styleWithCSS', false, true);
-        document.execCommand('foreColor', false, hex);
-        saveHistory();
-    });
-
-    $(document).on('click', '.menu-bg-tools .color-swatch', function(e) { 
-        e.preventDefault();
-        let hex = $(this).attr('data-color');
-        let r = parseInt(hex.slice(1, 3), 16);
-        let g = parseInt(hex.slice(3, 5), 16);
-        let b = parseInt(hex.slice(5, 7), 16);
-
-        let currentOp = $('#transparency-slider').val() || 1;
-        if (currentOp == 0) { currentOp = 1; $('#transparency-slider').val(1); }
-
-        saveHistory();
-        let $cells = $('.selected-cell');
-        if ($cells.length > 0) {
-            $cells.attr('data-bg-rgb', `${r},${g},${b}`);
-            $cells.css('background-color', `rgba(${r},${g},${b},${currentOp})`);
-        } else {
-            let $box = $('.selected-box');
-            let $audio = $box.find('.custom-audio-player');
-            if ($audio.length > 0) {
-                $audio.find('.audio-play-btn, .audio-progress').css('background-color', `rgba(${r},${g},${b},${currentOp})`);
-                $box.attr('data-bg-rgb', `${r},${g},${b}`); 
-            } else {
-                $box.attr('data-bg-rgb', `${r},${g},${b}`);
-                changeBoxStyle('background-color', `rgba(${r},${g},${b},${currentOp})`);
-            }
         }
     });
 
