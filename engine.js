@@ -29,7 +29,8 @@ let lastMouseY = 150;
 
 let activePinTabIdx = 0; 
 let isDraggingTable = false;
-let tableDragStartCell = null; // Excel spreadsheet drag state
+let tableDragStartCell = null; 
+let $activeTableContentArea = null; 
 
 let isPlacingText = false;
 let isPlacingSticky = false;
@@ -2215,7 +2216,7 @@ function toggleEdit() {
             }
         }).draggable({ 
             modifiers: [],
-            ignoreFrom: '.audio-play-btn, .audio-track, .audio-skip-btn, .audio-speed-btn, .is-editing-text, .content-area, td, th, .pin, .pin-rotation-ring, .pin-rotate-dot, .del-btn',
+            ignoreFrom: '.col-resizer, .audio-play-btn, .audio-track, .audio-skip-btn, .audio-speed-btn, .is-editing-text, .content-area, td, th, .pin, .pin-rotation-ring, .pin-rotate-dot, .del-btn',
             listeners: { 
                 start: saveHistory, 
                 move(event) {
@@ -2229,7 +2230,6 @@ function toggleEdit() {
             }
         });
 
-        // Rectangle Resizing
         interact('.pin[data-shape="rectangle"]').resizable({
             edges: { right: true, bottom: true },
             margin: 15,
@@ -2246,7 +2246,6 @@ function toggleEdit() {
             }
         });
 
-        // Global Pin Dragging
         interact('.pin').draggable({ 
             ignoreFrom: '.pin-rotate-dot', 
             listeners: { 
@@ -2500,7 +2499,7 @@ $(document).ready(async function() {
             $box.addClass('selected-box');
             updateContextMenu();
 
-            if ($(e.target).closest('.content-area, .audio-play-btn, .audio-track, .pin-rotate-dot').length > 0) { return; }
+            if ($(e.target).closest('.content-area, .audio-play-btn, .audio-track, .pin-rotate-dot, .col-resizer').length > 0) { return; }
             if(!$(e.target).is(':focus')) { e.preventDefault(); }
             return;
         }
@@ -2749,22 +2748,59 @@ $(document).ready(async function() {
     });
 
     // ==========================================================================
-    // SPREADSHEET-STYLE CELL SELECTION & BOX DRAGGING
+    // BULLETPROOF EXCEL-STYLE TABLE SELECTION & RESIZING
     // ==========================================================================
+
+    // 1. Auto-Normalize ANY table (Pasted, Extracted, or Generated)
+    $(document).on('mouseenter', '.canvas-box table', function() {
+        if (!isEditing) return;
+        let $table = $(this);
+        
+        if ($table.attr('data-normalized') !== 'true') {
+            // Force rigid spreadsheet layout
+            $table.css({ 'table-layout': 'fixed', 'border-collapse': 'collapse', 'width': '100%' });
+            
+            // Generate <colgroup> based on actual visual widths to preserve PPT layout
+            if ($table.find('colgroup').length === 0) {
+                let colHtml = '<colgroup>';
+                let totalWidth = $table.width() || 1;
+                $table.find('tr').first().children('td, th').each(function() {
+                    // Use native pixel width converted to percentage
+                    let w = ($(this).outerWidth() / totalWidth) * 100;
+                    colHtml += `<col style="width:${w}%">`;
+                });
+                colHtml += '</colgroup>';
+                $table.prepend(colHtml);
+            }
+            $table.attr('data-normalized', 'true');
+        }
+
+        // Inject invisible drag handles for columns
+        $table.find('tr:first-child').children('td, th').each(function() {
+            if ($(this).find('.col-resizer').length === 0 && $(this).next().length > 0) {
+                $(this).css('position', 'relative');
+                $(this).append('<div class="col-resizer" contenteditable="false" style="position:absolute; top:0; right:-3px; width:6px; height:100%; cursor:col-resize; z-index:999; background:transparent;"></div>');
+            }
+        });
+    });
+
+    // 2. Cell Selection - Mousedown
     $(document).on('mousedown touchstart', '.canvas-box table td, .canvas-box table th', function(e) {
         if(!isEditing) return;
-
-        // Ignore if they are clicking the column resize handle
         if ($(e.target).hasClass('col-resizer')) return;
 
         e.stopPropagation(); 
         isDraggingTable = true;
         tableDragStartCell = $(this);
+        
+        // KILL BROWSER TEXT HIGHLIGHTING by temporarily disabling contenteditable
+        $activeTableContentArea = $(this).closest('.content-area');
+        $activeTableContentArea.attr('contenteditable', 'false');
+        window.getSelection().removeAllRanges();
 
         if(!e.shiftKey && !e.ctrlKey && !e.metaKey) {
             $(this).closest('table').find('td, th').removeClass('selected-cell');
         }
-        
         $(this).addClass('selected-cell');
 
         let $box = $(this).closest('.canvas-box');
@@ -2772,38 +2808,34 @@ $(document).ready(async function() {
             $('.canvas-box').removeClass('selected-box');
             $box.addClass('selected-box');
         }
-
-        if ($(this).closest('.canvas-box').find('.pin').length > 0) {
-            switchTabToBox($box);
-        }
-
-        // Disable native text selection across the whole page while dragging cells
-        $('body').css('user-select', 'none'); 
+        if ($(this).closest('.canvas-box').find('.pin').length > 0) switchTabToBox($box);
 
         updateContextMenu();
     });
 
+    // 3. Cell Selection - Mousemove (Dragging the box)
     $(document).on('mouseenter', '.canvas-box table td, .canvas-box table th', function(e) {
         if(!isEditing || !isDraggingTable || !tableDragStartCell) return;
 
         let $table = $(this).closest('table');
-        $table.find('td, th').removeClass('selected-cell'); // Clear current selection
+        $table.find('td, th').removeClass('selected-cell'); 
 
-        // Calculate grid coordinates to form a perfect rectangle
-        let startRow = tableDragStartCell.closest('tr').index();
-        let startCol = tableDragStartCell.index();
-        let endRow = $(this).closest('tr').index();
-        let endCol = $(this).index();
+        // Use native cellIndex and rowIndex for far better accuracy on complex PPT tables
+        let startRow = tableDragStartCell.parent()[0].rowIndex;
+        let startCol = tableDragStartCell[0].cellIndex;
+        let endRow = $(this).parent()[0].rowIndex;
+        let endCol = $(this)[0].cellIndex;
 
         let minRow = Math.min(startRow, endRow);
         let maxRow = Math.max(startRow, endRow);
         let minCol = Math.min(startCol, endCol);
         let maxCol = Math.max(startCol, endCol);
 
-        // Apply selection box
-        $table.find('tr').each(function(r) {
+        $table.find('tr').each(function() {
+            let r = this.rowIndex;
             if (r >= minRow && r <= maxRow) {
-                $(this).children('td, th').each(function(c) {
+                $(this).children('td, th').each(function() {
+                    let c = this.cellIndex;
                     if (c >= minCol && c <= maxCol) {
                         $(this).addClass('selected-cell');
                     }
@@ -2812,61 +2844,53 @@ $(document).ready(async function() {
         });
     });
 
+    // 4. Release Drag - Restore editing
     $(document).on('mouseup touchend', function() {
         if (isDraggingTable) {
             isDraggingTable = false;
             tableDragStartCell = null;
-            $('body').css('user-select', ''); // Restore text selection when mouse releases
+            if ($activeTableContentArea) {
+                $activeTableContentArea.attr('contenteditable', 'true');
+                $activeTableContentArea = null;
+            }
         }
     });
 
-    // ==========================================================================
-    // COLUMN RESIZING LOGIC
-    // ==========================================================================
-    // 1. Inject invisible drag handles when you hover over a table
-    $(document).on('mouseenter', '.canvas-box table', function() {
-        if (!isEditing) return;
-        $(this).find('tr:first-child').children('td, th').each(function() {
-            if ($(this).find('.col-resizer').length === 0 && $(this).next().length > 0) {
-                $(this).append('<div class="col-resizer" contenteditable="false" style="position:absolute; top:0; right:-3px; width:6px; height:100%; cursor:col-resize; z-index:10; background:transparent;"></div>');
-            }
-        });
-    });
-
-    // 2. Handle the math of dragging the column boundary
+    // 5. Math logic for dragging the column boundary
     $(document).on('mousedown', '.col-resizer', function(e) {
         if (!isEditing) return;
         e.stopPropagation();
         e.preventDefault();
 
         let $table = $(this).closest('table');
-        let colIndex = $(this).parent().index();
+        let colIndex = $(this).parent()[0].cellIndex;
         
-        // Safety check: ensure table has <colgroup> initialized
-        if ($table.find('colgroup').length === 0) {
-            $('.selected-box').removeClass('selected-box');
-            $(this).closest('.canvas-box').addClass('selected-box');
-            equalizeTable(); 
-        }
-
         let $col = $table.find('col').eq(colIndex);
         let $nextCol = $table.find('col').eq(colIndex + 1);
 
         if ($col.length === 0 || $nextCol.length === 0) return;
 
         let startX = e.pageX;
-        let startColWidth = parseFloat($col[0].style.width) || (100 / $table.find('col').length);
-        let startNextColWidth = parseFloat($nextCol[0].style.width) || (100 / $table.find('col').length);
+        let startColWidth = parseFloat($col[0].style.width);
+        let startNextColWidth = parseFloat($nextCol[0].style.width);
         let tableWidth = $table.width();
+
+        // If for some reason percentages aren't set, default math
+        if (isNaN(startColWidth)) startColWidth = 100 / $table.find('col').length;
+        if (isNaN(startNextColWidth)) startNextColWidth = 100 / $table.find('col').length;
+
+        // Prevent dragging the whole box around
+        let $box = $table.closest('.canvas-box');
+        $box.css('pointer-events', 'none'); 
+        $table.css('pointer-events', 'auto'); // Keep table active
 
         $(document).on('mousemove.tblResize', function(ev) {
             let dx = ev.pageX - startX;
-            let dxPercent = (dx / tableWidth) * 100; // Convert pixel movement to percentage
+            let dxPercent = (dx / tableWidth) * 100; 
 
             let newWidth = startColWidth + dxPercent;
             let newNextWidth = startNextColWidth - dxPercent;
 
-            // Prevent squishing a column to 0 width
             if (newWidth > 3 && newNextWidth > 3) {
                 $col.css('width', newWidth + '%');
                 $nextCol.css('width', newNextWidth + '%');
@@ -2875,6 +2899,7 @@ $(document).ready(async function() {
 
         $(document).on('mouseup.tblResize', function() {
             $(document).off('mousemove.tblResize mouseup.tblResize');
+            $box.css('pointer-events', 'auto');
             saveHistory();
         });
     });
