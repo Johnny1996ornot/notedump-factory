@@ -29,6 +29,7 @@ let lastMouseY = 150;
 
 let activePinTabIdx = 0; 
 let isDraggingTable = false;
+let tableDragStartCell = null; // Excel spreadsheet drag state
 
 let isPlacingText = false;
 let isPlacingSticky = false;
@@ -1728,7 +1729,6 @@ function togglePinShape(origIdx) {
     else if (nextShape === 'triangle') $btn.addClass('fa-caret-up');
 }
 
-// FIX: Removing the hardcoded class that broke interact.js draggable
 function toggleImagePinShape(origIdx) {
     debouncedSaveHistory();
     let $pin = getPinEl(origIdx);
@@ -2246,7 +2246,7 @@ function toggleEdit() {
             }
         });
 
-        // Global Pin Dragging FIX: Removed the buggy rectangle class so all pins can drag again
+        // Global Pin Dragging
         interact('.pin').draggable({ 
             ignoreFrom: '.pin-rotate-dot', 
             listeners: { 
@@ -2660,15 +2660,12 @@ $(document).ready(async function() {
         let pastedHtml = clipboardData.getData('text/html');
         let items = clipboardData.items;
 
-        // THE PPT TEXT FIX: If PPT left text/plain empty but sent a massive HTML blob, 
-        // aggressively strip the HTML tags to force the text out.
         if (!pastedText && pastedHtml) {
             let tempDiv = document.createElement('div');
             tempDiv.innerHTML = pastedHtml;
             pastedText = tempDiv.innerText || tempDiv.textContent || "";
         }
 
-        // Pre-check: Is there a raw image file in the clipboard?
         let imageFile = null;
         for (let i = 0; i < items.length; i++) {
             if (items[i].type.indexOf("image") === 0) {
@@ -2677,7 +2674,6 @@ $(document).ready(async function() {
             }
         }
 
-        // 1. Handle custom internal NoteDump copy/paste
         if (pastedText && pastedText.includes('"noteDumpClipboard":true')) {
             e.preventDefault();
             processCustomPaste(pastedText);
@@ -2686,9 +2682,8 @@ $(document).ready(async function() {
 
         let isTyping = $(e.target).is('textarea, [contenteditable="true"]:focus, input:focus');
 
-        // 2. SCENARIO A: User is actively typing inside a text box
         if (isTyping) {
-            e.preventDefault(); // Stop default browser dumping
+            e.preventDefault();
 
             if (imageFile) {
                 let r = new FileReader();
@@ -2702,10 +2697,8 @@ $(document).ready(async function() {
             return;
         }
 
-        // 3. SCENARIO B: User clicked the canvas background
         let coords = getPasteCoords();
 
-        // Handle Tables
         if (pastedHtml && pastedHtml.includes('<table')) {
             let temp = $('<div>').html(pastedHtml);
             let $table = temp.find('table').first();
@@ -2721,7 +2714,6 @@ $(document).ready(async function() {
             }
         }
 
-        // Handle Raw Image Files
         if (imageFile) {
             e.preventDefault();
             let r = new FileReader();
@@ -2735,13 +2727,11 @@ $(document).ready(async function() {
             return;
         }
 
-        // Handle HTML Images
         if (pastedHtml && pastedHtml.includes('<img')) {
             let temp = $('<div>').html(pastedHtml);
             let $img = temp.find('img').first();
             let src = $img.attr('src');
             
-            // THE PPT IMAGE FIX: Browsers block file:/// links. If it's a local temp file, skip this and fall back to text.
             if ($img.length > 0 && src && !src.startsWith('file:///')) {
                 e.preventDefault(); saveHistory(); $('.canvas-box').removeClass('selected-box');
                 $(`#p-${current}`).append(`<div class="canvas-box selected-box" style="top:${coords.y}px;left:${coords.x}px;width:300px;max-width:calc(800px - ${coords.x}px);z-index:${getHighestZ()};transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><img src="${src}" style="width:100%"></div>`);
@@ -2750,7 +2740,6 @@ $(document).ready(async function() {
             }
         }
 
-        // Handle Plain Text
         if (pastedText && pastedText.trim() !== "") {
             e.preventDefault(); saveHistory(); $('.canvas-box').removeClass('selected-box');
             let safeText = $('<div>').text(pastedText).html().replace(/\n/g, '<br>');
@@ -2759,13 +2748,23 @@ $(document).ready(async function() {
         }
     });
 
+    // ==========================================================================
+    // SPREADSHEET-STYLE CELL SELECTION & BOX DRAGGING
+    // ==========================================================================
     $(document).on('mousedown touchstart', '.canvas-box table td, .canvas-box table th', function(e) {
         if(!isEditing) return;
+
+        // Ignore if they are clicking the column resize handle
+        if ($(e.target).hasClass('col-resizer')) return;
+
         e.stopPropagation(); 
         isDraggingTable = true;
+        tableDragStartCell = $(this);
+
         if(!e.shiftKey && !e.ctrlKey && !e.metaKey) {
             $(this).closest('table').find('td, th').removeClass('selected-cell');
         }
+        
         $(this).addClass('selected-cell');
 
         let $box = $(this).closest('.canvas-box');
@@ -2778,17 +2777,108 @@ $(document).ready(async function() {
             switchTabToBox($box);
         }
 
+        // Disable native text selection across the whole page while dragging cells
+        $('body').css('user-select', 'none'); 
+
         updateContextMenu();
     });
 
     $(document).on('mouseenter', '.canvas-box table td, .canvas-box table th', function(e) {
-        if(!isEditing || !isDraggingTable) return;
-        $(this).addClass('selected-cell');
+        if(!isEditing || !isDraggingTable || !tableDragStartCell) return;
+
+        let $table = $(this).closest('table');
+        $table.find('td, th').removeClass('selected-cell'); // Clear current selection
+
+        // Calculate grid coordinates to form a perfect rectangle
+        let startRow = tableDragStartCell.closest('tr').index();
+        let startCol = tableDragStartCell.index();
+        let endRow = $(this).closest('tr').index();
+        let endCol = $(this).index();
+
+        let minRow = Math.min(startRow, endRow);
+        let maxRow = Math.max(startRow, endRow);
+        let minCol = Math.min(startCol, endCol);
+        let maxCol = Math.max(startCol, endCol);
+
+        // Apply selection box
+        $table.find('tr').each(function(r) {
+            if (r >= minRow && r <= maxRow) {
+                $(this).children('td, th').each(function(c) {
+                    if (c >= minCol && c <= maxCol) {
+                        $(this).addClass('selected-cell');
+                    }
+                });
+            }
+        });
     });
 
     $(document).on('mouseup touchend', function() {
-        isDraggingTable = false;
+        if (isDraggingTable) {
+            isDraggingTable = false;
+            tableDragStartCell = null;
+            $('body').css('user-select', ''); // Restore text selection when mouse releases
+        }
     });
+
+    // ==========================================================================
+    // COLUMN RESIZING LOGIC
+    // ==========================================================================
+    // 1. Inject invisible drag handles when you hover over a table
+    $(document).on('mouseenter', '.canvas-box table', function() {
+        if (!isEditing) return;
+        $(this).find('tr:first-child').children('td, th').each(function() {
+            if ($(this).find('.col-resizer').length === 0 && $(this).next().length > 0) {
+                $(this).append('<div class="col-resizer" contenteditable="false" style="position:absolute; top:0; right:-3px; width:6px; height:100%; cursor:col-resize; z-index:10; background:transparent;"></div>');
+            }
+        });
+    });
+
+    // 2. Handle the math of dragging the column boundary
+    $(document).on('mousedown', '.col-resizer', function(e) {
+        if (!isEditing) return;
+        e.stopPropagation();
+        e.preventDefault();
+
+        let $table = $(this).closest('table');
+        let colIndex = $(this).parent().index();
+        
+        // Safety check: ensure table has <colgroup> initialized
+        if ($table.find('colgroup').length === 0) {
+            $('.selected-box').removeClass('selected-box');
+            $(this).closest('.canvas-box').addClass('selected-box');
+            equalizeTable(); 
+        }
+
+        let $col = $table.find('col').eq(colIndex);
+        let $nextCol = $table.find('col').eq(colIndex + 1);
+
+        if ($col.length === 0 || $nextCol.length === 0) return;
+
+        let startX = e.pageX;
+        let startColWidth = parseFloat($col[0].style.width) || (100 / $table.find('col').length);
+        let startNextColWidth = parseFloat($nextCol[0].style.width) || (100 / $table.find('col').length);
+        let tableWidth = $table.width();
+
+        $(document).on('mousemove.tblResize', function(ev) {
+            let dx = ev.pageX - startX;
+            let dxPercent = (dx / tableWidth) * 100; // Convert pixel movement to percentage
+
+            let newWidth = startColWidth + dxPercent;
+            let newNextWidth = startNextColWidth - dxPercent;
+
+            // Prevent squishing a column to 0 width
+            if (newWidth > 3 && newNextWidth > 3) {
+                $col.css('width', newWidth + '%');
+                $nextCol.css('width', newNextWidth + '%');
+            }
+        });
+
+        $(document).on('mouseup.tblResize', function() {
+            $(document).off('mousemove.tblResize mouseup.tblResize');
+            saveHistory();
+        });
+    });
+
 
     let colorHtml = "";
     COLORS.forEach(c => { colorHtml += `<div class="color-swatch" style="background:${c};" data-color="${c}" onmousedown="event.preventDefault();"></div>`; });
