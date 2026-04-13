@@ -23,20 +23,21 @@ FRONTEND_HTML = """
     <style>
         body { background-color: #000000; color: white; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; position: relative; }
         
-        /* 1. Header & Logo Container */
-        .hero { text-align: center; margin-bottom: 40px; position: relative; }
-        .logo-container { position: relative; display: inline-block; padding: 0 20px; }
-        .logo-text { font-size: 55px; font-weight: 800; color: #f8fafc; margin: 0; display: inline-block;}
+        /* 1. Header & Logo Flexbox Container */
+        .hero { text-align: center; margin-bottom: 40px; display: flex; flex-direction: column; align-items: center; }
         
-        /* 2. Repositioned Buttons (Now relative to Logo) */
-        .header-actions { position: absolute; top: -10px; right: -80px; display: flex; align-items: center; gap: 8px; }
-        .guide-btn { color: #94a3b8; text-decoration: none; font-size: 14px; font-weight: bold; border: 1px solid #475569; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; background: #1e293b; transition: 0.2s; }
+        .logo-header { display: flex; align-items: flex-start; gap: 15px; }
+        .logo-text { font-size: 55px; font-weight: 800; color: #f8fafc; margin: 0; line-height: 1;}
+        
+        /* 2. Buttons nestled perfectly to the top right of the logo */
+        .header-actions { display: flex; align-items: center; gap: 8px; margin-top: 5px; }
+        .guide-btn { color: #94a3b8; text-decoration: none; font-size: 14px; font-weight: bold; border: 1px solid #475569; border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; background: #1e293b; transition: 0.2s; }
         .guide-btn:hover { color: white; border-color: #0ea5e9; background: #0ea5e9;}
-        .coffee-btn { color: #0ea5e9; text-decoration: none; font-weight: bold; font-size: 11px; border: 1px solid #0ea5e9; padding: 4px 10px; border-radius: 20px; transition: 0.2s; white-space: nowrap; background: transparent; }
+        .coffee-btn { color: #0ea5e9; text-decoration: none; font-weight: bold; font-size: 12px; border: 1px solid #0ea5e9; padding: 5px 12px; border-radius: 20px; transition: 0.2s; white-space: nowrap; background: transparent; }
         .coffee-btn:hover { background: rgba(14, 165, 233, 0.15); color: #fff; }
 
-        /* 3. Lowered Tagline & Text */
-        .tagline { color: #94a3b8; font-size: 18px; margin-top: 15px; margin-bottom: 5px; }
+        /* 3. Lowered Tagline & Support Text */
+        .tagline { color: #94a3b8; font-size: 18px; margin-top: 30px; margin-bottom: 5px; }
         .support-text { font-size: 12px; color: #475569; margin-top: 5px; letter-spacing: 1px; }
 
         /* Modal Settings */
@@ -182,13 +183,14 @@ FRONTEND_HTML = """
 <body>
     
     <div class="hero">
-        <div class="logo-container">
+        <div class="logo-header">
             <h1 class="logo-text">📝 NoteDump</h1>
             <div class="header-actions">
                 <a href="https://buymeacoffee.com/jpramirez" target="_blank" class="coffee-btn">☕ Support</a>
                 <a href="#guide-modal" class="guide-btn">?</a>
             </div>
         </div>
+        
         <p class="tagline">Turning your documents into an interactive notebook</p>
         <p class="support-text">PPTX • PPT • PDF</p>
     </div>
