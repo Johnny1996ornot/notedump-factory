@@ -317,7 +317,10 @@ async function restoreFromBrowser() {
         if (savedCanvas && savedNav) {
             $('#canvas').html(savedCanvas);
             $('#nav-list-container').html(savedNav);
-            if (savedTitle) $('#lecture-title').text(savedTitle);
+            if (savedTitle) {
+                $('#lecture-title').text(savedTitle);
+                document.title = savedTitle; // Restore live title on load
+            }
             if (savedWidth) {
                 $('#canvas').attr('data-width', savedWidth);
                 $('#canvas-w-cm').val(Math.round((savedWidth / 37.795) * 10) / 10);
@@ -405,16 +408,23 @@ function saveNotebookToFile() {
     $('#export-modal-bg').hide();
     let wasEditing = isEditing;
     if (isEditing) toggleEdit();
+    
     let documentClone = document.documentElement.cloneNode(true);
+    let $clone = $(documentClone);
+
+    // FIX: Update the actual <title> tag inside the HTML file before downloading
+    let title = $('#lecture-title').text().trim() || "NoteDump_Saved";
+    $clone.find('title').text(title);
+
     let fullHtml = "<!DOCTYPE html>\n" + documentClone.outerHTML;
     let blob = new Blob([fullHtml], { type: "text/html;charset=utf-8" });
     let link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    let title = $('#lecture-title').text().trim() || "NoteDump_Saved";
     link.download = title + ".html";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    
     if (wasEditing) toggleEdit();
     showToast("💾 Notebook saved successfully!");
 }
@@ -435,6 +445,8 @@ function saveReadOnlyNotebook() {
 
     let currentTitle = $('#lecture-title').text().trim() || "NoteDump_Saved";
     $clone.find('#lecture-title').text(currentTitle + " (Read Only)");
+    
+    // FIX: Update the actual <title> tag inside the HTML file before downloading
     $clone.find('title').text(currentTitle + " - Read Only");
 
     let fullHtml = "<!DOCTYPE html>\n" + documentClone.outerHTML;
@@ -1084,8 +1096,6 @@ function updateContextMenu() {
     let $sel = $('.selected-box');
     if($sel.length > 0 && isEditing) {
         $('#context-menu').css('display', 'flex');
-        
-        // COMPLETELY REMOVED THE UGLY VERTICAL SIDE MENU LOGIC
         $('#context-menu').removeClass('is-vertical-menu');
 
         let hasTable = $sel.find('table').length > 0;
@@ -1176,11 +1186,8 @@ function updateContextMenu() {
         if (finalMenuLeft < vLeft + 10) finalMenuLeft = vLeft + 10;
         if (finalMenuLeft + cWidth > vRight - 10) finalMenuLeft = vRight - cWidth - 10;
 
-        // If it doesn't fit neatly ABOVE the box, simply drop it neatly BELOW the box.
         if (finalMenuTop < vTop + 10) {
             finalMenuTop = topPos + $sel.outerHeight() + 15;
-            
-            // If the box is so massive it doesn't fit below either, just stick it to the top of the screen
             if (finalMenuTop + cHeight > vBottom - 10) {
                 finalMenuTop = vTop + 10;
             }
@@ -2330,6 +2337,15 @@ function processCustomPaste(pastedText) {
 }
 
 $(document).ready(async function() {
+    
+    // --- NEW: Live Title Update Listener ---
+    let $lectureTitle = $('#lecture-title');
+    if ($lectureTitle.length) {
+        $lectureTitle.on('input', function() {
+            document.title = $(this).text().trim() || "NoteDump";
+        });
+    }
+
     await restoreFromBrowser(); 
     lastSavedState = getPageHTML(); 
 
@@ -2337,18 +2353,67 @@ $(document).ready(async function() {
         if(!$(this).is('select') && !$(this).is('input')) e.preventDefault(); 
     });
 
+    // --- UPDATED: Text Formatting Interceptor ---
     $(document).on('click', '.ctx-btn[data-cmd]', function(e) {
         e.preventDefault();
-        document.execCommand($(this).attr('data-cmd'), false, null);
+        let cmd = $(this).attr('data-cmd');
+        let $cells = $('.selected-cell');
+
+        // Check if we are formatting table cells instead of highlighted text
+        if ($cells.length > 0) {
+            if (cmd === 'bold') {
+                let isBold = $cells.first().css('font-weight') === '700' || $cells.first().css('font-weight') === 'bold';
+                $cells.css('font-weight', isBold ? 'normal' : 'bold');
+                $cells.find('*').css('font-weight', isBold ? 'normal' : 'bold');
+            } else if (cmd === 'italic') {
+                let isItalic = $cells.first().css('font-style') === 'italic';
+                $cells.css('font-style', isItalic ? 'normal' : 'italic');
+                $cells.find('*').css('font-style', isItalic ? 'normal' : 'italic');
+            } else if (cmd === 'underline') {
+                let isUnderlined = $cells.first().css('text-decoration').includes('underline');
+                $cells.css('text-decoration', isUnderlined ? 'none' : 'underline');
+                $cells.find('*').css('text-decoration', isUnderlined ? 'none' : 'underline');
+            } else if (cmd === 'justifyLeft') {
+                $cells.css('text-align', 'left');
+                $cells.find('*').css('text-align', 'left');
+            } else if (cmd === 'justifyCenter') {
+                $cells.css('text-align', 'center');
+                $cells.find('*').css('text-align', 'center');
+            } else if (cmd === 'justifyRight') {
+                $cells.css('text-align', 'right');
+                $cells.find('*').css('text-align', 'right');
+            }
+            saveHistory();
+            return; // Skip normal execCommand
+        }
+
+        // Fallback to normal text editing
+        document.execCommand(cmd, false, null);
         saveHistory();
     });
 
     $(document).on('change', 'select[data-cmd="fontName"]', function() {
-        document.execCommand('fontName', false, $(this).val());
+        let val = $(this).val();
+        let $cells = $('.selected-cell');
+        if ($cells.length > 0) {
+            $cells.css('font-family', val);
+            $cells.find('*').css('font-family', val);
+            saveHistory();
+            return;
+        }
+        document.execCommand('fontName', false, val);
         saveHistory();
     });
 
     $(document).on('change', 'select[data-cmd="fontSize"]', function() {
+        let val = $(this).val() + 'px';
+        let $cells = $('.selected-cell');
+        if ($cells.length > 0) {
+            $cells.css('font-size', val);
+            $cells.find('*').css('font-size', val);
+            saveHistory();
+            return;
+        }
         applyFontSize($(this).val());
     });
 
@@ -2711,7 +2776,7 @@ $(document).ready(async function() {
             r.onload = ev => {
                 saveHistory();
                 $('.canvas-box').removeClass('selected-box');
-                $(`#p-${current}`).append(`<div class="canvas-box selected-box" style="top:${coords.y}px;left:${coords.x}px;width:300px;z-index:${getHighestZ()};transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><img src="${ev.target.result}" style="width:100%"></div>`);
+                $(`#p-${current}`).append(`<div class="canvas-box selected-box" style="top:${coords.y}px;left:${coords.x}px;width:300px;max-width:calc(800px - ${coords.x}px);z-index:${getHighestZ()};transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><img src="${ev.target.result}" style="width:100%"></div>`);
                 updateContextMenu();
             };
             r.readAsDataURL(imageFile);
@@ -2725,7 +2790,7 @@ $(document).ready(async function() {
             
             if ($img.length > 0 && src && !src.startsWith('file:///')) {
                 e.preventDefault(); saveHistory(); $('.canvas-box').removeClass('selected-box');
-                $(`#p-${current}`).append(`<div class="canvas-box selected-box" style="top:${coords.y}px;left:${coords.x}px;width:300px;z-index:${getHighestZ()};transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><img src="${src}" style="width:100%"></div>`);
+                $(`#p-${current}`).append(`<div class="canvas-box selected-box" style="top:${coords.y}px;left:${coords.x}px;width:300px;max-width:calc(800px - ${coords.x}px);z-index:${getHighestZ()};transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><img src="${src}" style="width:100%"></div>`);
                 updateContextMenu();
                 return;
             }
@@ -2734,7 +2799,7 @@ $(document).ready(async function() {
         if (pastedText && pastedText.trim() !== "") {
             e.preventDefault(); saveHistory(); $('.canvas-box').removeClass('selected-box');
             let safeText = $('<div>').text(pastedText).html().replace(/\n/g, '<br>');
-            $(`#p-${current}`).append(`<div class="canvas-box selected-box" style="top:${coords.y}px;left:${coords.x}px;width:300px;z-index:${getHighestZ()};background-color:transparent;transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><div class="content-area" contenteditable="true" style="width: 100%; height: 100%; box-sizing: border-box; word-break: break-word; white-space: pre-wrap; overflow-wrap: break-word;">${safeText}</div></div>`);
+            $(`#p-${current}`).append(`<div class="canvas-box selected-box" style="top:${coords.y}px;left:${coords.x}px;width:300px;max-width:calc(800px - ${coords.x}px);z-index:${getHighestZ()};background-color:transparent;transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><div class="content-area" contenteditable="true" style="width: 100%; height: 100%; box-sizing: border-box; word-break: break-word; white-space: pre-wrap; overflow-wrap: break-word;">${safeText}</div></div>`);
             updateContextMenu();
         }
     });
@@ -2936,6 +3001,7 @@ $(document).ready(async function() {
         if ($(this).text().includes('Color')) $(this).next('div').html(colorHtml);
     });
 
+    // --- UPDATED: Text Color Interceptor ---
     $(document).on('click', '.menu-text-tools .color-swatch', function(e) { 
         e.preventDefault();
         let hex = $(this).attr('data-color');
@@ -2954,6 +3020,16 @@ $(document).ready(async function() {
             return;
         }
 
+        // Apply direct to cells if we are formatting a table
+        let $cells = $('.selected-cell');
+        if ($cells.length > 0) {
+            $cells.css('color', hex);
+            $cells.find('*').css('color', hex); // Target any inner divs
+            saveHistory();
+            return;
+        }
+
+        // Fallback to normal text editing
         restoreSelection();
         document.execCommand('styleWithCSS', false, true);
         document.execCommand('foreColor', false, hex);
