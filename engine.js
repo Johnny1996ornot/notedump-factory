@@ -2656,9 +2656,17 @@ $(document).ready(async function() {
         if (!isEditing) return;
 
         let clipboardData = (e.originalEvent || e).clipboardData;
-        let pastedText = clipboardData.getData('text/plain');
+        let pastedText = clipboardData.getData('text/plain') || clipboardData.getData('Text');
         let pastedHtml = clipboardData.getData('text/html');
         let items = clipboardData.items;
+
+        // THE PPT TEXT FIX: If PPT left text/plain empty but sent a massive HTML blob, 
+        // aggressively strip the HTML tags to force the text out.
+        if (!pastedText && pastedHtml) {
+            let tempDiv = document.createElement('div');
+            tempDiv.innerHTML = pastedHtml;
+            pastedText = tempDiv.innerText || tempDiv.textContent || "";
+        }
 
         // Pre-check: Is there a raw image file in the clipboard?
         let imageFile = null;
@@ -2689,7 +2697,7 @@ $(document).ready(async function() {
                 };
                 r.readAsDataURL(imageFile);
             } else if (pastedText) {
-                document.execCommand('insertText', false, pastedText);
+                document.execCommand('insertText', false, pastedText.trim());
             }
             return;
         }
@@ -2731,9 +2739,12 @@ $(document).ready(async function() {
         if (pastedHtml && pastedHtml.includes('<img')) {
             let temp = $('<div>').html(pastedHtml);
             let $img = temp.find('img').first();
-            if ($img.length > 0 && $img.attr('src')) {
+            let src = $img.attr('src');
+            
+            // THE PPT IMAGE FIX: Browsers block file:/// links. If it's a local temp file, skip this and fall back to text.
+            if ($img.length > 0 && src && !src.startsWith('file:///')) {
                 e.preventDefault(); saveHistory(); $('.canvas-box').removeClass('selected-box');
-                $(`#p-${current}`).append(`<div class="canvas-box selected-box" style="top:${coords.y}px;left:${coords.x}px;width:300px;max-width:calc(800px - ${coords.x}px);z-index:${getHighestZ()};transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><img src="${$img.attr('src')}" style="width:100%"></div>`);
+                $(`#p-${current}`).append(`<div class="canvas-box selected-box" style="top:${coords.y}px;left:${coords.x}px;width:300px;max-width:calc(800px - ${coords.x}px);z-index:${getHighestZ()};transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><img src="${src}" style="width:100%"></div>`);
                 updateContextMenu();
                 return;
             }
