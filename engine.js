@@ -2654,55 +2654,93 @@ $(document).ready(async function() {
 
     $(document).on('paste', function(e) {
         if (!isEditing) return;
-        let isTyping = $(e.target).is('textarea, [contenteditable="true"]:focus, input:focus');
-        if (isTyping) return; 
 
-        // Universal Paste Handler
-        let pastedText = (e.originalEvent || e).clipboardData.getData('text/plain');
+        let clipboardData = (e.originalEvent || e).clipboardData;
+        let pastedText = clipboardData.getData('text/plain');
+        let pastedHtml = clipboardData.getData('text/html');
+        let items = clipboardData.items;
+
+        // Pre-check: Is there a raw image file in the clipboard?
+        let imageFile = null;
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type.indexOf("image") === 0) {
+                imageFile = items[i].getAsFile();
+                break;
+            }
+        }
+
+        // 1. Handle custom internal NoteDump copy/paste
         if (pastedText && pastedText.includes('"noteDumpClipboard":true')) {
             e.preventDefault();
             processCustomPaste(pastedText);
             return;
         }
 
-        let items = (e.originalEvent || e).clipboardData.items;
-        let pastedImage = false;
+        let isTyping = $(e.target).is('textarea, [contenteditable="true"]:focus, input:focus');
+
+        // 2. SCENARIO A: User is actively typing inside a text box
+        if (isTyping) {
+            e.preventDefault(); // Stop default browser dumping
+
+            if (imageFile) {
+                let r = new FileReader();
+                r.onload = ev => {
+                    document.execCommand('insertImage', false, ev.target.result);
+                };
+                r.readAsDataURL(imageFile);
+            } else if (pastedText) {
+                document.execCommand('insertText', false, pastedText);
+            }
+            return;
+        }
+
+        // 3. SCENARIO B: User clicked the canvas background
         let coords = getPasteCoords();
 
-        let pastedHtml = (e.originalEvent || e).clipboardData.getData('text/html');
+        // Handle Tables
         if (pastedHtml && pastedHtml.includes('<table')) {
             let temp = $('<div>').html(pastedHtml);
             let $table = temp.find('table').first();
             if ($table.length > 0) {
                 e.preventDefault(); saveHistory(); $('.canvas-box').removeClass('selected-box');
-
                 $table.css({width: '100%', height: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '12px'});
                 $table.find('td, th').css({border: '1px solid #cbd5e1', padding: '4px 6px', wordWrap: 'break-word', overflowWrap: 'break-word', whiteSpace: 'pre-wrap', verticalAlign: 'top', resize: 'none', overflow: 'hidden', position: 'relative'});
 
                 $(`#p-${current}`).append(`<div class="canvas-box selected-box" style="top:${coords.y}px;left:${coords.x}px;width:400px; height:150px; background:white; z-index:${getHighestZ()}; transform: translate(0px, 0px); display:flex; flex-direction:column;"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><div class="content-area" contenteditable="true" style="flex-grow:1; width:100%; height:100%; outline:none;">${$table[0].outerHTML}</div></div>`);
                 equalizeTable();
                 updateContextMenu();
-                return; 
+                return;
             }
         }
 
-        for (let i = 0; i < items.length; i++) {
-            if (items[i].type.indexOf("image") === 0) {
-                e.preventDefault();
-                let file = items[i].getAsFile();
-                let r = new FileReader();
-                r.onload = ev => {
-                    saveHistory();
-                    $('.canvas-box').removeClass('selected-box');
-                    $(`#p-${current}`).append(`<div class="canvas-box selected-box" style="top:${coords.y}px;left:${coords.x}px;width:300px;max-width:calc(800px - ${coords.x}px);z-index:${getHighestZ()};transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><img src="${ev.target.result}" style="width:100%"></div>`);
-                    updateContextMenu();
-                };
-                r.readAsDataURL(file);
-                pastedImage = true; break;
+        // Handle Raw Image Files
+        if (imageFile) {
+            e.preventDefault();
+            let r = new FileReader();
+            r.onload = ev => {
+                saveHistory();
+                $('.canvas-box').removeClass('selected-box');
+                $(`#p-${current}`).append(`<div class="canvas-box selected-box" style="top:${coords.y}px;left:${coords.x}px;width:300px;max-width:calc(800px - ${coords.x}px);z-index:${getHighestZ()};transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><img src="${ev.target.result}" style="width:100%"></div>`);
+                updateContextMenu();
+            };
+            r.readAsDataURL(imageFile);
+            return;
+        }
+
+        // Handle HTML Images
+        if (pastedHtml && pastedHtml.includes('<img')) {
+            let temp = $('<div>').html(pastedHtml);
+            let $img = temp.find('img').first();
+            if ($img.length > 0 && $img.attr('src')) {
+                e.preventDefault(); saveHistory(); $('.canvas-box').removeClass('selected-box');
+                $(`#p-${current}`).append(`<div class="canvas-box selected-box" style="top:${coords.y}px;left:${coords.x}px;width:300px;max-width:calc(800px - ${coords.x}px);z-index:${getHighestZ()};transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><img src="${$img.attr('src')}" style="width:100%"></div>`);
+                updateContextMenu();
+                return;
             }
         }
 
-        if (!pastedImage && pastedText && pastedText.trim() !== "") {
+        // Handle Plain Text
+        if (pastedText && pastedText.trim() !== "") {
             e.preventDefault(); saveHistory(); $('.canvas-box').removeClass('selected-box');
             let safeText = $('<div>').text(pastedText).html().replace(/\n/g, '<br>');
             $(`#p-${current}`).append(`<div class="canvas-box selected-box" style="top:${coords.y}px;left:${coords.x}px;width:300px;max-width:calc(800px - ${coords.x}px);z-index:${getHighestZ()};background-color:transparent;transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><div class="content-area" contenteditable="true" style="width: 100%; height: 100%; box-sizing: border-box; word-break: break-word; white-space: pre-wrap; overflow-wrap: break-word;">${safeText}</div></div>`);
