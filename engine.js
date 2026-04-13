@@ -2649,19 +2649,6 @@ $(document).ready(async function() {
                     showToast("📋 Copied " + customClipboard.length + " item(s)");
                 }
             }
-
-            if (e.ctrlKey && e.key.toLowerCase() === 'v' && !isTyping) {
-                if (navigator.clipboard && navigator.clipboard.readText) {
-                    navigator.clipboard.readText().then(text => {
-                        if (text && text.includes('"noteDumpClipboard":true')) {
-                            processCustomPaste(text);
-                        }
-                    }).catch(err => {
-                        // Suppress error
-                    });
-                }
-                return;
-            }
         }
     });
 
