@@ -23,45 +23,44 @@ FRONTEND_HTML = """
     <style>
         body { background-color: #000000; color: white; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; position: relative; }
         
-        /* Nav & Header */
-        .top-nav { display: flex; justify-content: flex-end; align-items: center; padding: 20px 30px; position: absolute; top: 0; right: 0; width: 100%; z-index: 9999; gap: 12px; box-sizing: border-box; }
-        .guide-btn { color: #94a3b8; text-decoration: none; font-size: 16px; font-weight: bold; font-family: sans-serif; border: 1px solid #475569; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: #1e293b; transition: 0.2s; }
-        .guide-btn:hover { color: white; border-color: #0ea5e9; transform: scale(1.1); background: #0ea5e9;}
-        .coffee-btn { color: #0ea5e9; text-decoration: none; font-weight: bold; font-size: 14px; border: 1px solid #0ea5e9; padding: 8px 16px; border-radius: 20px; transition: 0.2s; white-space: nowrap; background: transparent; }
+        /* 1. Header & Logo Container */
+        .hero { text-align: center; margin-bottom: 40px; position: relative; }
+        .logo-container { position: relative; display: inline-block; padding: 0 20px; }
+        .logo-text { font-size: 55px; font-weight: 800; color: #f8fafc; margin: 0; display: inline-block;}
+        
+        /* 2. Repositioned Buttons (Now relative to Logo) */
+        .header-actions { position: absolute; top: -10px; right: -80px; display: flex; align-items: center; gap: 8px; }
+        .guide-btn { color: #94a3b8; text-decoration: none; font-size: 14px; font-weight: bold; border: 1px solid #475569; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; background: #1e293b; transition: 0.2s; }
+        .guide-btn:hover { color: white; border-color: #0ea5e9; background: #0ea5e9;}
+        .coffee-btn { color: #0ea5e9; text-decoration: none; font-weight: bold; font-size: 11px; border: 1px solid #0ea5e9; padding: 4px 10px; border-radius: 20px; transition: 0.2s; white-space: nowrap; background: transparent; }
         .coffee-btn:hover { background: rgba(14, 165, 233, 0.15); color: #fff; }
 
-        /* Modal */
+        /* 3. Lowered Tagline & Text */
+        .tagline { color: #94a3b8; font-size: 18px; margin-top: 15px; margin-bottom: 5px; }
+        .support-text { font-size: 12px; color: #475569; margin-top: 5px; letter-spacing: 1px; }
+
+        /* Modal Settings */
         .modal-window { position: fixed; background-color: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px); top: 0; right: 0; bottom: 0; left: 0; z-index: 99999; visibility: hidden; opacity: 0; transition: all 0.3s; display: flex; justify-content: center; align-items: center; }
         .modal-window:target { visibility: visible; opacity: 1; }
-        .modal-content { background: #0f172a; width: 90%; max-width: 650px; padding: 30px; border-radius: 16px; border: 1px solid #334155; color: #f1f5f9; position: relative; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.8); text-align: left;}
-        .modal-close { position: absolute; top: 20px; right: 25px; color: #64748b; text-decoration: none; font-size: 28px; font-weight: bold; transition: 0.2s; }
-        .modal-close:hover { color: #ef4444; }
-        .modal-content h2 { margin-top: 0; color: #4f46e5; font-size: 24px; border-bottom: 1px solid #1e293b; padding-bottom: 10px;}
-        .modal-content h4 { color: #0ea5e9; margin-top: 20px; margin-bottom: 10px; font-size: 18px;}
-        .modal-content li { margin-bottom: 10px; line-height: 1.5; font-size: 15px; color: #cbd5e1;}
+        .modal-content { background: #0f172a; width: 90%; max-width: 650px; padding: 30px; border-radius: 16px; border: 1px solid #334155; color: #f1f5f9; position: relative; max-height: 80vh; overflow-y: auto; text-align: left;}
+        .modal-close { position: absolute; top: 20px; right: 25px; color: #64748b; text-decoration: none; font-size: 28px; font-weight: bold; }
+        .modal-content h2 { color: #4f46e5; border-bottom: 1px solid #1e293b; padding-bottom: 10px;}
         .pro-tag { color: #10b981; font-weight: bold; } 
 
-        /* Main UI */
-        .hero { text-align: center; margin-bottom: 30px; }
-        .logo-text { font-size: 55px; font-weight: 800; color: #f8fafc; margin: 0;}
-        .tagline { color: #94a3b8; font-size: 18px; margin-top: -5px;}
+        /* Main UI Box */
         .upload-box { background-color: #0f172a; border: 1px dashed #334155; border-radius: 12px; padding: 40px; text-align: center; width: 450px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        
         .primary-btn { display: inline-block; background-color: #4f46e5; color: white; border: none; padding: 16px 28px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; width: 100%; transition: 0.2s; text-align: center; box-sizing: border-box; }
         .primary-btn:hover { background-color: #4338ca; }
         .primary-btn span { color: #c7d2fe; font-size: 14px; display: block; margin-top: 4px; font-weight: normal;}
-
         .blank-btn { background-color: #1e293b; border: 1px solid #334155; margin-top: 20px;}
         .blank-btn:hover { background-color: #334155; }
         
-        .error-box { display: none; color: #ef4444; background-color: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 6px; padding: 10px; margin-top: 20px; font-size: 14px; }
-
-        /* Progress Bar Styles */
+        /* Progress & Error */
         .progress-container { width: 100%; background-color: #1e293b; border-radius: 4px; overflow: hidden; margin-bottom: 8px; height: 10px; display: none; }
         .progress-fill { width: 0%; height: 100%; background-color: #10b981; transition: width 0.2s ease-out; }
         .status-text { color: #c7d2fe; font-size: 14px; font-weight: bold; display: none; }
-        
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        .error-box { display: none; color: #ef4444; background-color: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 6px; padding: 10px; margin-top: 20px; font-size: 14px; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         .processing-pulse { animation: pulse 1.5s infinite; color: #fcd34d !important; }
     </style>
     <script>
@@ -73,13 +72,10 @@ FRONTEND_HTML = """
             const btnLabel = document.getElementById('upload-label');
             const errorBox = document.getElementById('error-box');
             
-            // Save original button HTML to restore later safely
-            const originalHtml = `
-                📥 convert existing file<br>
-                <span>200 mb pdf pdx ppt</span>
-            `;
+            // Save original HTML
+            const originalHtml = `📥 convert existing file<br><span>200 mb pdf pdx ppt</span>`;
             
-            // Transform UI for Progress Tracking
+            // Trigger UI Loading State
             btnLabel.style.pointerEvents = 'none';
             btnLabel.style.backgroundColor = '#312e81';
             btnLabel.innerHTML = `
@@ -93,38 +89,38 @@ FRONTEND_HTML = """
             const formData = new FormData();
             formData.append('file', file);
 
-            // Use XMLHttpRequest instead of fetch for real progress events
             const xhr = new XMLHttpRequest();
             xhr.open('POST', '/convert', true);
             xhr.responseType = 'blob';
 
-            // 1. Upload Progress Phase
+            // Phase 1: Real-time progress bar tracking
             xhr.upload.onprogress = function(e) {
                 if (e.lengthComputable) {
-                    const percentComplete = Math.round((e.loaded / e.total) * 100);
-                    document.getElementById('prog-fill').style.width = percentComplete + '%';
-                    document.getElementById('stat-text').innerText = 'Uploading: ' + percentComplete + '%';
+                    const percent = Math.round((e.loaded / e.total) * 100);
+                    document.getElementById('prog-fill').style.width = percent + '%';
+                    document.getElementById('stat-text').innerText = 'Uploading: ' + percent + '%';
                     
-                    if (percentComplete >= 100) {
-                        // 2. Processing Phase (Server side parsing)
-                        document.getElementById('stat-text').innerHTML = 'Processing Document...<br><span style="font-size: 12px; font-weight: normal;">(This may take a minute for large files)</span>';
+                    if (percent >= 100) {
+                        // Switch text once upload finishes and parsing begins
+                        document.getElementById('stat-text').innerHTML = 'Processing Document...<br><small style="font-weight: normal;">(Converting slides & images)</small>';
                         document.getElementById('stat-text').classList.add('processing-pulse');
                     }
                 }
             };
 
-            // 3. Completion / Error Handling Phase
-            xhr.onload = function() {
-                // Hard reset the button UI
+            // FAIL-SAFE: The instant the request resolves (success or fail), reset the button.
+            xhr.onloadend = function() {
                 btnLabel.style.backgroundColor = '';
                 btnLabel.style.pointerEvents = 'auto';
                 btnLabel.innerHTML = originalHtml;
                 fileInput.value = '';
+            };
 
+            // Phase 2: Handle the server's response
+            xhr.onload = function() {
                 if (xhr.status === 200) {
-                    // Success Download
-                    const blob = xhr.response;
-                    const url = window.URL.createObjectURL(blob);
+                    // Success -> Trigger file download natively in browser
+                    const url = window.URL.createObjectURL(xhr.response);
                     const a = document.createElement('a');
                     a.style.display = 'none';
                     a.href = url;
@@ -133,24 +129,18 @@ FRONTEND_HTML = """
                     a.click();
                     window.URL.revokeObjectURL(url);
                 } else {
-                    // Handle Server Error Returns
+                    // Server threw an error (like a 500 or 400)
                     const reader = new FileReader();
-                    reader.onload = function() {
-                        errorBox.innerHTML = "Server Error: " + reader.result;
+                    reader.onload = () => { 
+                        errorBox.innerHTML = "Server Error: " + reader.result; 
                         errorBox.style.display = 'block';
                     };
                     reader.readAsText(xhr.response);
                 }
             };
 
-            // 4. Catastrophic Network Failure / Timeout
-            xhr.onerror = function() {
-                btnLabel.style.backgroundColor = '';
-                btnLabel.style.pointerEvents = 'auto';
-                btnLabel.innerHTML = originalHtml;
-                fileInput.value = '';
-                
-                errorBox.innerHTML = "🚨 Network or Server Timeout. If your file is massive, Render's free server may have killed the process before it could finish.";
+            xhr.onerror = () => {
+                errorBox.innerHTML = "🚨 Network error or timeout. If the file is massive, the server process may have been killed.";
                 errorBox.style.display = 'block';
             };
 
@@ -160,16 +150,16 @@ FRONTEND_HTML = """
         async function handleBlank(event) {
             event.preventDefault();
             const btn = document.getElementById('blank-btn');
-            const originalHtml = btn.innerHTML;
+            const original = btn.innerHTML;
             
             btn.style.pointerEvents = 'none';
             btn.style.opacity = '0.7';
             btn.innerHTML = '⏳ Generating...';
-
+            
             try {
-                const response = await fetch('/blank');
-                if (response.ok) {
-                    const blob = await response.blob();
+                const res = await fetch('/blank');
+                if (res.ok) {
+                    const blob = await res.blob();
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.style.display = 'none';
@@ -182,23 +172,30 @@ FRONTEND_HTML = """
             } catch(e) {
                 console.error(e);
             }
-
+            
             btn.style.pointerEvents = 'auto';
             btn.style.opacity = '1';
-            btn.innerHTML = originalHtml;
+            btn.innerHTML = original;
         }
     </script>
 </head>
 <body>
     
-    <div class="top-nav">
-        <a href="https://buymeacoffee.com/jpramirez" target="_blank" class="coffee-btn">☕ Buy me a coffee</a>
-        <a href="#guide-modal" class="guide-btn" title="App Guide & Features">?</a>
+    <div class="hero">
+        <div class="logo-container">
+            <h1 class="logo-text">📝 NoteDump</h1>
+            <div class="header-actions">
+                <a href="https://buymeacoffee.com/jpramirez" target="_blank" class="coffee-btn">☕ Support</a>
+                <a href="#guide-modal" class="guide-btn">?</a>
+            </div>
+        </div>
+        <p class="tagline">Turning your documents into an interactive notebook</p>
+        <p class="support-text">PPTX • PPT • PDF</p>
     </div>
 
     <div id="guide-modal" class="modal-window">
         <div class="modal-content">
-            <a href="#" class="modal-close" title="Close">&times;</a>
+            <a href="#" class="modal-close">&times;</a>
             <h2>📝 Welcome to NoteDump</h2>
             <p>Turning your documents into an interactive notebook.</p>
             <h4>✨ NoteDump Features & Guide</h4>
@@ -218,20 +215,15 @@ FRONTEND_HTML = """
         </div>
     </div>
 
-    <div class="hero">
-        <h1 class="logo-text">📝 NoteDump</h1>
-        <p class="tagline">Turning your documents into an interactive notebook</p>
-    </div>
-    
     <div class="upload-box">
         <input type="file" id="file" accept=".pdf,.pptx,.ppt" style="display: none;" onchange="handleUpload(event);">
         <label id="upload-label" for="file" class="primary-btn">
             📥 convert existing file<br>
             <span>200 mb pdf pdx ppt</span>
         </label>
-
+        
         <button id="blank-btn" class="primary-btn blank-btn" onclick="handleBlank(event)">📓 Create Blank Notebook</button>
-
+        
         <div id="error-box" class="error-box"></div>
     </div>
 
