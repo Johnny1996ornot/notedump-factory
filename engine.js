@@ -28,10 +28,6 @@ let lastMouseX = 150;
 let lastMouseY = 150;
 
 let activePinTabIdx = 0; 
-let isDraggingTable = false;
-let tableDragStartCell = null; 
-let $activeTableContentArea = null; 
-
 let isPlacingText = false;
 let isPlacingSticky = false;
 
@@ -1349,7 +1345,7 @@ function selectTableRow() {
 function selectTableCol() {
     let $cell = $('.selected-cell').first();
     if($cell.length === 0) return showToast("Click a cell first!");
-    let idx = $cell.index();
+    let idx = $cell[0].cellIndex;
     let $table = $cell.closest('table');
     $table.find('tr').each(function() {
         $(this).children().eq(idx).addClass('selected-cell');
@@ -1374,7 +1370,7 @@ function addTableCol() {
     saveHistory();
     let $cell = $('.selected-cell').first();
     if($cell.length === 0) return showToast("Click a cell first!");
-    let idx = $cell.index();
+    let idx = $cell[0].cellIndex;
     let $table = $cell.closest('table');
     $table.find('tr').each(function() {
         $(this).children().eq(idx).after(`<td style="border: 1px solid #cbd5e1; padding: 4px 6px; word-break: break-word; white-space: pre-wrap; vertical-align: top; overflow:hidden;"><br></td>`);
@@ -1395,8 +1391,9 @@ function delTableCol() {
     saveHistory();
     let $cell = $('.selected-cell').first();
     if($cell.length === 0) return showToast("Click a cell first!");
-    let idx = $cell.index();
+    let idx = $cell[0].cellIndex;
     let $table = $cell.closest('table');
+    $table.find('col').eq(idx).remove();
     $table.find('tr').each(function() {
         $(this).children().eq(idx).remove();
     });
@@ -1424,7 +1421,6 @@ function equalizeTable() {
     if (maxCols === 0 || numRows === 0) return;
 
     let percW = (100 / maxCols).toFixed(4) + '%';
-    let percH = (100 / numRows).toFixed(4) + '%';
 
     $table.removeAttr('style').css({
         'table-layout': 'fixed', 'width': '100%', 'height': '100%',
@@ -1436,13 +1432,12 @@ function equalizeTable() {
 
     $table.find('colgroup').remove();
     $table.prepend(`<colgroup>${colgroupHtml}</colgroup>`);
-    $table.find('tr').css('height', percH);
 
     $table.find('td, th').each(function() {
         $(this).css({
-            'width': percW, 'height': percH, 'border': '1px solid #cbd5e1', 'padding': '4px 6px',
+            'border': '1px solid #cbd5e1', 'padding': '4px 6px',
             'word-break': 'break-word', 'white-space': 'pre-wrap', 'vertical-align': 'top',
-            'overflow': 'hidden', 'resize': 'none'
+            'overflow': 'hidden', 'position': 'relative'
         });
     });
 
@@ -1458,8 +1453,8 @@ function mergeTableCells() {
     let minR = 9999, maxR = -1, minC = 9999, maxC = -1;
 
     $cells.each(function() {
-        let r = $(this).closest('tr').index();
-        let c = $(this).index();
+        let r = $(this).closest('tr')[0].rowIndex;
+        let c = $(this)[0].cellIndex;
         let rSpan = parseInt($(this).attr('rowspan')) || 1;
         let cSpan = parseInt($(this).attr('colspan')) || 1;
         if(r < minR) minR = r;
@@ -2216,7 +2211,7 @@ function toggleEdit() {
             }
         }).draggable({ 
             modifiers: [],
-            ignoreFrom: '.col-resizer, .audio-play-btn, .audio-track, .audio-skip-btn, .audio-speed-btn, .is-editing-text, .content-area, td, th, .pin, .pin-rotation-ring, .pin-rotate-dot, .del-btn',
+            ignoreFrom: '.audio-play-btn, .audio-track, .audio-skip-btn, .audio-speed-btn, .is-editing-text, .content-area, td, th, .pin, .pin-rotation-ring, .pin-rotate-dot, .del-btn',
             listeners: { 
                 start: saveHistory, 
                 move(event) {
@@ -2499,7 +2494,7 @@ $(document).ready(async function() {
             $box.addClass('selected-box');
             updateContextMenu();
 
-            if ($(e.target).closest('.content-area, .audio-play-btn, .audio-track, .pin-rotate-dot, .col-resizer').length > 0) { return; }
+            if ($(e.target).closest('.content-area, .audio-play-btn, .audio-track, .pin-rotate-dot').length > 0) { return; }
             if(!$(e.target).is(':focus')) { e.preventDefault(); }
             return;
         }
@@ -2748,160 +2743,118 @@ $(document).ready(async function() {
     });
 
     // ==========================================================================
-    // BULLETPROOF EXCEL-STYLE TABLE SELECTION & RESIZING
+    // SPREADSHEET MANAGER (Replaces old buggy table logic)
     // ==========================================================================
+    let tblMgr = { 
+        active: false, isRow: false, isCol: false, 
+        start: 0, $c1: null, $c2: null, $row: null, 
+        w1: 0, w2: 0, h1: 0, tW: 0 
+    };
 
-    // 1. Auto-Normalize ANY table (Pasted, Extracted, or Generated)
+    function normalizeTable($t) {
+        if ($t.attr('data-norm') === 'true') return;
+        $t.css({ 'table-layout': 'fixed', 'width': '100%', 'border-collapse': 'collapse' });
+        $t.find('td, th').css({ 'width': '', 'position': 'relative' }); // clear rigid inline widths
+        
+        let cols = 0;
+        $t.find('tr').first().children().each(function() { cols += parseInt($(this).attr('colspan')||1); });
+        
+        if (cols > 0 && $t.find('colgroup').length === 0) {
+            let cg = '<colgroup>';
+            for(let i=0; i<cols; i++) cg += `<col style="width:${100/cols}%">`;
+            cg += '</colgroup>';
+            $t.prepend(cg);
+        }
+        $t.attr('data-norm', 'true');
+    }
+
     $(document).on('mouseenter', '.canvas-box table', function() {
+        if(isEditing) normalizeTable($(this));
+    });
+
+    $(document).on('mousemove', '.canvas-box table', function(e) {
+        if (!isEditing || tblMgr.active) return;
+        let $td = $(e.target).closest('td, th');
+        if (!$td.length) return;
+
+        let rect = $td[0].getBoundingClientRect();
+        let nearR = (rect.right - e.clientX) >= 0 && (rect.right - e.clientX) <= 6;
+        let nearB = (rect.bottom - e.clientY) >= 0 && (rect.bottom - e.clientY) <= 6;
+
+        $(this).css('cursor', 'auto');
+        $(this).find('.res-c, .res-r').removeClass('res-c res-r');
+
+        if (nearR && $td.next().length) {
+            $(this).css('cursor', 'col-resize');
+            $td.addClass('res-c');
+        } else if (nearB && $td.parent().next().length) {
+            $(this).css('cursor', 'row-resize');
+            $td.addClass('res-r');
+        }
+    });
+
+    $(document).on('mousedown', '.canvas-box table td, .canvas-box table th', function(e) {
         if (!isEditing) return;
-        let $table = $(this);
         
-        if ($table.attr('data-normalized') !== 'true') {
-            // Force rigid spreadsheet layout
-            $table.css({ 'table-layout': 'fixed', 'border-collapse': 'collapse', 'width': '100%' });
-            
-            // Generate <colgroup> based on actual visual widths to preserve PPT layout
-            if ($table.find('colgroup').length === 0) {
-                let colHtml = '<colgroup>';
-                let totalWidth = $table.width() || 1;
-                $table.find('tr').first().children('td, th').each(function() {
-                    // Use native pixel width converted to percentage
-                    let w = ($(this).outerWidth() / totalWidth) * 100;
-                    colHtml += `<col style="width:${w}%">`;
-                });
-                colHtml += '</colgroup>';
-                $table.prepend(colHtml);
-            }
-            $table.attr('data-normalized', 'true');
-        }
-
-        // Inject invisible drag handles for columns
-        $table.find('tr:first-child').children('td, th').each(function() {
-            if ($(this).find('.col-resizer').length === 0 && $(this).next().length > 0) {
-                $(this).css('position', 'relative');
-                $(this).append('<div class="col-resizer" contenteditable="false" style="position:absolute; top:0; right:-3px; width:6px; height:100%; cursor:col-resize; z-index:999; background:transparent;"></div>');
-            }
-        });
-    });
-
-    // 2. Cell Selection - Mousedown
-    $(document).on('mousedown touchstart', '.canvas-box table td, .canvas-box table th', function(e) {
-        if(!isEditing) return;
-        if ($(e.target).hasClass('col-resizer')) return;
-
-        e.stopPropagation(); 
-        isDraggingTable = true;
-        tableDragStartCell = $(this);
+        let $t = $(this).closest('table');
         
-        // KILL BROWSER TEXT HIGHLIGHTING by temporarily disabling contenteditable
-        $activeTableContentArea = $(this).closest('.content-area');
-        $activeTableContentArea.attr('contenteditable', 'false');
-        window.getSelection().removeAllRanges();
-
-        if(!e.shiftKey && !e.ctrlKey && !e.metaKey) {
-            $(this).closest('table').find('td, th').removeClass('selected-cell');
-        }
-        $(this).addClass('selected-cell');
-
-        let $box = $(this).closest('.canvas-box');
-        if(!$box.hasClass('selected-box')) {
-            $('.canvas-box').removeClass('selected-box');
-            $box.addClass('selected-box');
-        }
-        if ($(this).closest('.canvas-box').find('.pin').length > 0) switchTabToBox($box);
-
-        updateContextMenu();
-    });
-
-    // 3. Cell Selection - Mousemove (Dragging the box)
-    $(document).on('mouseenter', '.canvas-box table td, .canvas-box table th', function(e) {
-        if(!isEditing || !isDraggingTable || !tableDragStartCell) return;
-
-        let $table = $(this).closest('table');
-        $table.find('td, th').removeClass('selected-cell'); 
-
-        // Use native cellIndex and rowIndex for far better accuracy on complex PPT tables
-        let startRow = tableDragStartCell.parent()[0].rowIndex;
-        let startCol = tableDragStartCell[0].cellIndex;
-        let endRow = $(this).parent()[0].rowIndex;
-        let endCol = $(this)[0].cellIndex;
-
-        let minRow = Math.min(startRow, endRow);
-        let maxRow = Math.max(startRow, endRow);
-        let minCol = Math.min(startCol, endCol);
-        let maxCol = Math.max(startCol, endCol);
-
-        $table.find('tr').each(function() {
-            let r = this.rowIndex;
-            if (r >= minRow && r <= maxRow) {
-                $(this).children('td, th').each(function() {
-                    let c = this.cellIndex;
-                    if (c >= minCol && c <= maxCol) {
-                        $(this).addClass('selected-cell');
-                    }
-                });
-            }
-        });
-    });
-
-    // 4. Release Drag - Restore editing
-    $(document).on('mouseup touchend', function() {
-        if (isDraggingTable) {
-            isDraggingTable = false;
-            tableDragStartCell = null;
-            if ($activeTableContentArea) {
-                $activeTableContentArea.attr('contenteditable', 'true');
-                $activeTableContentArea = null;
-            }
-        }
-    });
-
-    // 5. Math logic for dragging the column boundary
-    $(document).on('mousedown', '.col-resizer', function(e) {
-        if (!isEditing) return;
-        e.stopPropagation();
-        e.preventDefault();
-
-        let $table = $(this).closest('table');
-        let colIndex = $(this).parent()[0].cellIndex;
+        if ($(this).hasClass('res-c')) {
+            e.preventDefault(); e.stopPropagation();
+            normalizeTable($t);
+            tblMgr.active = true; tblMgr.isCol = true; tblMgr.start = e.clientX;
+            let idx = this.cellIndex;
+            tblMgr.$c1 = $t.find('col').eq(idx);
+            tblMgr.$c2 = $t.find('col').eq(idx + 1);
+            tblMgr.tW = $t.width();
+            tblMgr.w1 = parseFloat(tblMgr.$c1[0].style.width) || (100/$t.find('col').length);
+            tblMgr.w2 = parseFloat(tblMgr.$c2[0].style.width) || (100/$t.find('col').length);
+            // Lock parent box from dragging
+            $t.closest('.canvas-box').draggable = false; 
+            return;
+        } 
         
-        let $col = $table.find('col').eq(colIndex);
-        let $nextCol = $table.find('col').eq(colIndex + 1);
+        if ($(this).hasClass('res-r')) {
+            e.preventDefault(); e.stopPropagation();
+            tblMgr.active = true; tblMgr.isRow = true; tblMgr.start = e.clientY;
+            tblMgr.$row = $(this).parent();
+            tblMgr.h1 = tblMgr.$row.height();
+            return;
+        }
 
-        if ($col.length === 0 || $nextCol.length === 0) return;
+        // Cell Selection vs Text Selection
+        if (e.shiftKey || e.ctrlKey || e.metaKey) {
+            e.preventDefault(); // Stop text caret
+            if (!e.ctrlKey && !e.metaKey) $t.find('td, th').removeClass('selected-cell');
+            $(this).addClass('selected-cell');
+            updateContextMenu();
+        } else {
+            $t.find('td, th').removeClass('selected-cell');
+        }
+    });
 
-        let startX = e.pageX;
-        let startColWidth = parseFloat($col[0].style.width);
-        let startNextColWidth = parseFloat($nextCol[0].style.width);
-        let tableWidth = $table.width();
-
-        // If for some reason percentages aren't set, default math
-        if (isNaN(startColWidth)) startColWidth = 100 / $table.find('col').length;
-        if (isNaN(startNextColWidth)) startNextColWidth = 100 / $table.find('col').length;
-
-        // Prevent dragging the whole box around
-        let $box = $table.closest('.canvas-box');
-        $box.css('pointer-events', 'none'); 
-        $table.css('pointer-events', 'auto'); // Keep table active
-
-        $(document).on('mousemove.tblResize', function(ev) {
-            let dx = ev.pageX - startX;
-            let dxPercent = (dx / tableWidth) * 100; 
-
-            let newWidth = startColWidth + dxPercent;
-            let newNextWidth = startNextColWidth - dxPercent;
-
-            if (newWidth > 3 && newNextWidth > 3) {
-                $col.css('width', newWidth + '%');
-                $nextCol.css('width', newNextWidth + '%');
+    $(document).on('mousemove', function(e) {
+        if (!tblMgr.active) return;
+        if (tblMgr.isCol) {
+            let dx = ((e.clientX - tblMgr.start) / tblMgr.tW) * 100;
+            let nW1 = tblMgr.w1 + dx; let nW2 = tblMgr.w2 - dx;
+            if (nW1 > 3 && nW2 > 3) {
+                tblMgr.$c1.css('width', nW1 + '%');
+                tblMgr.$c2.css('width', nW2 + '%');
             }
-        });
+        } else if (tblMgr.isRow) {
+            let dy = (e.clientY - tblMgr.start) / currentZoom;
+            let nH = tblMgr.h1 + dy;
+            if (nH > 15) tblMgr.$row.css('height', nH + 'px');
+        }
+    });
 
-        $(document).on('mouseup.tblResize', function() {
-            $(document).off('mousemove.tblResize mouseup.tblResize');
-            $box.css('pointer-events', 'auto');
+    $(document).on('mouseup', function() {
+        if (tblMgr.active) {
+            tblMgr.active = false; tblMgr.isCol = false; tblMgr.isRow = false;
+            $('.canvas-box table').css('cursor', 'auto');
+            $('.res-c, .res-r').removeClass('res-c res-r');
             saveHistory();
-        });
+        }
     });
 
 
