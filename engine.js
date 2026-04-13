@@ -1084,6 +1084,8 @@ function updateContextMenu() {
     let $sel = $('.selected-box');
     if($sel.length > 0 && isEditing) {
         $('#context-menu').css('display', 'flex');
+        
+        // COMPLETELY REMOVED THE UGLY VERTICAL SIDE MENU LOGIC
         $('#context-menu').removeClass('is-vertical-menu');
 
         let hasTable = $sel.find('table').length > 0;
@@ -1174,20 +1176,13 @@ function updateContextMenu() {
         if (finalMenuLeft < vLeft + 10) finalMenuLeft = vLeft + 10;
         if (finalMenuLeft + cWidth > vRight - 10) finalMenuLeft = vRight - cWidth - 10;
 
+        // If it doesn't fit neatly ABOVE the box, simply drop it neatly BELOW the box.
         if (finalMenuTop < vTop + 10) {
-            $('#context-menu').addClass('is-vertical-menu');
-            cHeight = $('#context-menu').outerHeight() || 300;
-            cWidth = $('#context-menu').outerWidth() || 60;
-
-            finalMenuTop = Math.max(vTop + 10, topPos);
+            finalMenuTop = topPos + $sel.outerHeight() + 15;
+            
+            // If the box is so massive it doesn't fit below either, just stick it to the top of the screen
             if (finalMenuTop + cHeight > vBottom - 10) {
-                finalMenuTop = vBottom - cHeight - 10;
-            }
-
-            finalMenuLeft = leftPos + $sel.outerWidth() + 10;
-
-            if (finalMenuLeft + cWidth > vRight - 10) {
-                finalMenuLeft = leftPos - cWidth - 10; 
+                finalMenuTop = vTop + 10;
             }
         }
 
@@ -1447,7 +1442,7 @@ function equalizeTable() {
 function mergeTableCells() {
     saveHistory();
     let $cells = $('.selected-cell');
-    if($cells.length < 2) return showToast("Select at least 2 cells to merge (Hold Shift and Click cells)");
+    if($cells.length < 2) return showToast("Select at least 2 cells to merge (Drag to select cells)");
 
     let $table = $cells.first().closest('table');
     let minR = 9999, maxR = -1, minC = 9999, maxC = -1;
@@ -1492,7 +1487,7 @@ function addImgCenter() {
                 $cell.append(`<div style="width:100%; height:auto;"><img src="${ev.target.result}" style="max-width:100%; height:auto; object-fit:contain; border-radius:4px; display:block; margin:auto;"></div>`);
             } else {
                 let coords = getScreenCenterCoords(300, 200);
-                $(`#p-${current}`).append(`<div class="canvas-box selected-box" style="top:${coords.y}px;left:${coords.x}px;width:300px;max-width:calc(800px - ${coords.x}px);z-index:${getHighestZ()};transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><img src="${ev.target.result}" style="width:100%"></div>`); 
+                $(`#p-${current}`).append(`<div class="canvas-box selected-box" style="top:${coords.y}px;left:${coords.x}px;width:300px;z-index:${getHighestZ()};transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><img src="${ev.target.result}" style="width:100%"></div>`); 
             }
             if(isEditing) { toggleEdit(); toggleEdit(); } 
             updateContextMenu(); 
@@ -2486,6 +2481,8 @@ $(document).ready(async function() {
 
         if ($(e.target).closest('.canvas-box').length > 0) {
             let $box = $(e.target).closest('.canvas-box');
+            
+            // Only clear table selection if we didn't just click inside a table
             if ($(e.target).closest('table').length === 0) {
                 $('.canvas-box table td, .canvas-box table th').removeClass('selected-cell');
             }
@@ -2714,7 +2711,7 @@ $(document).ready(async function() {
             r.onload = ev => {
                 saveHistory();
                 $('.canvas-box').removeClass('selected-box');
-                $(`#p-${current}`).append(`<div class="canvas-box selected-box" style="top:${coords.y}px;left:${coords.x}px;width:300px;max-width:calc(800px - ${coords.x}px);z-index:${getHighestZ()};transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><img src="${ev.target.result}" style="width:100%"></div>`);
+                $(`#p-${current}`).append(`<div class="canvas-box selected-box" style="top:${coords.y}px;left:${coords.x}px;width:300px;z-index:${getHighestZ()};transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><img src="${ev.target.result}" style="width:100%"></div>`);
                 updateContextMenu();
             };
             r.readAsDataURL(imageFile);
@@ -2728,7 +2725,7 @@ $(document).ready(async function() {
             
             if ($img.length > 0 && src && !src.startsWith('file:///')) {
                 e.preventDefault(); saveHistory(); $('.canvas-box').removeClass('selected-box');
-                $(`#p-${current}`).append(`<div class="canvas-box selected-box" style="top:${coords.y}px;left:${coords.x}px;width:300px;max-width:calc(800px - ${coords.x}px);z-index:${getHighestZ()};transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><img src="${src}" style="width:100%"></div>`);
+                $(`#p-${current}`).append(`<div class="canvas-box selected-box" style="top:${coords.y}px;left:${coords.x}px;width:300px;z-index:${getHighestZ()};transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><img src="${src}" style="width:100%"></div>`);
                 updateContextMenu();
                 return;
             }
@@ -2737,7 +2734,7 @@ $(document).ready(async function() {
         if (pastedText && pastedText.trim() !== "") {
             e.preventDefault(); saveHistory(); $('.canvas-box').removeClass('selected-box');
             let safeText = $('<div>').text(pastedText).html().replace(/\n/g, '<br>');
-            $(`#p-${current}`).append(`<div class="canvas-box selected-box" style="top:${coords.y}px;left:${coords.x}px;width:300px;max-width:calc(800px - ${coords.x}px);z-index:${getHighestZ()};background-color:transparent;transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><div class="content-area" contenteditable="true" style="width: 100%; height: 100%; box-sizing: border-box; word-break: break-word; white-space: pre-wrap; overflow-wrap: break-word;">${safeText}</div></div>`);
+            $(`#p-${current}`).append(`<div class="canvas-box selected-box" style="top:${coords.y}px;left:${coords.x}px;width:300px;z-index:${getHighestZ()};background-color:transparent;transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><div class="content-area" contenteditable="true" style="width: 100%; height: 100%; box-sizing: border-box; word-break: break-word; white-space: pre-wrap; overflow-wrap: break-word;">${safeText}</div></div>`);
             updateContextMenu();
         }
     });
@@ -2754,7 +2751,7 @@ $(document).ready(async function() {
     function normalizeTable($t) {
         if ($t.attr('data-norm') === 'true') return;
         $t.css({ 'table-layout': 'fixed', 'width': '100%', 'border-collapse': 'collapse' });
-        $t.find('td, th').css({ 'width': '', 'position': 'relative' }); // clear rigid inline widths
+        $t.find('td, th').css({ 'width': '', 'position': 'relative' }); 
         
         let cols = 0;
         $t.find('tr').first().children().each(function() { cols += parseInt($(this).attr('colspan')||1); });
@@ -2773,7 +2770,7 @@ $(document).ready(async function() {
     });
 
     $(document).on('mousemove', '.canvas-box table', function(e) {
-        if (!isEditing || tblMgr.active) return;
+        if (!isEditing || tblMgr.active || tblDrag.active) return;
         let $td = $(e.target).closest('td, th');
         if (!$td.length) return;
 
@@ -2793,58 +2790,114 @@ $(document).ready(async function() {
         }
     });
 
+    // --- NEW SMART CELL SELECTION LOGIC ---
+    let tblDrag = {
+        active: false,
+        startX: 0, startY: 0,
+        startCell: null,
+        $table: null,
+        $contentArea: null
+    };
+
     $(document).on('mousedown', '.canvas-box table td, .canvas-box table th', function(e) {
         if (!isEditing) return;
         
-        let $t = $(this).closest('table');
-        
-        if ($(this).hasClass('res-c')) {
-            e.preventDefault(); e.stopPropagation();
-            normalizeTable($t);
-            tblMgr.active = true; tblMgr.isCol = true; tblMgr.start = e.clientX;
-            let idx = this.cellIndex;
-            tblMgr.$c1 = $t.find('col').eq(idx);
-            tblMgr.$c2 = $t.find('col').eq(idx + 1);
-            tblMgr.tW = $t.width();
-            tblMgr.w1 = parseFloat(tblMgr.$c1[0].style.width) || (100/$t.find('col').length);
-            tblMgr.w2 = parseFloat(tblMgr.$c2[0].style.width) || (100/$t.find('col').length);
-            // Lock parent box from dragging
-            $t.closest('.canvas-box').draggable = false; 
-            return;
-        } 
-        
-        if ($(this).hasClass('res-r')) {
-            e.preventDefault(); e.stopPropagation();
-            tblMgr.active = true; tblMgr.isRow = true; tblMgr.start = e.clientY;
-            tblMgr.$row = $(this).parent();
-            tblMgr.h1 = tblMgr.$row.height();
-            return;
+        // Let the resizing module handle it if we clicked an edge
+        if ($(this).hasClass('res-c') || $(this).hasClass('res-r')) {
+            let $t = $(this).closest('table');
+            if ($(this).hasClass('res-c')) {
+                e.preventDefault(); e.stopPropagation();
+                normalizeTable($t);
+                tblMgr.active = true; tblMgr.isCol = true; tblMgr.start = e.clientX;
+                let idx = this.cellIndex;
+                tblMgr.$c1 = $t.find('col').eq(idx);
+                tblMgr.$c2 = $t.find('col').eq(idx + 1);
+                tblMgr.tW = $t.width();
+                tblMgr.w1 = parseFloat(tblMgr.$c1[0].style.width) || (100/$t.find('col').length);
+                tblMgr.w2 = parseFloat(tblMgr.$c2[0].style.width) || (100/$t.find('col').length);
+                $t.closest('.canvas-box')[0].draggable = false; 
+                return;
+            } 
+            if ($(this).hasClass('res-r')) {
+                e.preventDefault(); e.stopPropagation();
+                tblMgr.active = true; tblMgr.isRow = true; tblMgr.start = e.clientY;
+                tblMgr.$row = $(this).parent();
+                tblMgr.h1 = tblMgr.$row.height();
+                return;
+            }
         }
 
-        // Cell Selection vs Text Selection
-        if (e.shiftKey || e.ctrlKey || e.metaKey) {
-            e.preventDefault(); // Stop text caret
-            if (!e.ctrlKey && !e.metaKey) $t.find('td, th').removeClass('selected-cell');
-            $(this).addClass('selected-cell');
-            updateContextMenu();
-        } else {
-            $t.find('td, th').removeClass('selected-cell');
+        // Setup for smart cell dragging
+        tblDrag.startX = e.clientX;
+        tblDrag.startY = e.clientY;
+        tblDrag.startCell = this;
+        tblDrag.$table = $(this).closest('table');
+        tblDrag.$contentArea = $(this).closest('.content-area');
+        tblDrag.active = false;
+
+        if (!e.shiftKey) {
+            tblDrag.$table.find('.selected-cell').removeClass('selected-cell');
         }
+        $(this).addClass('selected-cell');
+        updateContextMenu();
     });
 
     $(document).on('mousemove', function(e) {
-        if (!tblMgr.active) return;
-        if (tblMgr.isCol) {
-            let dx = ((e.clientX - tblMgr.start) / tblMgr.tW) * 100;
-            let nW1 = tblMgr.w1 + dx; let nW2 = tblMgr.w2 - dx;
-            if (nW1 > 3 && nW2 > 3) {
-                tblMgr.$c1.css('width', nW1 + '%');
-                tblMgr.$c2.css('width', nW2 + '%');
+        // Handle Edge Resizing
+        if (tblMgr.active) {
+            if (tblMgr.isCol) {
+                let dx = ((e.clientX - tblMgr.start) / tblMgr.tW) * 100;
+                let nW1 = tblMgr.w1 + dx; let nW2 = tblMgr.w2 - dx;
+                if (nW1 > 3 && nW2 > 3) {
+                    tblMgr.$c1.css('width', nW1 + '%');
+                    tblMgr.$c2.css('width', nW2 + '%');
+                }
+            } else if (tblMgr.isRow) {
+                let dy = (e.clientY - tblMgr.start) / currentZoom;
+                let nH = tblMgr.h1 + dy;
+                if (nH > 15) tblMgr.$row.css('height', nH + 'px');
             }
-        } else if (tblMgr.isRow) {
-            let dy = (e.clientY - tblMgr.start) / currentZoom;
-            let nH = tblMgr.h1 + dy;
-            if (nH > 15) tblMgr.$row.css('height', nH + 'px');
+            return;
+        }
+
+        // Handle Smart Dragging over cells
+        if (isEditing && tblDrag.startCell) {
+            if (!tblDrag.active) {
+                // Wait until they drag 5 pixels before blocking text editing
+                let dist = Math.hypot(e.clientX - tblDrag.startX, e.clientY - tblDrag.startY);
+                if (dist > 5) {
+                    tblDrag.active = true;
+                    // KILL text bleeding
+                    tblDrag.$contentArea.attr('contenteditable', 'false');
+                    if (window.getSelection) window.getSelection().removeAllRanges();
+                }
+            }
+
+            if (tblDrag.active) {
+                let $hoveredCell = $(e.target).closest('td, th');
+                if ($hoveredCell.length && $hoveredCell.closest('table')[0] === tblDrag.$table[0]) {
+                    let r1 = tblDrag.startCell.parentNode.rowIndex;
+                    let c1 = tblDrag.startCell.cellIndex;
+                    let r2 = $hoveredCell[0].parentNode.rowIndex;
+                    let c2 = $hoveredCell[0].cellIndex;
+
+                    let minR = Math.min(r1, r2); let maxR = Math.max(r1, r2);
+                    let minC = Math.min(c1, c2); let maxC = Math.max(c1, c2);
+
+                    tblDrag.$table.find('td, th').removeClass('selected-cell');
+                    tblDrag.$table.find('tr').each(function() {
+                        let r = this.rowIndex;
+                        if (r >= minR && r <= maxR) {
+                            $(this).children().each(function() {
+                                let c = this.cellIndex;
+                                if (c >= minC && c <= maxC) {
+                                    $(this).addClass('selected-cell');
+                                }
+                            });
+                        }
+                    });
+                }
+            }
         }
     });
 
@@ -2855,7 +2908,21 @@ $(document).ready(async function() {
             $('.res-c, .res-r').removeClass('res-c res-r');
             saveHistory();
         }
+
+        if (tblDrag.startCell) {
+            if (tblDrag.active) {
+                // Restore text editing abilities after you let go of the mouse
+                tblDrag.$contentArea.attr('contenteditable', 'true');
+            }
+            tblDrag.startCell = null;
+            tblDrag.active = false;
+            tblDrag.$table = null;
+            tblDrag.$contentArea = null;
+            updateContextMenu();
+        }
     });
+
+    // --- END SMART CELL LOGIC ---
 
 
     let colorHtml = "";
