@@ -125,7 +125,6 @@ function format(command, value = null) {
 function applyFontSize(size) {
     saveHistory(); 
 
-    // OVERRIDE: If table cells are explicitly selected, loop through them and natively highlight/format
     let $cells = $('.selected-cell');
     if ($cells.length > 0) {
         $cells.each(function() {
@@ -1147,7 +1146,6 @@ function updateContextMenu() {
             $('.menu-bg-tools').css('display', 'flex'); 
         }
 
-        // --- FIX: Safely rename only the color labels, without destroying dropdown text ---
         if (hasAudio && $activeCell.length === 0) {
             $('.menu-text-tools').find('.color-swatch').first().parent().prev('div').html('<span>Player<br>BG</span>');
             $('.menu-bg-tools').find('.color-swatch').first().parent().prev('div').html('<span>Button<br>Color</span>');
@@ -1380,7 +1378,6 @@ function selectTableCol() {
     updateContextMenu();
 }
 
-// --- FIX: Add Debouncer to prevent double-firing from inline HTML onClick attributes ---
 let tableActionLock = false;
 function executeTableAction(actionFn) {
     if (tableActionLock) return;
@@ -2397,44 +2394,50 @@ $(document).ready(async function() {
         if(!$(this).is('select') && !$(this).is('input')) e.preventDefault(); 
     });
 
-    // --- OVERRIDE: Cell Text Formatting Interceptor ---
+    // --- FIX: The "Smart Formatter" ---
+    // This routes alignment to CSS, and bold/italic to the native engine safely.
     $(document).on('click', '.ctx-btn[data-cmd]', function(e) {
         e.preventDefault();
         let cmd = $(this).attr('data-cmd');
         let $cells = $('.selected-cell');
 
         if ($cells.length > 0) {
-            $cells.each(function() {
-                let range = document.createRange();
-                range.selectNodeContents(this);
-                let sel = window.getSelection();
-                sel.removeAllRanges();
-                sel.addRange(range);
-                document.execCommand(cmd, false, null);
-            });
-            window.getSelection().removeAllRanges();
             saveHistory();
+            
+            // 1. Force alignment/justify via CSS because browsers hate aligning inside <td>
+            if (['justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull'].includes(cmd)) {
+                let alignMap = { justifyLeft: 'left', justifyCenter: 'center', justifyRight: 'right', justifyFull: 'justify' };
+                $cells.css('text-align', alignMap[cmd]);
+                $cells.find('*').css('text-align', alignMap[cmd]); // Ensure inside divs follow suit
+            } 
+            // 2. Loop and natively format inline styles (Bold, Italic, Lists)
+            else {
+                $cells.each(function() {
+                    let range = document.createRange();
+                    range.selectNodeContents(this);
+                    let sel = window.getSelection();
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                    document.execCommand(cmd, false, null);
+                });
+                window.getSelection().removeAllRanges();
+            }
             return; 
         }
 
+        // Standard behavior if NO table cells are selected
         document.execCommand(cmd, false, null);
         saveHistory();
     });
 
+    // --- FIX: Force Font Family via CSS for selected cells ---
     $(document).on('change', 'select[data-cmd="fontName"]', function() {
         let val = $(this).val();
         let $cells = $('.selected-cell');
         
         if ($cells.length > 0) {
-            $cells.each(function() {
-                let range = document.createRange();
-                range.selectNodeContents(this);
-                let sel = window.getSelection();
-                sel.removeAllRanges();
-                sel.addRange(range);
-                document.execCommand('fontName', false, val);
-            });
-            window.getSelection().removeAllRanges();
+            $cells.css('font-family', val);
+            $cells.find('*').css('font-family', val); // Force children to obey
             saveHistory();
             return;
         }
@@ -2442,12 +2445,22 @@ $(document).ready(async function() {
         saveHistory();
     });
 
+    // --- FIX: Font Size remains intact from the previous fix ---
     $(document).on('change', 'select[data-cmd="fontSize"]', function() {
         applyFontSize($(this).val());
     });
 
+    // --- FIX: Force Line Spacing via CSS for selected cells ---
     $(document).on('change', 'select[data-cmd="lineHeight"]', function() {
-        applyLineHeight($(this).val());
+        let val = $(this).val();
+        let $cells = $('.selected-cell');
+        if ($cells.length > 0) {
+            $cells.css('line-height', val);
+            $cells.find('*').css('line-height', val);
+            saveHistory();
+            return;
+        }
+        applyLineHeight(val);
     });
 
     $(document).on('click', '[title="Move Up"], .fa-angle-double-up', function(e) { e.preventDefault(); changeLayer(1); });
@@ -2467,7 +2480,6 @@ $(document).ready(async function() {
         if ($(this).text().includes('Color')) $(this).next('div').html(colorHtml);
     });
 
-    // --- OVERRIDE: Cell Text Color Interceptor ---
     $(document).on('click', '.menu-text-tools .color-swatch', function(e) { 
         e.preventDefault();
         let hex = $(this).attr('data-color');
