@@ -125,26 +125,11 @@ function format(command, value = null) {
 function applyFontSize(size) {
     saveHistory(); 
 
+    // OVERRIDE: Excel-style raw CSS override for multiple cells
     let $cells = $('.selected-cell');
     if ($cells.length > 0) {
-        $cells.each(function() {
-            let range = document.createRange();
-            range.selectNodeContents(this);
-            let sel = window.getSelection();
-            sel.removeAllRanges();
-            sel.addRange(range);
-            
-            document.execCommand("fontSize", false, "7");
-            let fontElements = this.getElementsByTagName("font");
-            for (let i = 0, len = fontElements.length; i < len; ++i) {
-                if (fontElements[i].size == "7") {
-                    fontElements[i].removeAttribute("size");
-                    fontElements[i].style.fontSize = size + "px";
-                    $(fontElements[i]).find('*').css('font-size', '');
-                }
-            }
-        });
-        window.getSelection().removeAllRanges();
+        $cells.css('font-size', size + 'px');
+        $cells.find('*').css('font-size', size + 'px');
         return;
     }
 
@@ -832,9 +817,10 @@ function setZoom(v) {
     let scaledW = baseW * currentZoom;
     let scaledH = baseH * currentZoom;
 
+    // SCROLL FIX: Added massive invisible padding (800px bottom, 600px sides) so you can freely scroll past tables
     $('#canvas-center-wrapper').css({
-        'width': scaledW + 'px',
-        'height': scaledH + 'px'
+        'width': (scaledW + 600) + 'px',
+        'height': (scaledH + 800) + 'px'
     });
 
     $('#zoom-slider, #ns-zoom-slider').val(currentZoom); 
@@ -2380,23 +2366,42 @@ function processCustomPaste(pastedText) {
 
 $(document).ready(async function() {
     
+    // UI FIX: Inject CSS to tighten the toolbar padding so it takes less space
+    $("<style>")
+        .prop("type", "text/css")
+        .html(`
+            #context-menu { padding: 6px 12px !important; gap: 4px !important; border-radius: 8px !important; }
+            .menu-table-tools, .menu-text-tools, .menu-bg-tools { padding: 2px !important; margin: 0 !important; }
+            .ctx-btn, button[data-cmd] { padding: 4px 6px !important; margin: 0 2px !important; }
+        `)
+        .appendTo("head");
+
+    // TAB TITLE FIX: Sync the tab name with the file name automatically
     let $lectureTitle = $('#lecture-title');
     if ($lectureTitle.length) {
-        $lectureTitle.on('input', function() {
-            document.title = $(this).text().trim() || "NoteDump";
-        });
+        let updateTitle = () => { 
+            let txt = $lectureTitle.text().trim();
+            if(txt && txt !== "NoteDump_Saved") {
+                document.title = txt; 
+            }
+        };
+        $lectureTitle.on('input', updateTitle);
+        updateTitle();
+        let observer = new MutationObserver(updateTitle);
+        observer.observe($lectureTitle[0], { childList: true, characterData: true, subtree: true });
     }
 
     await restoreFromBrowser(); 
     lastSavedState = getPageHTML(); 
 
-    $(document).on('mousedown', '.ctx-btn, select, .color-swatch, .action-btn', function(e) {
+    $(document).on('mousedown', '.ctx-btn, select, .color-swatch, .action-btn, button[data-cmd]', function(e) {
         if(!$(this).is('select') && !$(this).is('input')) e.preventDefault(); 
     });
 
-    // --- FIX: The "Smart Formatter" ---
-    // This routes alignment to CSS, and bold/italic to the native engine safely.
-    $(document).on('click', '.ctx-btn[data-cmd]', function(e) {
+    // --- OVERRIDE: The "Excel-Style" Smart Formatter ---
+    // Grabs ALL selected cells and applies pure CSS instantly to them
+    $(document).on('click', 'button[data-cmd], .ctx-btn[data-cmd]', function(e) {
+        if($(this).is('select') || $(this).is('input')) return;
         e.preventDefault();
         let cmd = $(this).attr('data-cmd');
         let $cells = $('.selected-cell');
@@ -2404,14 +2409,35 @@ $(document).ready(async function() {
         if ($cells.length > 0) {
             saveHistory();
             
-            // 1. Force alignment/justify via CSS because browsers hate aligning inside <td>
+            // 1. Alignments forced via CSS
             if (['justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull'].includes(cmd)) {
                 let alignMap = { justifyLeft: 'left', justifyCenter: 'center', justifyRight: 'right', justifyFull: 'justify' };
                 $cells.css('text-align', alignMap[cmd]);
-                $cells.find('*').css('text-align', alignMap[cmd]); // Ensure inside divs follow suit
+                $cells.find('*').css('text-align', alignMap[cmd]); 
             } 
-            // 2. Loop and natively format inline styles (Bold, Italic, Lists)
-            else {
+            // 2. Bold forced via CSS
+            else if (cmd === 'bold') {
+                let isBold = $cells.first().css('font-weight') === '700' || $cells.first().css('font-weight') === 'bold';
+                let targetWeight = isBold ? 'normal' : 'bold';
+                $cells.css('font-weight', targetWeight);
+                $cells.find('*').css('font-weight', targetWeight);
+            }
+            // 3. Italic forced via CSS
+            else if (cmd === 'italic') {
+                let isItalic = $cells.first().css('font-style') === 'italic';
+                let targetStyle = isItalic ? 'normal' : 'italic';
+                $cells.css('font-style', targetStyle);
+                $cells.find('*').css('font-style', targetStyle);
+            }
+            // 4. Underline forced via CSS
+            else if (cmd === 'underline') {
+                let isUnderlined = ($cells.first().css('text-decoration') || '').includes('underline');
+                let targetDeco = isUnderlined ? 'none' : 'underline';
+                $cells.css('text-decoration', targetDeco);
+                $cells.find('*').css('text-decoration', targetDeco);
+            }
+            // 5. Lists (Keep as execCommand since CSS can't build <ul> elements safely)
+            else if (['insertUnorderedList', 'insertOrderedList'].includes(cmd)) {
                 $cells.each(function() {
                     let range = document.createRange();
                     range.selectNodeContents(this);
@@ -2430,14 +2456,14 @@ $(document).ready(async function() {
         saveHistory();
     });
 
-    // --- FIX: Force Font Family via CSS for selected cells ---
+    // OVERRIDE: Font Family forced via CSS for multiple cells
     $(document).on('change', 'select[data-cmd="fontName"]', function() {
         let val = $(this).val();
         let $cells = $('.selected-cell');
         
         if ($cells.length > 0) {
             $cells.css('font-family', val);
-            $cells.find('*').css('font-family', val); // Force children to obey
+            $cells.find('*').css('font-family', val);
             saveHistory();
             return;
         }
@@ -2445,12 +2471,11 @@ $(document).ready(async function() {
         saveHistory();
     });
 
-    // --- FIX: Font Size remains intact from the previous fix ---
     $(document).on('change', 'select[data-cmd="fontSize"]', function() {
         applyFontSize($(this).val());
     });
 
-    // --- FIX: Force Line Spacing via CSS for selected cells ---
+    // OVERRIDE: Line Spacing forced via CSS for multiple cells
     $(document).on('change', 'select[data-cmd="lineHeight"]', function() {
         let val = $(this).val();
         let $cells = $('.selected-cell');
