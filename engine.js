@@ -100,6 +100,7 @@ $(document).on('focus', '.content-area', function() {
     $(this).closest('.canvas-box').removeClass('is-editing');
 });
 
+// CORE FIX: Dynamic Font Size Identification for Extracted Documents
 document.addEventListener('selectionchange', () => {
     if (!isEditing) return;
     let selection = window.getSelection();
@@ -107,16 +108,24 @@ document.addEventListener('selectionchange', () => {
         let parentEl = selection.anchorNode.nodeType === 3 ? selection.anchorNode.parentNode : selection.anchorNode;
         if ($(parentEl).closest('.content-area').length > 0) {
             savedSelection = selection.getRangeAt(0);
-            let currentSize = window.getComputedStyle(parentEl).fontSize; 
-            let fontSizePicker = document.getElementById('font-size-select');
-            if (fontSizePicker) {
-                $(fontSizePicker).val(parseInt(currentSize));
+            
+            // Extract the true computed pixel size of the clicked text
+            let computedStyle = window.getComputedStyle(parentEl);
+            let currentSize = computedStyle.fontSize; 
+            let sizeInt = parseInt(currentSize);
+            
+            let $fontSizePicker = $('select[data-cmd="fontSize"]');
+            if ($fontSizePicker.length > 0 && !isNaN(sizeInt)) {
+                // If the font size doesn't exist in the dropdown (e.g. custom extracted size like 19px), add it dynamically
+                if ($fontSizePicker.find(`option[value="${sizeInt}"]`).length === 0) {
+                    $fontSizePicker.append(`<option value="${sizeInt}">${sizeInt}</option>`);
+                }
+                $fontSizePicker.val(sizeInt);
             }
         }
     }
 });
 
-// CORE FIX: Intercept the formatting function entirely
 function format(command, value = null) {
     let $cells = $('.selected-cell');
     let selStr = window.getSelection().toString();
@@ -132,7 +141,6 @@ function format(command, value = null) {
             let vMap = { verticalTop: 'top', verticalMiddle: 'middle', verticalBottom: 'bottom' };
             $cells.css('vertical-align', vMap[command]);
         } else if (command === 'absoluteCenter') {
-            // Force horizontal AND vertical centering
             $cells.css({'text-align': 'center', 'vertical-align': 'middle'});
             $cells.find('*').css({'text-align': 'center'});
         } else if (command === 'bold') {
@@ -165,7 +173,6 @@ function format(command, value = null) {
         return;
     }
 
-    // Absolute Center for normal boxes (Flexbox trick)
     if (command === 'absoluteCenter') {
         saveHistory();
         let $activeBox = $('.selected-box').not(':has(table)'); 
@@ -186,39 +193,53 @@ function format(command, value = null) {
     saveHistory();
 }
 
+// CORE FIX: 48px Bug Obliterated
 function applyFontSize(size) {
     saveHistory(); 
 
     let $cells = $('.selected-cell');
     let selStr = window.getSelection().toString();
+    let $activeBox = $('.selected-box').not(':has(table)');
 
+    // 1. Table Cells (Apply to whole cell)
     if ($cells.length > 0 && ($cells.length > 1 || selStr.length === 0)) {
         $cells.css('font-size', size + 'px');
-        $cells.find('*').css('font-size', size + 'px');
+        $cells.find('*').css('font-size', ''); // Strip inner styles to prevent conflicts
         return;
     }
 
-    restoreSelection();
-    document.execCommand("fontSize", false, "7");
-    let fontElements = document.getElementsByTagName("font");
-
-    for (let i = 0, len = fontElements.length; i < len; ++i) {
-        if (fontElements[i].size == "7") {
-            fontElements[i].removeAttribute("size");
-            fontElements[i].style.fontSize = size + "px";
-            $(fontElements[i]).find('*').css('font-size', '');
-        }
-    }
-
-    let $activeBox = $('.selected-box');
-    if ($activeBox.length > 0) {
+    // 2. Normal text box (Apply to whole box if no specific text is highlighted)
+    if ($activeBox.length > 0 && selStr.length === 0 && $cells.length === 0) {
+        let $content = $activeBox.find('.content-area');
+        $content.css('font-size', size + 'px');
+        $content.find('*').css('font-size', ''); // Strip inner styles
         $activeBox.css({'height': 'auto', 'min-height': '50px', 'overflow': 'visible'});
+        return;
     }
 
-    if (!selStr && $activeBox.find('.content-area').length > 0) {
-        $activeBox.find('.content-area').css('font-size', size + 'px');
-        $activeBox.find('.content-area *').css('font-size', '');
-    }
+    // 3. Highlighted text inside a box/cell
+    restoreSelection();
+    document.execCommand("styleWithCSS", false, false); 
+    document.execCommand("fontSize", false, "7"); // Triggers browser to max size text
+
+    // Hunt down old HTML font tags
+    let fonts = document.querySelectorAll('font[size="7"]');
+    fonts.forEach(el => {
+        el.removeAttribute("size");
+        el.style.fontSize = size + "px";
+        $(el).find('*').css('font-size', '');
+    });
+
+    // Hunt down modern Browser CSS spans (This fixes the 48px bug!)
+    let spans = document.querySelectorAll('span');
+    spans.forEach(el => {
+        let fs = el.style.fontSize;
+        if (fs === '-webkit-xxx-large' || fs === 'xxx-large' || fs === '48px') {
+            el.style.fontSize = size + 'px';
+            $(el).find('*').css('font-size', '');
+        }
+    });
+
     saveHistory(); 
 }
 
@@ -1794,7 +1815,10 @@ function updatePinStyle(origIdx, property, value) {
                 $pin.find('.pin-rotator-group').css('transform', `rotate(${currentAngle}deg) scale(${scaleVal})`);
             }
         } else {
-            $visual.css({width: s + 'px', height: s + 'px'}); 
+            let scaleVal = s / 32; 
+            $pin.attr('data-scale', scaleVal);
+            $pin.find('.pin-rotator-group').css('transform', `scale(${scaleVal})`);
+            $visual.css({width: '24px', height: '24px'}); 
         }
     } else if (property === 'opacity') {
         $visual.css('opacity', value);
@@ -1920,6 +1944,7 @@ function getAnnotations() {
         let size = $(this).width();
         let scale = parseFloat($(this).attr('data-scale')) || 1;
         if (type === 'pin' && shape !== 'rectangle') size = scale * 32;
+        if (type === 'sticky') size = scale * 32;
 
         annos.push({ 
             el: $(this),
@@ -2427,7 +2452,6 @@ function processCustomPaste(pastedText) {
 
 $(document).ready(async function() {
 
-    // TAB TITLE FIX: Sync the tab name with the file name automatically
     let $lectureTitle = $('#lecture-title');
     if ($lectureTitle.length) {
         let updateTitle = () => { 
@@ -2445,15 +2469,12 @@ $(document).ready(async function() {
     await restoreFromBrowser(); 
     lastSavedState = getPageHTML(); 
 
-    // --- DYNAMICALLY INJECT NEW UI BUTTONS ---
-    // 1. Inject Absolute Center button into alignment tools if it doesn't exist
     if ($('.menu-table-tools [onclick="format(\'justifyRight\')"]').length && !$('.menu-table-tools [onclick="format(\'absoluteCenter\')"]').length) {
         $('.menu-table-tools [onclick="format(\'justifyRight\')"]').after(
             `<button class="ctx-btn" onclick="format('absoluteCenter')" title="Absolute Center"><i class="fas fa-compress-arrows-alt"></i></button>`
         );
     }
 
-    // 2. Inject Page Background Recolor button into the universal global tools
     if ($('#canvas-global-tools').length && !$('#page-color-btn').length) {
         let pageColorHtml = `
         <div style="position:relative; display:inline-block; margin-left: 10px;">
@@ -2468,23 +2489,19 @@ $(document).ready(async function() {
             </div>
         </div>`;
         
-        // Append near the split/merge buttons (usually end of canvas-global-tools)
         $('#canvas-global-tools').append(pageColorHtml);
 
-        // Populate color grid
         let pColorHtml = "";
         COLORS.forEach(c => { pColorHtml += `<div class="color-swatch" style="background:${c}; width:24px; height:24px; border-radius:4px; cursor:pointer;" data-pcolor="${c}"></div>`; });
         $('#page-color-grid').html(pColorHtml);
     }
 
-    // Close page color popup when clicking outside
     $(document).on('click', function(e) {
         if (!$(e.target).closest('#page-color-btn, #page-color-popup').length) {
             $('#page-color-popup').hide();
         }
     });
 
-    // Page Recolor logic
     $(document).on('click', '.color-swatch[data-pcolor]', function(e) {
         e.preventDefault();
         let hex = $(this).attr('data-pcolor');
@@ -2503,7 +2520,6 @@ $(document).ready(async function() {
     });
 
     $(document).on('change', '#page-opacity-slider', function() { saveHistory(); });
-    // --- END NEW UI INJECTIONS ---
 
 
     $(document).on('mousedown', '.ctx-btn, select, .color-swatch, .action-btn, button[data-cmd]', function(e) {
@@ -2570,7 +2586,6 @@ $(document).ready(async function() {
             return;
         }
 
-        // Specific Text Color Highlight check
         if ($cells.length === 1 && selStr.length > 0) {
             document.execCommand('styleWithCSS', false, true);
             document.execCommand('foreColor', false, hex);
