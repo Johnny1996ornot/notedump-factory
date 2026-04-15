@@ -2,40 +2,43 @@
 // STRICT CSS INJECTION (Hides Pin Handles, Fixes Toolbar Padding)
 // ==========================================================================
 const uiFixesCSS = `
-    /* BRUTE FORCE: Hide rotation ring entirely unless the pin is explicitly selected */
-    .pin:not(.is-selected) .pin-rotation-ring,
-    .pin:not(.is-selected) .pin-rotate-dot,
-    .pin:not(.is-selected) .resize-handle,
-    .pin:not(.is-selected) .pin-rect-adjust { 
+    /* BRUTE FORCE: Completely obliterate handles/dots if the pin is NOT selected */
+    #canvas .pin:not(.is-selected) .pin-rotation-ring,
+    #canvas .pin:not(.is-selected) .pin-rotate-dot,
+    #canvas .pin:not(.is-selected) .resize-handle,
+    #canvas .pin:not(.is-selected) .pin-rect-adjust { 
+        display: none !important;
+        visibility: hidden !important;
         opacity: 0 !important; 
         pointer-events: none !important; 
-        transition: opacity 0.2s ease-in-out !important; 
     }
 
     /* Force show when selected */
-    .pin.is-selected .pin-rotation-ring,
-    .pin.is-selected .pin-rotate-dot,
-    .pin.is-selected .resize-handle,
-    .pin.is-selected .pin-rect-adjust { 
+    #canvas .pin.is-selected .pin-rotation-ring,
+    #canvas .pin.is-selected .pin-rotate-dot,
+    #canvas .pin.is-selected .resize-handle,
+    #canvas .pin.is-selected .pin-rect-adjust { 
+        display: block !important;
+        visibility: visible !important;
         opacity: 1 !important; 
         pointer-events: auto !important; 
     }
 
-    /* BRUTE FORCE: Rectangles NEVER show the rotation dot */
-    .pin[data-shape="rectangle"] .pin-rotation-ring { 
+    /* BRUTE FORCE: Rectangles NEVER show the rotation dot/ring, ever. */
+    #canvas .pin[data-shape="rectangle"] .pin-rotation-ring,
+    #canvas .pin[data-shape="rectangle"] .pin-rotate-dot { 
         display: none !important; 
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
     }
 
-    /* BRUTE FORCE: Massive top margin on canvas to allow scrolling up to the floating toolbar */
-    #canvas {
-        margin-top: 350px !important;
-        margin-bottom: 50px !important;
-    }
-
-    /* Remove padding from wrapper since we use margin on canvas now */
+    /* BRUTE FORCE: Massive padding on wrapper to allow endless scrolling above and below */
     #canvas-center-wrapper { 
-        padding-top: 0px !important; 
-        padding-bottom: 0px !important; 
+        padding-top: 500px !important; 
+        padding-bottom: 500px !important; 
+        padding-left: 600px !important;
+        padding-right: 600px !important;
     }
 `;
 if ($('#custom-ui-fixes').length === 0) {
@@ -913,7 +916,7 @@ function goTo(id) {
     }
 }
 
-// FIXED: Exact Center Viewport Math with new 350px Margin Accounted For
+// FIXED: Calculate True Center via Screen Width and Scroll into the 500px Padding
 function recenterViewport() {
     setTimeout(() => {
         let cvp = document.getElementById('canvas-viewport');
@@ -921,12 +924,13 @@ function recenterViewport() {
             let canvasW = parseInt($('#canvas').attr('data-width')) || 816;
             let scaledW = canvasW * currentZoom;
 
-            // 600px padding left + half scaled width centers it exactly
+            // Centers horizontally based on true screen dimensions
             let targetScrollLeft = 600 + (scaledW / 2) - (cvp.clientWidth / 2);
             cvp.scrollLeft = targetScrollLeft;
             
-            // Scroll down halfway into the 350px top margin to leave perfect clearance for floating toolbars
-            cvp.scrollTo({ top: 150, behavior: 'auto' });
+            // Starts the vertical view 400px deep into the 500px top padding.
+            // This guarantees EXACTLY 100px of visible, scollable space above the canvas upon loading.
+            cvp.scrollTop = 400; 
         }
     }, 50);
 }
@@ -949,14 +953,14 @@ function setZoom(v) {
     let scaledW = baseW * currentZoom;
     let scaledH = baseH * currentZoom;
 
-    // FIXED: Let the margin handle top/bottom spacing, wrap just sets side bounds and height
+    // FIXED: Enforce the padding in the wrapper size so you can scroll freely
     $('#canvas-center-wrapper').css({
         'width': (scaledW + 1200) + 'px',
-        'height': (scaledH + 400) + 'px', 
+        'height': (scaledH + 1000) + 'px', 
         'padding-left': '600px',
         'padding-right': '600px',
-        'padding-top': '0px',
-        'padding-bottom': '0px'
+        'padding-top': '500px',
+        'padding-bottom': '500px'
     });
 
     $('#zoom-slider, #ns-zoom-slider').val(currentZoom); 
@@ -2515,13 +2519,14 @@ $(document).ready(async function() {
     }
 
     // ==========================================================================
-    // RECOLOR BUTTON FIX (Forces inside the split button's actual group)
+    // RECOLOR BUTTON FIX (Forces removal of old, injects EXACTLY before Split Page)
     // ==========================================================================
-    if ($('#canvas-global-tools').length && !$('#page-color-btn').length) {
+    if ($('#canvas-global-tools').length) {
+        $('#page-color-btn').remove(); // NUKE ANY EXISTING ONES
+
         let $splitBtn = $('.action-btn[onclick*="splitPage"]');
         let pageColorHtml = `<button id="page-color-btn" class="action-btn" title="Page Background Color" style="display:inline-flex; align-items:center; justify-content:center; margin-right: 5px;"><i class="fas fa-fill-drip"></i></button>`;
         
-        // FIXED: .before() injects it strictly inside the same parent container next to the split button
         if ($splitBtn.length) {
             $splitBtn.before(pageColorHtml);
         } else {
@@ -2540,7 +2545,9 @@ $(document).ready(async function() {
                 </div>
             </div>
         </div>`;
-        $('body').append(customPaletteModal);
+        if ($('#recolor-modal-bg').length === 0) {
+            $('body').append(customPaletteModal);
+        }
 
         let paletteHtml = "";
         COLORS.forEach(c => {
