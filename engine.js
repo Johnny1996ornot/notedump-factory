@@ -2,9 +2,18 @@
 // STRICT CSS INJECTION (Hides Pin Handles, Fixes Toolbar Padding)
 // ==========================================================================
 const uiFixesCSS = `
-    /* Hide rotation dot unless hovering over pin in edit mode */
-    .pin .pin-rotate-dot { opacity: 0; pointer-events: none; transition: opacity 0.2s; }
-    .is-editing .pin:hover .pin-rotate-dot { opacity: 1; pointer-events: auto; }
+    /* Force hide rotation dots and ANY resize handles unless hovering in edit mode */
+    .pin .pin-rotate-dot, .pin .pin-rect-adjust, .pin .resize-handle { 
+        opacity: 0 !important; 
+        pointer-events: none !important; 
+        transition: opacity 0.2s !important; 
+    }
+    .is-editing .pin:hover .pin-rotate-dot, 
+    .is-editing .pin:hover .pin-rect-adjust, 
+    .is-editing .pin:hover .resize-handle { 
+        opacity: 1 !important; 
+        pointer-events: auto !important; 
+    }
 
     /* Hide the white circle completely for rectangle shapes */
     .pin[data-shape="rectangle"] .pin-rotate-dot { display: none !important; }
@@ -12,7 +21,9 @@ const uiFixesCSS = `
     /* FIXED: Massive top margin for toolbar clearance, removed excessive bottom padding */
     #canvas-center-wrapper { 
         padding-top: 400px !important; 
-        padding-bottom: 100px !important; 
+        padding-bottom: 50px !important; 
+        padding-left: 600px !important;
+        padding-right: 600px !important;
     }
 `;
 if ($('#custom-ui-fixes').length === 0) {
@@ -870,7 +881,7 @@ function goTo(id) {
     if (currentViewMode === 'single') {
         $('.page').removeClass('active');
         $('#p-' + id).addClass('active');
-        recenterViewport(); // Reset viewport scroll instantly
+        recenterViewport();
     } else {
         let $p = $(`#p-${id}`);
         if($p.length) {
@@ -894,21 +905,19 @@ function goTo(id) {
     }
 }
 
-// FIXED: Adjusts target scroll top to properly frame the canvas with the new top padding
+// FIXED: Adjusts target scroll top to explicitly start slightly scrolled down so top padding exists but page is centered
 function recenterViewport() {
     setTimeout(() => {
         let cvp = document.getElementById('canvas-viewport');
-        let wrapper = document.getElementById('canvas-center-wrapper');
-        let canvas = document.getElementById('canvas');
-        if (cvp && wrapper && canvas) {
-            let canvasW = parseInt($(canvas).attr('data-width')) || 816;
+        if (cvp) {
+            let canvasW = parseInt($('#canvas').attr('data-width')) || 816;
             let scaledW = canvasW * currentZoom;
 
             let targetScrollLeft = 600 + (scaledW / 2) - (cvp.clientWidth / 2);
-            let targetScrollTop = 250; // Scroll down slightly into the top padding so the canvas is perfectly framed
-
+            
             cvp.scrollLeft = targetScrollLeft;
-            cvp.scrollTo({ top: targetScrollTop, behavior: 'auto' });
+            // Scroll down exactly 300px into the 400px padding, leaving 100px physically above the canvas top
+            cvp.scrollTo({ top: 300, behavior: 'auto' });
         }
     }, 50);
 }
@@ -931,12 +940,14 @@ function setZoom(v) {
     let scaledW = baseW * currentZoom;
     let scaledH = baseH * currentZoom;
 
-    // FIXED: Massive top allowance for floating toolbars, reduced bottom gap
+    // FIXED: Enforces rigid 400px top clearance for floating toolbars, drops bottom to 50px
     $('#canvas-center-wrapper').css({
         'width': (scaledW + 1200) + 'px',
-        'height': (scaledH + 500) + 'px',
+        'height': (scaledH + 450) + 'px',
         'padding-top': '400px',
-        'padding-bottom': '100px'
+        'padding-bottom': '50px',
+        'padding-left': '600px',
+        'padding-right': '600px'
     });
 
     $('#zoom-slider, #ns-zoom-slider').val(currentZoom); 
