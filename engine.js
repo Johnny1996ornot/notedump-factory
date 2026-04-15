@@ -1,5 +1,5 @@
 // ==========================================================================
-// STRICT CSS INJECTION (Hides Pin Handles, Adds Massive Padding)
+// STRICT CSS INJECTION (Hides Pin Handles, Fixes Toolbar Padding)
 // ==========================================================================
 const uiFixesCSS = `
     /* Hide rotation dot unless hovering over pin in edit mode */
@@ -11,10 +11,10 @@ const uiFixesCSS = `
     .is-editing .pin.rect-pin:hover .pin-rect-adjust,
     .is-editing .pin.rect-pin:hover .resize-handle { opacity: 1; pointer-events: auto; }
 
-    /* Massive top padding for canvas to allow scrolling up to the toolbar */
+    /* FIXED: Strict top margin for toolbar clearance, removed excessive bottom padding */
     #canvas-center-wrapper { 
-        padding-top: 2500px !important; 
-        padding-bottom: 2500px !important; 
+        padding-top: 150px !important; 
+        padding-bottom: 300px !important; 
     }
 `;
 if ($('#custom-ui-fixes').length === 0) {
@@ -165,7 +165,6 @@ function format(command, value = null) {
             $cells.css('vertical-align', vMap[command]);
             $cells.find('.content-area, div').css({'display': 'inline-block', 'vertical-align': 'inherit'});
         } else if (command === 'absoluteCenter') {
-            // FIXED: Proper table cell absolute centering
             $cells.css({'text-align': 'center', 'vertical-align': 'middle'});
             $cells.find('*').css({'text-align': 'center', 'margin': 'auto'});
         } else if (command === 'bold') {
@@ -218,7 +217,6 @@ function format(command, value = null) {
     saveHistory();
 }
 
-// CORE FIX: 48px Bug Obliterated
 function applyFontSize(size) {
     saveHistory(); 
 
@@ -229,7 +227,7 @@ function applyFontSize(size) {
     // 1. Table Cells (Apply to whole cell)
     if ($cells.length > 0 && ($cells.length > 1 || selStr.length === 0)) {
         $cells.css('font-size', size + 'px');
-        $cells.find('*').css('font-size', ''); // Strip inner styles to prevent conflicts
+        $cells.find('*').css('font-size', ''); 
         return;
     }
 
@@ -237,7 +235,7 @@ function applyFontSize(size) {
     if ($activeBox.length > 0 && selStr.length === 0 && $cells.length === 0) {
         let $content = $activeBox.find('.content-area');
         $content.css('font-size', size + 'px');
-        $content.find('*').css('font-size', ''); // Strip inner styles
+        $content.find('*').css('font-size', ''); 
         $activeBox.css({'height': 'auto', 'min-height': '50px', 'overflow': 'visible'});
         return;
     }
@@ -245,9 +243,8 @@ function applyFontSize(size) {
     // 3. Highlighted text inside a box/cell
     restoreSelection();
     document.execCommand("styleWithCSS", false, false); 
-    document.execCommand("fontSize", false, "7"); // Triggers browser to max size text
+    document.execCommand("fontSize", false, "7"); 
 
-    // Hunt down old HTML font tags
     let fonts = document.querySelectorAll('font[size="7"]');
     fonts.forEach(el => {
         el.removeAttribute("size");
@@ -255,7 +252,6 @@ function applyFontSize(size) {
         $(el).find('*').css('font-size', '');
     });
 
-    // Hunt down modern Browser CSS spans (This fixes the 48px bug!)
     let spans = document.querySelectorAll('span');
     spans.forEach(el => {
         let fs = el.style.fontSize;
@@ -535,7 +531,7 @@ function printToPDF() {
 function saveNotebookToFile() {
     $('#export-modal-bg').hide();
     let wasEditing = isEditing;
-    if (isEditing) toggleEdit();
+    if (isEditing) toggleEdit(); 
     
     let documentClone = document.documentElement.cloneNode(true);
     let $clone = $(documentClone);
@@ -876,7 +872,7 @@ function goTo(id) {
     if (currentViewMode === 'single') {
         $('.page').removeClass('active');
         $('#p-' + id).addClass('active');
-        recenterViewport();
+        recenterViewport(); // Reset viewport scroll instantly to the top
     } else {
         let $p = $(`#p-${id}`);
         if($p.length) {
@@ -900,7 +896,7 @@ function goTo(id) {
     }
 }
 
-// FIXED: Viewport Drop Logic (2500px allowance)
+// FIXED: Viewport Drop Logic (Removed 2500px trap, strictly positions at top 0)
 function recenterViewport() {
     setTimeout(() => {
         let cvp = document.getElementById('canvas-viewport');
@@ -911,10 +907,10 @@ function recenterViewport() {
             let scaledW = canvasW * currentZoom;
 
             let targetScrollLeft = 600 + (scaledW / 2) - (cvp.clientWidth / 2);
-            let targetScrollTop = 2500 - 50; 
+            let targetScrollTop = 0; // FIXED: Forces the viewport directly to the top edge
 
             cvp.scrollLeft = targetScrollLeft;
-            cvp.scrollTop = targetScrollTop;
+            cvp.scrollTo({ top: 0, behavior: 'auto' });
         }
     }, 50);
 }
@@ -937,12 +933,12 @@ function setZoom(v) {
     let scaledW = baseW * currentZoom;
     let scaledH = baseH * currentZoom;
 
-    // FIXED: MASSIVE 2500px SCROLL PADDING ENABLED
+    // FIXED: Strict 150px Top allowance, removed massive 2500px scroll gaps
     $('#canvas-center-wrapper').css({
         'width': (scaledW + 1200) + 'px',
-        'height': (scaledH + 5000) + 'px',
-        'padding-top': '2500px',
-        'padding-bottom': '2500px'
+        'height': (scaledH + 600) + 'px',
+        'padding-top': '150px',
+        'padding-bottom': '300px'
     });
 
     $('#zoom-slider, #ns-zoom-slider').val(currentZoom); 
@@ -2500,7 +2496,9 @@ $(document).ready(async function() {
         );
     }
 
-    // RECOLOR BUTTON FIX: Injecting native color picker and moving button to Merge/Split group
+    // ==========================================================================
+    // RECOLOR BUTTON FIX & CENTERED MODAL INJECTION
+    // ==========================================================================
     if ($('#canvas-global-tools').length && !$('#page-color-btn').length) {
         let $mergeBtn = $('.action-btn[onclick*="mergeNextPage"]');
         let $mergeContainer = $mergeBtn.parent();
@@ -2512,24 +2510,58 @@ $(document).ready(async function() {
         } else {
             $('#canvas-global-tools').append(pageColorHtml);
         }
-        
-        $('body').append('<input type="color" id="page-recolor-input" style="display:none; position:absolute;">');
+
+        let customPaletteModal = `
+        <div id="recolor-modal-bg" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999999; align-items:center; justify-content:center; flex-direction:column;">
+            <div style="background:#1e293b; padding:20px; border-radius:12px; width:300px; box-shadow:0 10px 40px rgba(0,0,0,0.5); border:1px solid #334155; text-align:center;">
+                <h3 style="color:white; margin-top:0; font-family:sans-serif; margin-bottom:15px; font-size:16px;">Page Background Color</h3>
+                <div id="recolor-grid" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; margin-bottom:15px;"></div>
+                <label style="color:#94a3b8; font-size:12px; display:block; margin-bottom:5px; text-align:left;">Custom Hex</label>
+                <input type="color" id="recolor-custom-hex" style="width:100%; height:40px; border:none; border-radius:6px; cursor:pointer; background:none;">
+                <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:15px;">
+                    <button onclick="$('#recolor-modal-bg').css('display', 'none')" style="background:#334155; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer;">Close</button>
+                </div>
+            </div>
+        </div>`;
+        $('body').append(customPaletteModal);
+
+        let paletteHtml = "";
+        COLORS.forEach(c => {
+            paletteHtml += `<div class="color-swatch" style="background:${c}; width:100%; padding-top:100%; border-radius:6px; cursor:pointer;" onclick="applyPageRecolor('${c}')"></div>`;
+        });
+        $('#recolor-grid').html(paletteHtml);
     }
+
+    window.applyPageRecolor = function(hex) {
+        let r = parseInt(hex.slice(1, 3), 16) || 255;
+        let g = parseInt(hex.slice(3, 5), 16) || 255;
+        let b = parseInt(hex.slice(5, 7), 16) || 255;
+        $('#p-' + current).css('background-color', `rgba(${r},${g},${b},1)`).attr('data-bg-rgb', `${r},${g},${b}`);
+        saveHistory();
+        $('#recolor-modal-bg').css('display', 'none');
+    };
 
     $(document).on('click', '#page-color-btn, .fa-fill-drip', function(e) {
         e.preventDefault();
         e.stopPropagation();
-        $('#page-recolor-input')[0].click();
+        $('#recolor-modal-bg').css('display', 'flex'); 
     });
 
-    $(document).on('input change', '#page-recolor-input', function() {
-        let hex = $(this).val();
-        let r = parseInt(hex.slice(1, 3), 16);
-        let g = parseInt(hex.slice(3, 5), 16);
-        let b = parseInt(hex.slice(5, 7), 16);
-        $(`#p-${current}`).css('background-color', `rgba(${r},${g},${b},1)`).attr('data-bg-rgb', `${r},${g},${b}`);
-        saveHistory();
+    $(document).on('input change', '#recolor-custom-hex', function() {
+        applyPageRecolor($(this).val());
     });
+
+    // ==========================================================================
+    // TABLE VERTICAL ALIGNMENT BUTTONS FIX
+    // ==========================================================================
+    if ($('.menu-table-tools').length && !$('.menu-table-tools [onclick="format(\'verticalTop\')"]').length) {
+        $('.menu-table-tools').append(`
+            <div style="width:1px; height:20px; background:#334155; margin:0 5px;"></div>
+            <button class="ctx-btn" onclick="format('verticalTop')" title="Align Top"><i class="fas fa-arrow-up"></i></button>
+            <button class="ctx-btn" onclick="format('verticalMiddle')" title="Align Middle"><i class="fas fa-arrows-alt-v"></i></button>
+            <button class="ctx-btn" onclick="format('verticalBottom')" title="Align Bottom"><i class="fas fa-arrow-down"></i></button>
+        `);
+    }
 
     $(document).on('mousedown', '.ctx-btn, select, .color-swatch, .action-btn, button[data-cmd]', function(e) {
         if(!$(this).is('select') && !$(this).is('input') && !$(this).is('#page-opacity-slider') && !$(this).is('#page-color-btn') && !$(this).is('.fa-fill-drip')) {
