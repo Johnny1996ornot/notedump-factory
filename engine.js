@@ -2,28 +2,40 @@
 // STRICT CSS INJECTION (Hides Pin Handles, Fixes Toolbar Padding)
 // ==========================================================================
 const uiFixesCSS = `
-    /* Force hide rotation dots and ANY resize handles unless hovering in edit mode */
-    .pin .pin-rotate-dot, .pin .pin-rect-adjust, .pin .resize-handle { 
+    /* BRUTE FORCE: Hide rotation ring entirely unless the pin is explicitly selected */
+    .pin:not(.is-selected) .pin-rotation-ring,
+    .pin:not(.is-selected) .pin-rotate-dot,
+    .pin:not(.is-selected) .resize-handle,
+    .pin:not(.is-selected) .pin-rect-adjust { 
         opacity: 0 !important; 
         pointer-events: none !important; 
-        transition: opacity 0.2s !important; 
+        transition: opacity 0.2s ease-in-out !important; 
     }
-    .is-editing .pin:hover .pin-rotate-dot, 
-    .is-editing .pin:hover .pin-rect-adjust, 
-    .is-editing .pin:hover .resize-handle { 
+
+    /* Force show when selected */
+    .pin.is-selected .pin-rotation-ring,
+    .pin.is-selected .pin-rotate-dot,
+    .pin.is-selected .resize-handle,
+    .pin.is-selected .pin-rect-adjust { 
         opacity: 1 !important; 
         pointer-events: auto !important; 
     }
 
-    /* Hide the white circle completely for rectangle shapes */
-    .pin[data-shape="rectangle"] .pin-rotate-dot { display: none !important; }
+    /* BRUTE FORCE: Rectangles NEVER show the rotation dot */
+    .pin[data-shape="rectangle"] .pin-rotation-ring { 
+        display: none !important; 
+    }
 
-    /* FIXED: Massive top margin for toolbar clearance, removed excessive bottom padding */
+    /* BRUTE FORCE: Massive top margin on canvas to allow scrolling up to the floating toolbar */
+    #canvas {
+        margin-top: 350px !important;
+        margin-bottom: 50px !important;
+    }
+
+    /* Remove padding from wrapper since we use margin on canvas now */
     #canvas-center-wrapper { 
-        padding-top: 400px !important; 
-        padding-bottom: 50px !important; 
-        padding-left: 600px !important;
-        padding-right: 600px !important;
+        padding-top: 0px !important; 
+        padding-bottom: 0px !important; 
     }
 `;
 if ($('#custom-ui-fixes').length === 0) {
@@ -148,7 +160,6 @@ document.addEventListener('selectionchange', () => {
             
             let $fontSizePicker = $('select[data-cmd="fontSize"]');
             if ($fontSizePicker.length > 0 && !isNaN(sizeInt)) {
-                // If the font size doesn't exist in the dropdown (e.g. custom extracted size like 19px), add it dynamically
                 if ($fontSizePicker.find(`option[value="${sizeInt}"]`).length === 0) {
                     $fontSizePicker.append(`<option value="${sizeInt}">${sizeInt}</option>`);
                 }
@@ -233,14 +244,12 @@ function applyFontSize(size) {
     let selStr = window.getSelection().toString();
     let $activeBox = $('.selected-box').not(':has(table)');
 
-    // 1. Table Cells (Apply to whole cell)
     if ($cells.length > 0 && ($cells.length > 1 || selStr.length === 0)) {
         $cells.css('font-size', size + 'px');
         $cells.find('*').css('font-size', ''); 
         return;
     }
 
-    // 2. Normal text box (Apply to whole box if no specific text is highlighted)
     if ($activeBox.length > 0 && selStr.length === 0 && $cells.length === 0) {
         let $content = $activeBox.find('.content-area');
         $content.css('font-size', size + 'px');
@@ -249,7 +258,6 @@ function applyFontSize(size) {
         return;
     }
 
-    // 3. Highlighted text inside a box/cell
     restoreSelection();
     document.execCommand("styleWithCSS", false, false); 
     document.execCommand("fontSize", false, "7"); 
@@ -905,7 +913,7 @@ function goTo(id) {
     }
 }
 
-// FIXED: Adjusts target scroll top to explicitly start slightly scrolled down so top padding exists but page is centered
+// FIXED: Exact Center Viewport Math with new 350px Margin Accounted For
 function recenterViewport() {
     setTimeout(() => {
         let cvp = document.getElementById('canvas-viewport');
@@ -913,11 +921,12 @@ function recenterViewport() {
             let canvasW = parseInt($('#canvas').attr('data-width')) || 816;
             let scaledW = canvasW * currentZoom;
 
+            // 600px padding left + half scaled width centers it exactly
             let targetScrollLeft = 600 + (scaledW / 2) - (cvp.clientWidth / 2);
-            
             cvp.scrollLeft = targetScrollLeft;
-            // Scroll down exactly 300px into the 400px padding, leaving 100px physically above the canvas top
-            cvp.scrollTo({ top: 300, behavior: 'auto' });
+            
+            // Scroll down halfway into the 350px top margin to leave perfect clearance for floating toolbars
+            cvp.scrollTo({ top: 150, behavior: 'auto' });
         }
     }, 50);
 }
@@ -940,14 +949,14 @@ function setZoom(v) {
     let scaledW = baseW * currentZoom;
     let scaledH = baseH * currentZoom;
 
-    // FIXED: Enforces rigid 400px top clearance for floating toolbars, drops bottom to 50px
+    // FIXED: Let the margin handle top/bottom spacing, wrap just sets side bounds and height
     $('#canvas-center-wrapper').css({
         'width': (scaledW + 1200) + 'px',
-        'height': (scaledH + 450) + 'px',
-        'padding-top': '400px',
-        'padding-bottom': '50px',
+        'height': (scaledH + 400) + 'px', 
         'padding-left': '600px',
-        'padding-right': '600px'
+        'padding-right': '600px',
+        'padding-top': '0px',
+        'padding-bottom': '0px'
     });
 
     $('#zoom-slider, #ns-zoom-slider').val(currentZoom); 
@@ -2506,23 +2515,17 @@ $(document).ready(async function() {
     }
 
     // ==========================================================================
-    // RECOLOR BUTTON FIX & CENTERED MODAL INJECTION
+    // RECOLOR BUTTON FIX (Forces inside the split button's actual group)
     // ==========================================================================
     if ($('#canvas-global-tools').length && !$('#page-color-btn').length) {
         let $splitBtn = $('.action-btn[onclick*="splitPage"]');
-        let pageColorHtml = `<button id="page-color-btn" class="action-btn" title="Page Background Color" style="display:inline-flex; align-items:center; justify-content:center; margin-left: 10px;"><i class="fas fa-fill-drip"></i></button>`;
+        let pageColorHtml = `<button id="page-color-btn" class="action-btn" title="Page Background Color" style="display:inline-flex; align-items:center; justify-content:center; margin-right: 5px;"><i class="fas fa-fill-drip"></i></button>`;
         
-        // FIXED: Explicitly appends immediately after the split button so it stays clustered
+        // FIXED: .before() injects it strictly inside the same parent container next to the split button
         if ($splitBtn.length) {
-            $splitBtn.after(pageColorHtml);
+            $splitBtn.before(pageColorHtml);
         } else {
-            let $mergeBtn = $('.action-btn[onclick*="mergeNextPage"]');
-            let $mergeContainer = $mergeBtn.parent();
-            if ($mergeContainer.length) {
-                $mergeContainer.append(pageColorHtml);
-            } else {
-                $('#canvas-global-tools').append(pageColorHtml);
-            }
+            $('#canvas-global-tools').append(pageColorHtml);
         }
 
         let customPaletteModal = `
