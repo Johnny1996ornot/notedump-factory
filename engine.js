@@ -140,6 +140,7 @@ function format(command, value = null) {
         } else if (['verticalTop', 'verticalMiddle', 'verticalBottom'].includes(command)) {
             let vMap = { verticalTop: 'top', verticalMiddle: 'middle', verticalBottom: 'bottom' };
             $cells.css('vertical-align', vMap[command]);
+            $cells.find('.content-area, div').css({'display': 'inline-block', 'vertical-align': 'inherit'});
         } else if (command === 'absoluteCenter') {
             $cells.css({'text-align': 'center', 'vertical-align': 'middle'});
             $cells.find('*').css({'text-align': 'center'});
@@ -884,9 +885,9 @@ function recenterViewport() {
             let canvasW = parseInt($(canvas).attr('data-width')) || 816;
             let scaledW = canvasW * currentZoom;
 
-            // MASSIVE 1000px SCROLL PADDING ENABLED
+            // FIX: Default to top
             let targetScrollLeft = 600 + (scaledW / 2) - (cvp.clientWidth / 2);
-            let targetScrollTop = 1000; 
+            let targetScrollTop = 0; 
 
             cvp.scrollLeft = targetScrollLeft;
             cvp.scrollTop = targetScrollTop;
@@ -912,11 +913,11 @@ function setZoom(v) {
     let scaledW = baseW * currentZoom;
     let scaledH = baseH * currentZoom;
 
-    // MASSIVE 1000px SCROLL PADDING ENABLED
+    // FIX: MASSIVE 1500px SCROLL PADDING ENABLED
     $('#canvas-center-wrapper').css({
         'width': (scaledW + 1200) + 'px',
         'height': (scaledH + 2400) + 'px',
-        'padding-top': '1000px',
+        'padding-top': '1500px',
         'padding-bottom': '1000px'
     });
 
@@ -2477,7 +2478,7 @@ $(document).ready(async function() {
 
     if ($('#canvas-global-tools').length && !$('#page-color-btn').length) {
         let pageColorHtml = `
-        <div style="position:relative; display:inline-block; margin-left: 10px;">
+        <div class="tool-group">
             <button id="page-color-btn" class="action-btn" title="Page Background Color" onclick="$('#page-color-popup').toggle()" style="display:flex; align-items:center; justify-content:center;">
                 <i class="fas fa-fill-drip"></i>
             </button>
@@ -2489,7 +2490,12 @@ $(document).ready(async function() {
             </div>
         </div>`;
         
-        $('#canvas-global-tools').append(pageColorHtml);
+        let $mergeBtn = $('.action-btn[onclick*="mergeNextPage"]');
+        if ($mergeBtn.length) {
+            $mergeBtn.parent().append(pageColorHtml);
+        } else {
+            $('#canvas-global-tools').append(pageColorHtml);
+        }
 
         let pColorHtml = "";
         COLORS.forEach(c => { pColorHtml += `<div class="color-swatch" style="background:${c}; width:24px; height:24px; border-radius:4px; cursor:pointer;" data-pcolor="${c}"></div>`; });
@@ -2735,7 +2741,7 @@ $(document).ready(async function() {
 
             saveHistory();
             $('.canvas-box').removeClass('selected-box');
-            $page.append(`<div class="canvas-box selected-box" style="top:${y}px;left:${x}px;width:200px; height:auto; z-index:${getHighestZ()}; background:transparent; transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><div class="content-area" contenteditable="true" style="width:100%; height:100%; box-sizing:border-box; word-break:break-word; white-space:pre-wrap; outline:none;">New Text</div></div>`);
+            $page.append(`<div class="canvas-box selected-box" style="top:${y}px;left:${x}px;width:200px; height:auto; z-index:${getHighestZ()}; background:transparent; transform: translate(0px, 0px);"><div class="del-btn" onclick="$(this).parent().remove(); updateContextMenu();">X</div><div class="content-area" contenteditable="true" style="width: 100%; height: 100%; box-sizing: border-box; word-break: break-word; white-space: pre-wrap; outline:none;">New Text</div></div>`);
             updateContextMenu();
             e.preventDefault();
             return;
