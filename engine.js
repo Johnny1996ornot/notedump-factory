@@ -3,18 +3,16 @@
 // ==========================================================================
 const uiFixesCSS = `
     /* Hide rotation dot unless hovering over pin in edit mode */
-    .pin .rotation-dot { opacity: 0; pointer-events: none; transition: opacity 0.2s; }
-    .is-editing .pin:hover .rotation-dot { opacity: 1; pointer-events: auto; }
+    .pin .pin-rotate-dot { opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+    .is-editing .pin:hover .pin-rotate-dot { opacity: 1; pointer-events: auto; }
 
-    /* Hide rectangle adjustment circle unless hovering in edit mode */
-    .pin-rect-adjust, .resize-handle { opacity: 0; pointer-events: none; transition: opacity 0.2s; }
-    .is-editing .pin.rect-pin:hover .pin-rect-adjust,
-    .is-editing .pin.rect-pin:hover .resize-handle { opacity: 1; pointer-events: auto; }
+    /* Hide the white circle completely for rectangle shapes */
+    .pin[data-shape="rectangle"] .pin-rotate-dot { display: none !important; }
 
-    /* FIXED: Strict top margin for toolbar clearance, removed excessive bottom padding */
+    /* FIXED: Massive top margin for toolbar clearance, removed excessive bottom padding */
     #canvas-center-wrapper { 
-        padding-top: 150px !important; 
-        padding-bottom: 300px !important; 
+        padding-top: 400px !important; 
+        padding-bottom: 100px !important; 
     }
 `;
 if ($('#custom-ui-fixes').length === 0) {
@@ -872,7 +870,7 @@ function goTo(id) {
     if (currentViewMode === 'single') {
         $('.page').removeClass('active');
         $('#p-' + id).addClass('active');
-        recenterViewport(); // Reset viewport scroll instantly to the top
+        recenterViewport(); // Reset viewport scroll instantly
     } else {
         let $p = $(`#p-${id}`);
         if($p.length) {
@@ -896,7 +894,7 @@ function goTo(id) {
     }
 }
 
-// FIXED: Viewport Drop Logic (Removed 2500px trap, strictly positions at top 0)
+// FIXED: Adjusts target scroll top to properly frame the canvas with the new top padding
 function recenterViewport() {
     setTimeout(() => {
         let cvp = document.getElementById('canvas-viewport');
@@ -907,10 +905,10 @@ function recenterViewport() {
             let scaledW = canvasW * currentZoom;
 
             let targetScrollLeft = 600 + (scaledW / 2) - (cvp.clientWidth / 2);
-            let targetScrollTop = 0; // FIXED: Forces the viewport directly to the top edge
+            let targetScrollTop = 250; // Scroll down slightly into the top padding so the canvas is perfectly framed
 
             cvp.scrollLeft = targetScrollLeft;
-            cvp.scrollTo({ top: 0, behavior: 'auto' });
+            cvp.scrollTo({ top: targetScrollTop, behavior: 'auto' });
         }
     }, 50);
 }
@@ -933,12 +931,12 @@ function setZoom(v) {
     let scaledW = baseW * currentZoom;
     let scaledH = baseH * currentZoom;
 
-    // FIXED: Strict 150px Top allowance, removed massive 2500px scroll gaps
+    // FIXED: Massive top allowance for floating toolbars, reduced bottom gap
     $('#canvas-center-wrapper').css({
         'width': (scaledW + 1200) + 'px',
-        'height': (scaledH + 600) + 'px',
-        'padding-top': '150px',
-        'padding-bottom': '300px'
+        'height': (scaledH + 500) + 'px',
+        'padding-top': '400px',
+        'padding-bottom': '100px'
     });
 
     $('#zoom-slider, #ns-zoom-slider').val(currentZoom); 
@@ -2500,15 +2498,20 @@ $(document).ready(async function() {
     // RECOLOR BUTTON FIX & CENTERED MODAL INJECTION
     // ==========================================================================
     if ($('#canvas-global-tools').length && !$('#page-color-btn').length) {
-        let $mergeBtn = $('.action-btn[onclick*="mergeNextPage"]');
-        let $mergeContainer = $mergeBtn.parent();
-        
+        let $splitBtn = $('.action-btn[onclick*="splitPage"]');
         let pageColorHtml = `<button id="page-color-btn" class="action-btn" title="Page Background Color" style="display:inline-flex; align-items:center; justify-content:center; margin-left: 10px;"><i class="fas fa-fill-drip"></i></button>`;
         
-        if ($mergeContainer.length) {
-            $mergeContainer.append(pageColorHtml);
+        // FIXED: Explicitly appends immediately after the split button so it stays clustered
+        if ($splitBtn.length) {
+            $splitBtn.after(pageColorHtml);
         } else {
-            $('#canvas-global-tools').append(pageColorHtml);
+            let $mergeBtn = $('.action-btn[onclick*="mergeNextPage"]');
+            let $mergeContainer = $mergeBtn.parent();
+            if ($mergeContainer.length) {
+                $mergeContainer.append(pageColorHtml);
+            } else {
+                $('#canvas-global-tools').append(pageColorHtml);
+            }
         }
 
         let customPaletteModal = `
