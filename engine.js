@@ -1,4 +1,27 @@
 // ==========================================================================
+// STRICT CSS INJECTION (Hides Pin Handles, Adds Massive Padding)
+// ==========================================================================
+const uiFixesCSS = `
+    /* Hide rotation dot unless hovering over pin in edit mode */
+    .pin .rotation-dot { opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+    .is-editing .pin:hover .rotation-dot { opacity: 1; pointer-events: auto; }
+
+    /* Hide rectangle adjustment circle unless hovering in edit mode */
+    .pin-rect-adjust, .resize-handle { opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+    .is-editing .pin.rect-pin:hover .pin-rect-adjust,
+    .is-editing .pin.rect-pin:hover .resize-handle { opacity: 1; pointer-events: auto; }
+
+    /* Massive top padding for canvas to allow scrolling up to the toolbar */
+    #canvas-center-wrapper { 
+        padding-top: 2500px !important; 
+        padding-bottom: 2500px !important; 
+    }
+`;
+if ($('#custom-ui-fixes').length === 0) {
+    $('<style id="custom-ui-fixes">').text(uiFixesCSS).appendTo('head');
+}
+
+// ==========================================================================
 // SECTION 1: GLOBAL VARIABLES & STATE MANAGEMENT
 // ==========================================================================
 let current = "0"; 
@@ -142,8 +165,9 @@ function format(command, value = null) {
             $cells.css('vertical-align', vMap[command]);
             $cells.find('.content-area, div').css({'display': 'inline-block', 'vertical-align': 'inherit'});
         } else if (command === 'absoluteCenter') {
+            // FIXED: Proper table cell absolute centering
             $cells.css({'text-align': 'center', 'vertical-align': 'middle'});
-            $cells.find('*').css({'text-align': 'center'});
+            $cells.find('*').css({'text-align': 'center', 'margin': 'auto'});
         } else if (command === 'bold') {
             let isBold = $cells.first().css('font-weight') === '700' || $cells.first().css('font-weight') === 'bold';
             let targetWeight = isBold ? 'normal' : 'bold';
@@ -876,6 +900,7 @@ function goTo(id) {
     }
 }
 
+// FIXED: Viewport Drop Logic (2500px allowance)
 function recenterViewport() {
     setTimeout(() => {
         let cvp = document.getElementById('canvas-viewport');
@@ -885,9 +910,8 @@ function recenterViewport() {
             let canvasW = parseInt($(canvas).attr('data-width')) || 816;
             let scaledW = canvasW * currentZoom;
 
-            // FIX: Default to top
             let targetScrollLeft = 600 + (scaledW / 2) - (cvp.clientWidth / 2);
-            let targetScrollTop = 0; 
+            let targetScrollTop = 2500 - 50; 
 
             cvp.scrollLeft = targetScrollLeft;
             cvp.scrollTop = targetScrollTop;
@@ -913,12 +937,12 @@ function setZoom(v) {
     let scaledW = baseW * currentZoom;
     let scaledH = baseH * currentZoom;
 
-    // FIX: MASSIVE 1500px SCROLL PADDING ENABLED
+    // FIXED: MASSIVE 2500px SCROLL PADDING ENABLED
     $('#canvas-center-wrapper').css({
         'width': (scaledW + 1200) + 'px',
-        'height': (scaledH + 2400) + 'px',
-        'padding-top': '1500px',
-        'padding-bottom': '1000px'
+        'height': (scaledH + 5000) + 'px',
+        'padding-top': '2500px',
+        'padding-bottom': '2500px'
     });
 
     $('#zoom-slider, #ns-zoom-slider').val(currentZoom); 
@@ -2476,60 +2500,41 @@ $(document).ready(async function() {
         );
     }
 
+    // RECOLOR BUTTON FIX: Injecting native color picker and moving button to Merge/Split group
     if ($('#canvas-global-tools').length && !$('#page-color-btn').length) {
-        let pageColorHtml = `
-        <div class="tool-group">
-            <button id="page-color-btn" class="action-btn" title="Page Background Color" onclick="$('#page-color-popup').toggle()" style="display:flex; align-items:center; justify-content:center;">
-                <i class="fas fa-fill-drip"></i>
-            </button>
-            <div id="page-color-popup" class="floating-panel" style="display:none; position:absolute; top:50px; right:0; width:220px; padding:12px; background:#1e293b; border-radius:8px; z-index:9999; box-shadow:0 4px 15px rgba(0,0,0,0.5); cursor:default;">
-                <div style="color:white; font-size:12px; margin-bottom:8px; font-weight:bold;">Page Background Color</div>
-                <div id="page-color-grid" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;"></div>
-                <div style="color:white; font-size:12px; margin-bottom:8px; font-weight:bold;">Page Opacity</div>
-                <input type="range" id="page-opacity-slider" min="0" max="1" step="0.05" value="1" style="width:100%;">
-            </div>
-        </div>`;
-        
         let $mergeBtn = $('.action-btn[onclick*="mergeNextPage"]');
-        if ($mergeBtn.length) {
-            $mergeBtn.parent().append(pageColorHtml);
+        let $mergeContainer = $mergeBtn.parent();
+        
+        let pageColorHtml = `<button id="page-color-btn" class="action-btn" title="Page Background Color" style="display:inline-flex; align-items:center; justify-content:center; margin-left: 10px;"><i class="fas fa-fill-drip"></i></button>`;
+        
+        if ($mergeContainer.length) {
+            $mergeContainer.append(pageColorHtml);
         } else {
             $('#canvas-global-tools').append(pageColorHtml);
         }
-
-        let pColorHtml = "";
-        COLORS.forEach(c => { pColorHtml += `<div class="color-swatch" style="background:${c}; width:24px; height:24px; border-radius:4px; cursor:pointer;" data-pcolor="${c}"></div>`; });
-        $('#page-color-grid').html(pColorHtml);
+        
+        $('body').append('<input type="color" id="page-recolor-input" style="display:none; position:absolute;">');
     }
 
-    $(document).on('click', function(e) {
-        if (!$(e.target).closest('#page-color-btn, #page-color-popup').length) {
-            $('#page-color-popup').hide();
-        }
+    $(document).on('click', '#page-color-btn, .fa-fill-drip', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        $('#page-recolor-input')[0].click();
     });
 
-    $(document).on('click', '.color-swatch[data-pcolor]', function(e) {
-        e.preventDefault();
-        let hex = $(this).attr('data-pcolor');
+    $(document).on('input change', '#page-recolor-input', function() {
+        let hex = $(this).val();
         let r = parseInt(hex.slice(1, 3), 16);
         let g = parseInt(hex.slice(3, 5), 16);
         let b = parseInt(hex.slice(5, 7), 16);
-        let op = $('#page-opacity-slider').val();
-        $(`#p-${current}`).css('background-color', `rgba(${r},${g},${b},${op})`).attr('data-bg-rgb', `${r},${g},${b}`);
+        $(`#p-${current}`).css('background-color', `rgba(${r},${g},${b},1)`).attr('data-bg-rgb', `${r},${g},${b}`);
         saveHistory();
     });
 
-    $(document).on('input', '#page-opacity-slider', function() {
-        let op = $(this).val();
-        let bgData = $(`#p-${current}`).attr('data-bg-rgb') || "255,255,255";
-        $(`#p-${current}`).css('background-color', `rgba(${bgData},${op})`);
-    });
-
-    $(document).on('change', '#page-opacity-slider', function() { saveHistory(); });
-
-
     $(document).on('mousedown', '.ctx-btn, select, .color-swatch, .action-btn, button[data-cmd]', function(e) {
-        if(!$(this).is('select') && !$(this).is('input') && !$(this).is('#page-opacity-slider')) e.preventDefault(); 
+        if(!$(this).is('select') && !$(this).is('input') && !$(this).is('#page-opacity-slider') && !$(this).is('#page-color-btn') && !$(this).is('.fa-fill-drip')) {
+            e.preventDefault(); 
+        }
     });
 
     $(document).on('change', 'select[data-cmd="fontName"]', function() {
