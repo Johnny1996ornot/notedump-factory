@@ -128,6 +128,13 @@ function format(command, value = null) {
             let alignMap = { justifyLeft: 'left', justifyCenter: 'center', justifyRight: 'right', justifyFull: 'justify' };
             $cells.css('text-align', alignMap[command]);
             $cells.find('*').css('text-align', alignMap[command]); 
+        } else if (['verticalTop', 'verticalMiddle', 'verticalBottom'].includes(command)) {
+            let vMap = { verticalTop: 'top', verticalMiddle: 'middle', verticalBottom: 'bottom' };
+            $cells.css('vertical-align', vMap[command]);
+        } else if (command === 'absoluteCenter') {
+            // Force horizontal AND vertical centering
+            $cells.css({'text-align': 'center', 'vertical-align': 'middle'});
+            $cells.find('*').css({'text-align': 'center'});
         } else if (command === 'bold') {
             let isBold = $cells.first().css('font-weight') === '700' || $cells.first().css('font-weight') === 'bold';
             let targetWeight = isBold ? 'normal' : 'bold';
@@ -155,6 +162,22 @@ function format(command, value = null) {
             window.getSelection().removeAllRanges();
         }
         saveHistory();
+        return;
+    }
+
+    // Absolute Center for normal boxes (Flexbox trick)
+    if (command === 'absoluteCenter') {
+        saveHistory();
+        let $activeBox = $('.selected-box').not(':has(table)'); 
+        if ($activeBox.length > 0) {
+            $activeBox.find('.content-area').css({
+                'display': 'flex',
+                'flex-direction': 'column',
+                'justify-content': 'center',
+                'align-items': 'center',
+                'text-align': 'center'
+            });
+        }
         return;
     }
 
@@ -840,9 +863,9 @@ function recenterViewport() {
             let canvasW = parseInt($(canvas).attr('data-width')) || 816;
             let scaledW = canvasW * currentZoom;
 
-            let targetScrollLeft = 400 + (scaledW / 2) - (cvp.clientWidth / 2);
-            // MATCH PADDING: Start scrolled exactly to where the paper begins
-            let targetScrollTop = 400; 
+            // MASSIVE 1000px SCROLL PADDING ENABLED
+            let targetScrollLeft = 600 + (scaledW / 2) - (cvp.clientWidth / 2);
+            let targetScrollTop = 1000; 
 
             cvp.scrollLeft = targetScrollLeft;
             cvp.scrollTop = targetScrollTop;
@@ -868,11 +891,12 @@ function setZoom(v) {
     let scaledW = baseW * currentZoom;
     let scaledH = baseH * currentZoom;
 
-    // CORE FIX: Massive padding-top so you can easily scroll UP to the toolbar
+    // MASSIVE 1000px SCROLL PADDING ENABLED
     $('#canvas-center-wrapper').css({
-        'width': (scaledW + 600) + 'px',
-        'height': (scaledH + 1200) + 'px',
-        'padding-top': '400px'
+        'width': (scaledW + 1200) + 'px',
+        'height': (scaledH + 2400) + 'px',
+        'padding-top': '1000px',
+        'padding-bottom': '1000px'
     });
 
     $('#zoom-slider, #ns-zoom-slider').val(currentZoom); 
@@ -1239,8 +1263,6 @@ function updateContextMenu() {
         let vLeft = (cvp.scrollLeft) / currentZoom;
         let vRight = vLeft + (cvp.clientWidth / currentZoom);
 
-        // CORE FIX: The toolbar is now PERMANENTLY bound to the top of your selection.
-        // I have removed the code that flips it to the bottom.
         let finalMenuTop = topPos - cHeight - 15;
         let finalMenuLeft = leftPos + ($sel.outerWidth() / 2) - (cWidth / 2);
 
@@ -1859,12 +1881,6 @@ function togglePinDropdown(idx) {
     }
 }
 
-$(document).on('click', function(e) {
-    if (!$(e.target).closest('.sticky-left-col').length && !$(e.target).closest('.sticky-dropdown').length) {
-        $('.sticky-dropdown').addClass('hidden');
-    }
-});
-
 function switchTabToBox($box) {
     if ($box.find('.pin[data-type="pin"]').length > 0) {
         let boxes = [];
@@ -2429,8 +2445,69 @@ $(document).ready(async function() {
     await restoreFromBrowser(); 
     lastSavedState = getPageHTML(); 
 
+    // --- DYNAMICALLY INJECT NEW UI BUTTONS ---
+    // 1. Inject Absolute Center button into alignment tools if it doesn't exist
+    if ($('.menu-table-tools [onclick="format(\'justifyRight\')"]').length && !$('.menu-table-tools [onclick="format(\'absoluteCenter\')"]').length) {
+        $('.menu-table-tools [onclick="format(\'justifyRight\')"]').after(
+            `<button class="ctx-btn" onclick="format('absoluteCenter')" title="Absolute Center"><i class="fas fa-compress-arrows-alt"></i></button>`
+        );
+    }
+
+    // 2. Inject Page Background Recolor button into the universal global tools
+    if ($('#canvas-global-tools').length && !$('#page-color-btn').length) {
+        let pageColorHtml = `
+        <div style="position:relative; display:inline-block; margin-left: 10px;">
+            <button id="page-color-btn" class="action-btn" title="Page Background Color" onclick="$('#page-color-popup').toggle()" style="display:flex; align-items:center; justify-content:center;">
+                <i class="fas fa-fill-drip"></i>
+            </button>
+            <div id="page-color-popup" class="floating-panel" style="display:none; position:absolute; top:50px; right:0; width:220px; padding:12px; background:#1e293b; border-radius:8px; z-index:9999; box-shadow:0 4px 15px rgba(0,0,0,0.5); cursor:default;">
+                <div style="color:white; font-size:12px; margin-bottom:8px; font-weight:bold;">Page Background Color</div>
+                <div id="page-color-grid" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;"></div>
+                <div style="color:white; font-size:12px; margin-bottom:8px; font-weight:bold;">Page Opacity</div>
+                <input type="range" id="page-opacity-slider" min="0" max="1" step="0.05" value="1" style="width:100%;">
+            </div>
+        </div>`;
+        
+        // Append near the split/merge buttons (usually end of canvas-global-tools)
+        $('#canvas-global-tools').append(pageColorHtml);
+
+        // Populate color grid
+        let pColorHtml = "";
+        COLORS.forEach(c => { pColorHtml += `<div class="color-swatch" style="background:${c}; width:24px; height:24px; border-radius:4px; cursor:pointer;" data-pcolor="${c}"></div>`; });
+        $('#page-color-grid').html(pColorHtml);
+    }
+
+    // Close page color popup when clicking outside
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('#page-color-btn, #page-color-popup').length) {
+            $('#page-color-popup').hide();
+        }
+    });
+
+    // Page Recolor logic
+    $(document).on('click', '.color-swatch[data-pcolor]', function(e) {
+        e.preventDefault();
+        let hex = $(this).attr('data-pcolor');
+        let r = parseInt(hex.slice(1, 3), 16);
+        let g = parseInt(hex.slice(3, 5), 16);
+        let b = parseInt(hex.slice(5, 7), 16);
+        let op = $('#page-opacity-slider').val();
+        $(`#p-${current}`).css('background-color', `rgba(${r},${g},${b},${op})`).attr('data-bg-rgb', `${r},${g},${b}`);
+        saveHistory();
+    });
+
+    $(document).on('input', '#page-opacity-slider', function() {
+        let op = $(this).val();
+        let bgData = $(`#p-${current}`).attr('data-bg-rgb') || "255,255,255";
+        $(`#p-${current}`).css('background-color', `rgba(${bgData},${op})`);
+    });
+
+    $(document).on('change', '#page-opacity-slider', function() { saveHistory(); });
+    // --- END NEW UI INJECTIONS ---
+
+
     $(document).on('mousedown', '.ctx-btn, select, .color-swatch, .action-btn, button[data-cmd]', function(e) {
-        if(!$(this).is('select') && !$(this).is('input')) e.preventDefault(); 
+        if(!$(this).is('select') && !$(this).is('input') && !$(this).is('#page-opacity-slider')) e.preventDefault(); 
     });
 
     $(document).on('change', 'select[data-cmd="fontName"]', function() {
@@ -2662,7 +2739,7 @@ $(document).ready(async function() {
             $box.addClass('selected-box');
             updateContextMenu();
 
-            if ($(e.target).closest('.content-area, .audio-play-btn, .audio-track, .pin-rotate-dot').length > 0) { return; }
+            if ($(e.target).closest('.content-area, .audio-play-btn, .audio-track, .pin-rotate-dot, #page-color-btn, #page-color-popup').length > 0) { return; }
             if(!$(e.target).is(':focus')) { e.preventDefault(); }
             return;
         }
