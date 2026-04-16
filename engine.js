@@ -5,20 +5,43 @@ const uiFixesCSS = `
     /* ABSOLUTE HIDE: Removes rotation handles and dots when the pin is NOT actively selected */
     #canvas .pin:not(.is-selected) .pin-rotation-ring,
     #canvas .pin:not(.is-selected) .pin-rotate-dot,
-    #canvas .pin:not(.is-selected) .resize-handle { 
+    #canvas .pin:not(.is-selected) .resize-handle,
+    #canvas .pin:not(.is-selected) [class*="resize"] { 
         display: none !important;
         opacity: 0 !important; 
         pointer-events: none !important; 
         visibility: hidden !important;
     }
 
+    /* Specifically target any pseudo-elements acting as handles on the rectangle pin */
+    #canvas .pin[data-shape="rectangle"]:not(.is-selected)::after,
+    #canvas .pin[data-shape="rectangle"]:not(.is-selected)::before {
+        display: none !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+    }
+
+    /* Rectangles shouldn't have rotation rings anyway */
+    #canvas .pin[data-shape="rectangle"] .pin-rotation-ring,
+    #canvas .pin[data-shape="rectangle"] .pin-rotate-dot {
+        display: none !important;
+    }
+
     /* SHOW: Only brings them back when you actually click the pin to edit it */
     #canvas .pin.is-selected .pin-rotation-ring,
     #canvas .pin.is-selected .pin-rotate-dot,
-    #canvas .pin.is-selected .resize-handle { 
+    #canvas .pin.is-selected .resize-handle,
+    #canvas .pin.is-selected [class*="resize"] { 
         display: flex !important;
         opacity: 1 !important; 
         pointer-events: auto !important; 
+        visibility: visible !important;
+    }
+
+    /* Restore pseudo-elements when selected */
+    #canvas .pin[data-shape="rectangle"].is-selected::after {
+        display: block !important;
+        opacity: 1 !important;
         visibility: visible !important;
     }
 
@@ -900,7 +923,7 @@ function goTo(id) {
     }
 }
 
-// RESTORED: Centers perfectly, sets scrollTop to 100 to show exactly 700px of top padding above the page.
+// RESTORED & UPGRADED: Calculates exact vertical center based on active page height and giant padding
 function recenterViewport() {
     setTimeout(() => {
         let cvp = document.getElementById('canvas-viewport');
@@ -908,11 +931,22 @@ function recenterViewport() {
             let canvasW = parseInt($('#canvas').attr('data-width')) || 816;
             let scaledW = canvasW * currentZoom;
 
+            let baseH = parseInt($('.page.active').attr('data-page-height')) || 1054;
+            if ($('#canvas').hasClass('scroll-mode')) {
+                baseH = 0;
+                $('.page').each(function() {
+                    baseH += parseInt($(this).attr('data-page-height')) || 1054;
+                    baseH += 20; 
+                });
+            }
+            let scaledH = baseH * currentZoom;
+
             let targetScrollLeft = 50 + (scaledW / 2) - (cvp.clientWidth / 2);
             cvp.scrollLeft = targetScrollLeft;
             
-            // This drops the page down significantly, exposing all that empty space at the top.
-            cvp.scrollTo({ top: 100, behavior: 'auto' });
+            // 800px padding + half the scaled page - half the viewport frame = Dead Center 
+            let targetScrollTop = 800 + (scaledH / 2) - (cvp.clientHeight / 2);
+            cvp.scrollTo({ top: targetScrollTop, behavior: 'auto' });
         }
     }, 50);
 }
@@ -2501,21 +2535,21 @@ $(document).ready(async function() {
     }
 
     // ==========================================================================
-    // RECOLOR BUTTON FIX: Precisely targets and injects after Split Page
+    // RECOLOR BUTTON FIX: Precisely targets and injects after Split Page / Merge
     // ==========================================================================
     if ($('#canvas-global-tools').length) {
         $('#page-color-btn').remove(); 
 
         let pageColorHtml = `<button id="page-color-btn" class="action-btn" title="Page Background Color" style="display:inline-flex; align-items:center; justify-content:center; margin: 0 5px;"><i class="fas fa-fill-drip"></i></button>`;
         
-        let $splitBtn = $('.action-btn').filter(function() {
+        let $targetBtn = $('.action-btn').filter(function() {
             let oc = $(this).attr('onclick') || '';
             let tit = $(this).attr('title') || '';
-            return oc.includes('splitPage') || tit.toLowerCase().includes('split');
-        }).first();
+            return oc.toLowerCase().includes('split') || oc.toLowerCase().includes('merge') || tit.toLowerCase().includes('split') || tit.toLowerCase().includes('merge');
+        }).last();
 
-        if ($splitBtn.length) {
-            $splitBtn.after(pageColorHtml);
+        if ($targetBtn.length) {
+            $targetBtn.after(pageColorHtml);
         } else {
             $('#canvas-global-tools').append(pageColorHtml);
         }
@@ -2606,7 +2640,7 @@ $(document).ready(async function() {
     $(document).on('click', '[title="Move Up"], .fa-angle-double-up', function(e) { e.preventDefault(); changeLayer(1); });
     $(document).on('click', '[title="Move Down"], .fa-angle-double-down', function(e) { e.preventDefault(); changeLayer(-1); });
 
-    $(document).on('input', '#transparency-slider', function() { liveUpdateOpacity($(this).val()); });
+    $(document).on('input', '#transparency-slider', function() { liveUpdateOpacity($(thisval()); });
     $(document).on('change', '#transparency-slider', function() { commitOpacity(); });
 
     let colorHtml = "";
@@ -3313,16 +3347,4 @@ $(document).ready(async function() {
                 let currentPinchX = ((e.touches[0].clientX + e.touches[1].clientX) / 2) - rect.left;
                 let currentPinchY = ((e.touches[0].clientY + e.touches[1].clientY) / 2) - rect.top;
 
-                cvp2.scrollLeft = (targetCanvasX * newZoom) - currentPinchX;
-                cvp2.scrollTop = (targetCanvasY * newZoom) - currentPinchY;
-            }
-        }, {passive: false, capture: true});
-
-        cvp2.addEventListener('touchend', function(e) { 
-            if (e.touches.length < 2) isPinching = false; 
-        }, {passive: false, capture: true});
-    }
-
-    goTo("0");
-    recenterViewport();
-});
+                cvp2.scrollLeft = (targetCanvasX * newZoom)
