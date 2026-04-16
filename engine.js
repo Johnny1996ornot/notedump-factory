@@ -5,44 +5,30 @@ const uiFixesCSS = `
     /* ABSOLUTE HIDE: Removes rotation handles and dots when the pin is NOT actively selected */
     #canvas .pin:not(.is-selected) .pin-rotation-ring,
     #canvas .pin:not(.is-selected) .pin-rotate-dot,
-    #canvas .pin:not(.is-selected) .resize-handle,
-    #canvas .pin:not(.is-selected) [class*="resize"] { 
+    #canvas .pin:not(.is-selected) .resize-handle { 
         display: none !important;
         opacity: 0 !important; 
         pointer-events: none !important; 
-        visibility: hidden !important;
     }
 
-    /* Specifically target any pseudo-elements acting as handles on the rectangle pin */
-    #canvas .pin[data-shape="rectangle"]:not(.is-selected)::after,
-    #canvas .pin[data-shape="rectangle"]:not(.is-selected)::before {
+    /* RECTANGLE PIN NUKE: Rectangles do not need rotation rings or circular drag handles ever */
+    #canvas .pin[data-shape="rectangle"] .pin-rotation-ring,
+    #canvas .pin[data-shape="rectangle"] .pin-rotate-dot,
+    #canvas .pin[data-shape="rectangle"] .resize-handle,
+    #canvas .pin[data-shape="rectangle"] [class*="resize"] {
         display: none !important;
         opacity: 0 !important;
+        pointer-events: none !important;
         visibility: hidden !important;
     }
 
-    /* Rectangles shouldn't have rotation rings anyway */
-    #canvas .pin[data-shape="rectangle"] .pin-rotation-ring,
-    #canvas .pin[data-shape="rectangle"] .pin-rotate-dot {
-        display: none !important;
-    }
-
-    /* SHOW: Only brings them back when you actually click the pin to edit it */
-    #canvas .pin.is-selected .pin-rotation-ring,
-    #canvas .pin.is-selected .pin-rotate-dot,
-    #canvas .pin.is-selected .resize-handle,
-    #canvas .pin.is-selected [class*="resize"] { 
+    /* SHOW: Only brings them back when you click a NORMAL pin */
+    #canvas .pin.is-selected:not([data-shape="rectangle"]) .pin-rotation-ring,
+    #canvas .pin.is-selected:not([data-shape="rectangle"]) .pin-rotate-dot,
+    #canvas .pin.is-selected:not([data-shape="rectangle"]) .resize-handle { 
         display: flex !important;
         opacity: 1 !important; 
         pointer-events: auto !important; 
-        visibility: visible !important;
-    }
-
-    /* Restore pseudo-elements when selected */
-    #canvas .pin[data-shape="rectangle"].is-selected::after {
-        display: block !important;
-        opacity: 1 !important;
-        visibility: visible !important;
     }
 
     /* Massive top/bottom padding to allow endless scrolling for toolbars */
@@ -923,7 +909,7 @@ function goTo(id) {
     }
 }
 
-// RESTORED & UPGRADED: Calculates exact vertical center based on active page height and giant padding
+// RESTORED & UPGRADED: Lowers the viewport to 550px down the 800px padding margin to expose tons of free space above the page
 function recenterViewport() {
     setTimeout(() => {
         let cvp = document.getElementById('canvas-viewport');
@@ -931,22 +917,11 @@ function recenterViewport() {
             let canvasW = parseInt($('#canvas').attr('data-width')) || 816;
             let scaledW = canvasW * currentZoom;
 
-            let baseH = parseInt($('.page.active').attr('data-page-height')) || 1054;
-            if ($('#canvas').hasClass('scroll-mode')) {
-                baseH = 0;
-                $('.page').each(function() {
-                    baseH += parseInt($(this).attr('data-page-height')) || 1054;
-                    baseH += 20; 
-                });
-            }
-            let scaledH = baseH * currentZoom;
-
             let targetScrollLeft = 50 + (scaledW / 2) - (cvp.clientWidth / 2);
             cvp.scrollLeft = targetScrollLeft;
             
-            // 800px padding + half the scaled page - half the viewport frame = Dead Center 
-            let targetScrollTop = 800 + (scaledH / 2) - (cvp.clientHeight / 2);
-            cvp.scrollTo({ top: targetScrollTop, behavior: 'auto' });
+            // Lowered intentionally to leave 250px of empty background visible above the page top (800 - 250 = 550)
+            cvp.scrollTo({ top: 550, behavior: 'auto' });
         }
     }, 50);
 }
@@ -969,7 +944,6 @@ function setZoom(v) {
     let scaledW = baseW * currentZoom;
     let scaledH = baseH * currentZoom;
 
-    // MASSIVE padding injected here to guarantee scrolling room above the page.
     $('#canvas-center-wrapper').css({
         'width': (scaledW + 100) + 'px',
         'height': (scaledH + 1600) + 'px', 
@@ -2540,16 +2514,14 @@ $(document).ready(async function() {
     if ($('#canvas-global-tools').length) {
         $('#page-color-btn').remove(); 
 
-        let pageColorHtml = `<button id="page-color-btn" class="action-btn" title="Page Background Color" style="display:inline-flex; align-items:center; justify-content:center; margin: 0 5px;"><i class="fas fa-fill-drip"></i></button>`;
+        let pageColorHtml = `<button id="page-color-btn" class="action-btn" title="Page Background Color" style="display:inline-flex; align-items:center; justify-content:center; padding: 4px 10px; background: transparent; border: none; cursor: pointer; color: inherit;"><i class="fas fa-fill-drip"></i></button>`;
         
-        let $targetBtn = $('.action-btn').filter(function() {
-            let oc = $(this).attr('onclick') || '';
-            let tit = $(this).attr('title') || '';
-            return oc.toLowerCase().includes('split') || oc.toLowerCase().includes('merge') || tit.toLowerCase().includes('split') || tit.toLowerCase().includes('merge');
+        let $splitBtn = $('#canvas-global-tools').find('button, div, span').filter(function() {
+            return $(this).text().trim().toLowerCase() === 'split' || ($(this).attr('onclick') || '').includes('splitPage');
         }).last();
 
-        if ($targetBtn.length) {
-            $targetBtn.after(pageColorHtml);
+        if ($splitBtn.length) {
+            $splitBtn.after(pageColorHtml);
         } else {
             $('#canvas-global-tools').append(pageColorHtml);
         }
@@ -2640,7 +2612,7 @@ $(document).ready(async function() {
     $(document).on('click', '[title="Move Up"], .fa-angle-double-up', function(e) { e.preventDefault(); changeLayer(1); });
     $(document).on('click', '[title="Move Down"], .fa-angle-double-down', function(e) { e.preventDefault(); changeLayer(-1); });
 
-    $(document).on('input', '#transparency-slider', function() { liveUpdateOpacity($(thisval()); });
+    $(document).on('input', '#transparency-slider', function() { liveUpdateOpacity($(this).val()); });
     $(document).on('change', '#transparency-slider', function() { commitOpacity(); });
 
     let colorHtml = "";
@@ -3347,4 +3319,16 @@ $(document).ready(async function() {
                 let currentPinchX = ((e.touches[0].clientX + e.touches[1].clientX) / 2) - rect.left;
                 let currentPinchY = ((e.touches[0].clientY + e.touches[1].clientY) / 2) - rect.top;
 
-                cvp2.scrollLeft = (targetCanvasX * newZoom)
+                cvp2.scrollLeft = (targetCanvasX * newZoom) - currentPinchX;
+                cvp2.scrollTop = (targetCanvasY * newZoom) - currentPinchY;
+            }
+        }, {passive: false, capture: true});
+
+        cvp2.addEventListener('touchend', function(e) { 
+            if (e.touches.length < 2) isPinching = false; 
+        }, {passive: false, capture: true});
+    }
+
+    goTo("0");
+    recenterViewport();
+});
