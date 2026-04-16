@@ -2,34 +2,30 @@
 // STRICT CSS INJECTION (Hides Pin Handles, Fixes Toolbar Padding)
 // ==========================================================================
 const uiFixesCSS = `
-    /* HIDE the resize handles and rotation dots when the pin is NOT selected */
-    .pin:not(.is-selected) .resize-handle,
-    .pin:not(.is-selected) .pin-rotation-ring,
-    .pin:not(.is-selected) .pin-rotate-dot { 
+    /* ABSOLUTE HIDE: Removes rotation handles and dots when the pin is NOT actively selected */
+    #canvas .pin:not(.is-selected) .pin-rotation-ring,
+    #canvas .pin:not(.is-selected) .pin-rotate-dot,
+    #canvas .pin:not(.is-selected) .resize-handle { 
         display: none !important;
         opacity: 0 !important; 
         pointer-events: none !important; 
+        visibility: hidden !important;
     }
 
-    /* SHOW the resize handle when the pin IS selected so you can edit it */
-    .pin.is-selected .resize-handle,
-    .pin.is-selected .pin-rotation-ring,
-    .pin.is-selected .pin-rotate-dot { 
-        display: block !important;
+    /* SHOW: Only brings them back when you actually click the pin to edit it */
+    #canvas .pin.is-selected .pin-rotation-ring,
+    #canvas .pin.is-selected .pin-rotate-dot,
+    #canvas .pin.is-selected .resize-handle { 
+        display: flex !important;
         opacity: 1 !important; 
         pointer-events: auto !important; 
+        visibility: visible !important;
     }
 
-    /* Rectangles NEVER show the rotation dot/ring, ever. */
-    .pin[data-shape="rectangle"] .pin-rotation-ring,
-    .pin[data-shape="rectangle"] .pin-rotate-dot { 
-        display: none !important; 
-    }
-
-    /* Massive top/bottom padding so the floating toolbar never gets cut off */
+    /* Massive top/bottom padding to allow endless scrolling for toolbars */
     #canvas-center-wrapper { 
-        padding-top: 500px !important; 
-        padding-bottom: 500px !important; 
+        padding-top: 800px !important; 
+        padding-bottom: 800px !important; 
     }
 `;
 if ($('#custom-ui-fixes').length === 0) {
@@ -904,6 +900,7 @@ function goTo(id) {
     }
 }
 
+// RESTORED: Centers perfectly, sets scrollTop to 100 to show exactly 700px of top padding above the page.
 function recenterViewport() {
     setTimeout(() => {
         let cvp = document.getElementById('canvas-viewport');
@@ -911,13 +908,11 @@ function recenterViewport() {
             let canvasW = parseInt($('#canvas').attr('data-width')) || 816;
             let scaledW = canvasW * currentZoom;
 
-            // Centers horizontally without factoring in ghost padding
             let targetScrollLeft = 50 + (scaledW / 2) - (cvp.clientWidth / 2);
             cvp.scrollLeft = targetScrollLeft;
             
-            // Scrolls down 350px into the 500px top padding. 
-            // This leaves EXACTLY 150px of visible space above the page for your floating table toolbar.
-            cvp.scrollTop = 350; 
+            // This drops the page down significantly, exposing all that empty space at the top.
+            cvp.scrollTo({ top: 100, behavior: 'auto' });
         }
     }, 50);
 }
@@ -940,12 +935,12 @@ function setZoom(v) {
     let scaledW = baseW * currentZoom;
     let scaledH = baseH * currentZoom;
 
-    // REMOVED massive left/right padding. Wrapper shrinks down to your canvas width + 100px.
+    // MASSIVE padding injected here to guarantee scrolling room above the page.
     $('#canvas-center-wrapper').css({
         'width': (scaledW + 100) + 'px',
-        'height': (scaledH + 1000) + 'px', 
-        'padding-top': '500px',
-        'padding-bottom': '500px',
+        'height': (scaledH + 1600) + 'px', 
+        'padding-top': '800px',
+        'padding-bottom': '800px',
         'padding-left': '50px',
         'padding-right': '50px'
     });
@@ -2506,18 +2501,23 @@ $(document).ready(async function() {
     }
 
     // ==========================================================================
-    // RECOLOR BUTTON FIX: Forces it precisely next to Split Page
+    // RECOLOR BUTTON FIX: Precisely targets and injects after Split Page
     // ==========================================================================
     if ($('#canvas-global-tools').length) {
         $('#page-color-btn').remove(); 
 
         let pageColorHtml = `<button id="page-color-btn" class="action-btn" title="Page Background Color" style="display:inline-flex; align-items:center; justify-content:center; margin: 0 5px;"><i class="fas fa-fill-drip"></i></button>`;
         
-        let $splitBtn = $('.action-btn[onclick*="splitPage"], .action-btn[title*="Split"]');
+        let $splitBtn = $('.action-btn').filter(function() {
+            let oc = $(this).attr('onclick') || '';
+            let tit = $(this).attr('title') || '';
+            return oc.includes('splitPage') || tit.toLowerCase().includes('split');
+        }).first();
+
         if ($splitBtn.length) {
-            $splitBtn.after(pageColorHtml); // Injects EXACTLY after the Split Page button
+            $splitBtn.after(pageColorHtml);
         } else {
-            $('#canvas-global-tools').prepend(pageColorHtml);
+            $('#canvas-global-tools').append(pageColorHtml);
         }
 
         let customPaletteModal = `
