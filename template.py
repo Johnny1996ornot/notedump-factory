@@ -34,8 +34,19 @@ def get_template(total_pages):
     __INJECTED_CSS__
 
     /* ==========================================
-       ALL NEW FIXES (Eraser Glow, Shapes, Borders, Audio)
+       ALL NEW FIXES (Eraser Glow, Shapes, Borders, Audio, Viewport)
        ========================================== */
+       
+    #canvas-viewport { 
+        display: block !important; 
+        overflow: auto; 
+        background: var(--page-bg); 
+        position: relative; 
+        flex-grow: 2; 
+        padding: 600px 300px 400px 300px; /* Massive 600px top padding for toolbar clearance */
+        box-sizing: border-box;
+    }
+
     #draw-btn.draw-active, #eraser-btn.draw-active { 
         color: #ef4444 !important; 
         background: rgba(239, 68, 68, 0.15) !important;
@@ -94,6 +105,7 @@ def get_template(total_pages):
         opacity: 0 !important;
     }
 
+    /* Resize Handle for Rectangles (Invisible until hover) */
     body.edit-active .pin[data-type="pin"][data-shape="rectangle"]::after {
         content: ''; 
         position: absolute; 
@@ -108,17 +120,37 @@ def get_template(total_pages):
         z-index: 1000;
         box-shadow: 0 1px 3px rgba(0,0,0,0.3);
         pointer-events: auto !important; 
+        opacity: 0 !important;
+        visibility: hidden;
+        transition: opacity 0.2s ease-in-out;
     }
 
-    /* Assign a specific class to the handle via javascript to ignore drags */
+    body.edit-active .pin[data-type="pin"][data-shape="rectangle"]:hover::after,
+    body.edit-active .pin[data-type="pin"][data-shape="rectangle"].is-selected::after {
+        opacity: 1 !important;
+        visibility: visible;
+        background: #e0f2fe; 
+        border-color: #0284c7; 
+    }
+
     .pin-resize-target {
         position: absolute; bottom: -8px; right: -8px; width: 20px; height: 20px; z-index: 1001; cursor: nwse-resize;
     }
 
-    body.edit-active .pin[data-type="pin"][data-shape="rectangle"]:hover::after {
-        background: #e0f2fe; 
-        border-color: #0284c7; 
+    /* --- STICKY NOTE FIXES --- */
+    .pin[data-type="sticky"] { 
+        width: 24px; height: 24px; filter: none; margin: 0 !important; cursor: move; pointer-events: auto; 
     }
+    .pin[data-type="sticky"] .pin-rotator-group { position: relative; transition: none; transform: none !important; filter: none;}
+    .pin[data-type="sticky"] .pin-rotation-ring { display: none !important; }
+    
+    .pin[data-type="sticky"] .pin-visual {
+        width: 100%; height: 100%; min-width: 24px; min-height: 24px; background-color: var(--pin-color, #fde047) !important; border-radius: 4px; border: 1px solid rgba(0,0,0,0.2);
+        position: relative; left: auto; bottom: auto; margin: 0; transform: none; box-shadow: inset 0 0 10px rgba(0,0,0,0.05); pointer-events: auto;
+    }
+    .pin[data-type="sticky"][data-shape="circle"] .pin-visual { border-radius: 50% !important; }
+    .pin[data-type="sticky"][data-shape="triangle"] .pin-visual { border-radius: 0 !important; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); border: none !important; }
+    .pin[data-type="sticky"] .pin-visual::after { display: none; }
 
     .pin[data-note]:not(:has(.pin-rotate-dot:hover)):hover::before {
         content: attr(data-note);
@@ -143,7 +175,6 @@ def get_template(total_pages):
     }
 
     /* --- AUDIO PLAYER FIXES --- */
-    /* Restyled Skip Button */
     .audio-skip-btn {
         background: transparent;
         color: white;
