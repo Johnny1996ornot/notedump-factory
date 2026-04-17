@@ -6,15 +6,14 @@ const uiFixesCSS = `
     #canvas .pin:not(.is-selected) .pin-rotation-ring,
     #canvas .pin:not(.is-selected) .pin-rotate-dot,
     #canvas .pin:not(.is-selected) .resize-handle { 
-        display: none !important;
         opacity: 0 !important; 
+        visibility: hidden !important;
         pointer-events: none !important; 
     }
 
-    /* NUKE THE WHITE CIRCLE (ROTATION DOT) ON RECTANGLES FOREVER */
+    /* NUKE THE ROTATION RING ON RECTANGLES FOREVER */
     #canvas .pin[data-shape="rectangle"] .pin-rotation-ring,
     #canvas .pin[data-shape="rectangle"] .pin-rotate-dot {
-        display: none !important;
         opacity: 0 !important;
         visibility: hidden !important;
         pointer-events: none !important;
@@ -23,11 +22,10 @@ const uiFixesCSS = `
     /* ONLY SHOW RESIZE HANDLES ON HOVER FOR RECTANGLES */
     #canvas .pin[data-shape="rectangle"] .resize-handle {
         opacity: 0 !important;
-        visibility: hidden !important;
+        pointer-events: none !important;
         transition: opacity 0.2s ease-in-out !important;
     }
     #canvas .pin.is-selected[data-shape="rectangle"]:hover .resize-handle {
-        display: block !important;
         opacity: 1 !important;
         visibility: visible !important;
         pointer-events: auto !important;
@@ -37,8 +35,8 @@ const uiFixesCSS = `
     #canvas .pin.is-selected:not([data-shape="rectangle"]) .pin-rotation-ring,
     #canvas .pin.is-selected:not([data-shape="rectangle"]) .pin-rotate-dot,
     #canvas .pin.is-selected:not([data-shape="rectangle"]) .resize-handle { 
-        display: flex !important;
         opacity: 1 !important; 
+        visibility: visible !important;
         pointer-events: auto !important; 
     }
 
@@ -1873,9 +1871,8 @@ $(document).on('mousemove touchmove', function(e) {
 
         let angle = Math.atan2(clientY - centerY, clientX - centerX) * (180 / Math.PI);
         
-        // PERFECT SYNC FIX: Changing this from +90 to -90 flips the rotation 180 degrees 
-        // to properly match the yellow dot's position instead of running away from it.
-        let visualAngle = angle - 90;
+        // REVERTED to +90: Perfect sync with the rotation handle 
+        let visualAngle = angle + 90;
 
         activePinToRotate.attr('data-angle', visualAngle);
 
@@ -1978,6 +1975,11 @@ function toggleImagePinShape(origIdx) {
         $pin.css({width: rectWidth + 'px', height: '24px', marginTop: '0', marginLeft: '0'});
         $pin.attr('data-angle', 0);
         $pin.find('.pin-rotator-group').css('transform', 'rotate(0deg) scale(1)');
+        
+        // Ensure the resize handle is injected properly into the rectangle pin
+        if ($pin.find('.resize-handle').length === 0) {
+            $pin.append('<div class="resize-handle" style="position:absolute; right:-5px; bottom:-5px; width:10px; height:10px; background:white; border:1px solid black; cursor:se-resize; z-index:999;"></div>');
+        }
     }
     else { 
         nextShape = 'marker'; iconClass = 'fa-map-marker-alt'; 
@@ -2496,8 +2498,23 @@ function toggleEdit() {
                     let currentW = parseFloat(target.style.width) || target.offsetWidth;
                     let currentH = parseFloat(target.style.height) || target.offsetHeight;
 
-                    target.style.width = (currentW + (event.deltaRect.width / currentZoom)) + 'px';
-                    target.style.height = (currentH + (event.deltaRect.height / currentZoom)) + 'px';
+                    let newW = currentW + (event.deltaRect.width / currentZoom);
+                    let newH = currentH + (event.deltaRect.height / currentZoom);
+
+                    target.style.width = newW + 'px';
+                    target.style.height = newH + 'px';
+
+                    // Ensures the inner visual container stretches with the interactive bounding box
+                    let visual = target.querySelector('.pin-visual');
+                    let rotatorGroup = target.querySelector('.pin-rotator-group');
+                    if (rotatorGroup) {
+                        rotatorGroup.style.width = '100%';
+                        rotatorGroup.style.height = '100%';
+                    }
+                    if (visual) {
+                        visual.style.width = '100%';
+                        visual.style.height = '100%';
+                    }
                 }
             }
         });
