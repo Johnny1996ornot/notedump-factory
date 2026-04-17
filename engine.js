@@ -11,15 +11,26 @@ const uiFixesCSS = `
         pointer-events: none !important; 
     }
 
-    /* RECTANGLE PIN NUKE: Rectangles do not need rotation rings or circular drag handles ever */
+    /* RECTANGLE PIN NUKE: Rectangles do not need rotation rings ever */
     #canvas .pin[data-shape="rectangle"] .pin-rotation-ring,
-    #canvas .pin[data-shape="rectangle"] .pin-rotate-dot,
-    #canvas .pin[data-shape="rectangle"] .resize-handle,
-    #canvas .pin[data-shape="rectangle"] [class*="resize"] {
+    #canvas .pin[data-shape="rectangle"] .pin-rotate-dot {
         display: none !important;
         opacity: 0 !important;
         pointer-events: none !important;
         visibility: hidden !important;
+    }
+
+    /* ONLY SHOW RECTANGLE RESIZE HANDLE ON HOVER */
+    #canvas .pin[data-shape="rectangle"] .resize-handle,
+    #canvas .pin[data-shape="rectangle"] [class*="resize"] {
+        opacity: 0 !important;
+        visibility: hidden !important;
+        transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out !important;
+    }
+    #canvas .pin.is-selected[data-shape="rectangle"]:hover .resize-handle,
+    #canvas .pin.is-selected[data-shape="rectangle"]:hover [class*="resize"] {
+        opacity: 1 !important;
+        visibility: visible !important;
     }
 
     /* SHOW: Only brings them back when you click a NORMAL pin */
@@ -31,10 +42,10 @@ const uiFixesCSS = `
         pointer-events: auto !important; 
     }
 
-    /* Massive top/bottom padding to allow endless scrolling for toolbars */
+    /* Massive top padding to allow endless scrolling for toolbars */
     #canvas-center-wrapper { 
-        padding-top: 800px !important; 
-        padding-bottom: 800px !important; 
+        padding-top: 1200px !important; 
+        padding-bottom: 400px !important; 
     }
 `;
 if ($('#custom-ui-fixes').length === 0) {
@@ -909,7 +920,7 @@ function goTo(id) {
     }
 }
 
-// RESTORED & UPGRADED: Lowers the viewport to 550px down the 800px padding margin to expose tons of free space above the page
+// RESTORED & UPGRADED: Lowers the viewport to 800px down the 1200px padding margin to expose tons of free space above the page
 function recenterViewport() {
     setTimeout(() => {
         let cvp = document.getElementById('canvas-viewport');
@@ -920,8 +931,8 @@ function recenterViewport() {
             let targetScrollLeft = 50 + (scaledW / 2) - (cvp.clientWidth / 2);
             cvp.scrollLeft = targetScrollLeft;
             
-            // Lowered intentionally to leave 250px of empty background visible above the page top (800 - 250 = 550)
-            cvp.scrollTo({ top: 550, behavior: 'auto' });
+            // Lowered intentionally to leave 400px of empty background visible above the page top (1200 - 400 = 800)
+            cvp.scrollTo({ top: 800, behavior: 'auto' });
         }
     }, 50);
 }
@@ -947,8 +958,8 @@ function setZoom(v) {
     $('#canvas-center-wrapper').css({
         'width': (scaledW + 100) + 'px',
         'height': (scaledH + 1600) + 'px', 
-        'padding-top': '800px',
-        'padding-bottom': '800px',
+        'padding-top': '1200px',
+        'padding-bottom': '400px',
         'padding-left': '50px',
         'padding-right': '50px'
     });
@@ -1848,10 +1859,11 @@ function updatePinStyle(origIdx, property, value) {
                 $pin.find('.pin-rotator-group').css('transform', `rotate(${currentAngle}deg) scale(${scaleVal})`);
             }
         } else {
-            let scaleVal = s / 32; 
-            $pin.attr('data-scale', scaleVal);
-            $pin.find('.pin-rotator-group').css('transform', `scale(${scaleVal})`);
-            $visual.css({width: '24px', height: '24px'}); 
+            // STICKY NOTE FIX: Direct width/height scaling for better hitbox
+            $pin.css({ width: s + 'px', height: s + 'px', marginTop: -(s/2) + 'px', marginLeft: -(s/2) + 'px' });
+            $pin.attr('data-scale', s / 32);
+            $pin.find('.pin-rotator-group').css('transform', `scale(1)`);
+            $visual.css({width: '100%', height: '100%'}); 
         }
     } else if (property === 'opacity') {
         $visual.css('opacity', value);
@@ -1977,7 +1989,10 @@ function getAnnotations() {
         let size = $(this).width();
         let scale = parseFloat($(this).attr('data-scale')) || 1;
         if (type === 'pin' && shape !== 'rectangle') size = scale * 32;
-        if (type === 'sticky') size = scale * 32;
+        if (type === 'sticky') {
+            size = $(this).width();
+            if (!size || size < 15) size = scale * 32;
+        }
 
         annos.push({ 
             el: $(this),
@@ -2764,9 +2779,9 @@ $(document).ready(async function() {
                 if (o > highestOrder) highestOrder = o;
             });
             $page.append(`
-                <div class="pin" data-type="sticky" data-shape="square" data-note="New Sticky Note" data-angle="0" data-order="${highestOrder + 1}" style="top:${y}px;left:${x}px; margin-top:-12px; margin-left:-12px; transform: translate(0px, 0px); opacity:1; --pin-color: #fde047;">
-                    <div class="pin-rotator-group" style="transform: rotate(0deg);">
-                        <div class="pin-visual"></div>
+                <div class="pin" data-type="sticky" data-shape="square" data-note="New Sticky Note" data-angle="0" data-order="${highestOrder + 1}" style="top:${y}px;left:${x}px; margin-top:-16px; margin-left:-16px; width:32px; height:32px; transform: translate(0px, 0px); opacity:1; --pin-color: #fde047;">
+                    <div class="pin-rotator-group" style="transform: rotate(0deg); width:100%; height:100%;">
+                        <div class="pin-visual" style="width:100%; height:100%;"></div>
                     </div>
                 </div>
             `);
