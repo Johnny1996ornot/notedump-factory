@@ -53,6 +53,23 @@ const uiFixesCSS = `
         left: -210px !important;
         top: 0 !important;
     }
+
+    /* GLOW EFFECT FOR PINS ON HOVER (BOTH ON CANVAS AND FROM SIDE PANEL) */
+    #canvas .pin:hover .pin-visual,
+    #canvas .pin.pin-hover-visible .pin-visual {
+        box-shadow: 0 0 15px 4px var(--pin-color) !important;
+        filter: drop-shadow(0 0 8px var(--pin-color)) brightness(1.2) !important;
+        transform: scale(1.15) !important;
+        transition: all 0.2s ease-in-out !important;
+        z-index: 99999 !important;
+    }
+
+    /* Prevent rectangles from scaling weirdly, but keep the glow */
+    #canvas .pin[data-shape="rectangle"]:hover .pin-visual,
+    #canvas .pin[data-shape="rectangle"].pin-hover-visible .pin-visual {
+        transform: none !important;
+        box-shadow: inset 0 0 10px 2px var(--pin-color), 0 0 15px 4px var(--pin-color) !important;
+    }
 `;
 if ($('#custom-ui-fixes').length === 0) {
     $('<style id="custom-ui-fixes">').text(uiFixesCSS).appendTo('head');
@@ -933,10 +950,7 @@ function recenterViewport() {
             let canvasW = parseInt($('#canvas').attr('data-width')) || 816;
             let scaledW = canvasW * currentZoom;
 
-            // HORIZONTAL: Perfect middle positioning matching the new 300px CSS left-padding
             let targetScrollLeft = 300 + (scaledW / 2) - (cvp.clientWidth / 2);
-            
-            // VERTICAL: 600px top padding leaves 100px empty space when scrolled to 500
             let targetScrollTop = 500;
 
             cvp.scrollTo({ top: targetScrollTop, left: targetScrollLeft, behavior: 'auto' });
@@ -1858,7 +1872,6 @@ function updatePinStyle(origIdx, property, value) {
         let s = parseInt(value);
         
         if (type === 'sticky') {
-            // PIXEL WIDTH FIX: Kills scaling properties and sets direct CSS pixel bounds
             $pin.attr('data-scale', 1);
             $pin.css({ width: s + 'px', height: s + 'px', marginTop: -(s/2) + 'px', marginLeft: -(s/2) + 'px', transform: 'none' });
             $pin.find('.pin-rotator-group').css({'transform': 'none', 'width': '100%', 'height': '100%'});
@@ -2005,7 +2018,7 @@ function getAnnotations() {
         if (type === 'pin' && shape !== 'rectangle') size = scale * 32;
         
         if (type === 'sticky') {
-            size = $(this).width(); // FIX: Reads direct pixel width instead of scaling multiplier
+            size = $(this).width(); 
             if (!size || size < 15) size = 32;
         }
 
