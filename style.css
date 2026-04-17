@@ -314,8 +314,17 @@ body.edit-active .pin.is-selected .pin-rotation-ring { display: block; }
 body.edit-active .pin[data-type="pin"][data-shape="rectangle"]::after {
     content: ''; position: absolute; bottom: -5px; right: -5px; width: 14px; height: 14px; background: #ffffff;
     border: 2px solid #0ea5e9; border-radius: 50%; cursor: nwse-resize; z-index: 1000; box-shadow: 0 1px 3px rgba(0,0,0,0.3); pointer-events: auto !important; 
+    opacity: 0 !important;
+    visibility: hidden;
+    transition: opacity 0.2s ease-in-out;
 }
-body.edit-active .pin[data-type="pin"][data-shape="rectangle"]:hover::after { background: #e0f2fe; border-color: #0284c7; }
+body.edit-active .pin[data-type="pin"][data-shape="rectangle"]:hover::after,
+body.edit-active .pin[data-type="pin"][data-shape="rectangle"].is-selected::after {
+    opacity: 1 !important;
+    visibility: visible;
+    background: #e0f2fe; 
+    border-color: #0284c7; 
+}
 
 .pin[data-type="sticky"] { width: auto !important; height: auto !important; filter: none; margin: 0 !important; cursor: move; pointer-events: auto; }
 .pin[data-type="sticky"] .pin-rotator-group { position: relative; transition: none; transform: none !important; filter: none;}
