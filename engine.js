@@ -11,24 +11,16 @@ const uiFixesCSS = `
         pointer-events: none !important; 
     }
 
-    /* RECTANGLE PIN NUKE: Rectangles do not need rotation rings ever */
+    /* RECTANGLE PIN FIX: Hide handles on rectangle UNLESS hovering */
     #canvas .pin[data-shape="rectangle"] .pin-rotation-ring,
     #canvas .pin[data-shape="rectangle"] .pin-rotate-dot {
-        display: none !important;
         opacity: 0 !important;
-        pointer-events: none !important;
         visibility: hidden !important;
+        transition: opacity 0.2s ease-in-out !important;
     }
 
-    /* ONLY SHOW RECTANGLE RESIZE HANDLE ON HOVER */
-    #canvas .pin[data-shape="rectangle"] .resize-handle,
-    #canvas .pin[data-shape="rectangle"] [class*="resize"] {
-        opacity: 0 !important;
-        visibility: hidden !important;
-        transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out !important;
-    }
-    #canvas .pin.is-selected[data-shape="rectangle"]:hover .resize-handle,
-    #canvas .pin.is-selected[data-shape="rectangle"]:hover [class*="resize"] {
+    #canvas .pin.is-selected[data-shape="rectangle"]:hover .pin-rotation-ring,
+    #canvas .pin.is-selected[data-shape="rectangle"]:hover .pin-rotate-dot {
         opacity: 1 !important;
         visibility: visible !important;
     }
@@ -44,8 +36,8 @@ const uiFixesCSS = `
 
     /* Massive top padding to allow endless scrolling for toolbars */
     #canvas-center-wrapper { 
-        padding-top: 1200px !important; 
-        padding-bottom: 400px !important; 
+        padding-top: 800px !important; 
+        padding-bottom: 300px !important; 
     }
 `;
 if ($('#custom-ui-fixes').length === 0) {
@@ -920,7 +912,7 @@ function goTo(id) {
     }
 }
 
-// RESTORED & UPGRADED: Lowers the viewport to 800px down the 1200px padding margin to expose tons of free space above the page
+// FIXED: Sets default view 100px from the top edge, leaving 700px of scrolling room above for your floating toolbars
 function recenterViewport() {
     setTimeout(() => {
         let cvp = document.getElementById('canvas-viewport');
@@ -931,8 +923,8 @@ function recenterViewport() {
             let targetScrollLeft = 50 + (scaledW / 2) - (cvp.clientWidth / 2);
             cvp.scrollLeft = targetScrollLeft;
             
-            // Lowered intentionally to leave 400px of empty background visible above the page top (1200 - 400 = 800)
-            cvp.scrollTo({ top: 800, behavior: 'auto' });
+            // Scrolls down 700px into the 800px top-padding, leaving 100px of empty space visible above the page
+            cvp.scrollTo({ top: 700, behavior: 'auto' });
         }
     }, 50);
 }
@@ -957,9 +949,9 @@ function setZoom(v) {
 
     $('#canvas-center-wrapper').css({
         'width': (scaledW + 100) + 'px',
-        'height': (scaledH + 1600) + 'px', 
-        'padding-top': '1200px',
-        'padding-bottom': '400px',
+        'height': (scaledH + 1100) + 'px', 
+        'padding-top': '800px',
+        'padding-bottom': '300px',
         'padding-left': '50px',
         'padding-right': '50px'
     });
@@ -1845,10 +1837,17 @@ function updatePinStyle(origIdx, property, value) {
     debouncedSaveHistory(); 
     let $pin = getPinEl(origIdx);
     let $visual = $pin.find('.pin-visual');
+    let type = $pin.attr('data-type');
 
     if(property === 'size') { 
         let s = parseInt(value);
-        if ($pin.attr('data-type') === 'pin') {
+        
+        if (type === 'sticky') {
+            $pin.css({ width: s + 'px', height: s + 'px', marginTop: -(s/2) + 'px', marginLeft: -(s/2) + 'px' });
+            $pin.attr('data-scale', s / 32);
+            $pin.find('.pin-rotator-group').css({'transform': 'scale(1)', 'width': '100%', 'height': '100%'});
+            $visual.css({'width': '100%', 'height': '100%'});
+        } else if (type === 'pin') {
             if ($pin.attr('data-shape') === 'rectangle') {
                 let currentH = parseInt($pin.css('height')) || 24;
                 $pin.css({width: s + 'px', height: currentH + 'px'}); 
@@ -1859,11 +1858,10 @@ function updatePinStyle(origIdx, property, value) {
                 $pin.find('.pin-rotator-group').css('transform', `rotate(${currentAngle}deg) scale(${scaleVal})`);
             }
         } else {
-            // STICKY NOTE FIX: Direct width/height scaling for better hitbox
-            $pin.css({ width: s + 'px', height: s + 'px', marginTop: -(s/2) + 'px', marginLeft: -(s/2) + 'px' });
-            $pin.attr('data-scale', s / 32);
-            $pin.find('.pin-rotator-group').css('transform', `scale(1)`);
-            $visual.css({width: '100%', height: '100%'}); 
+            let scaleVal = s / 32; 
+            $pin.attr('data-scale', scaleVal);
+            $pin.find('.pin-rotator-group').css('transform', `scale(${scaleVal})`);
+            $visual.css({width: '24px', height: '24px'}); 
         }
     } else if (property === 'opacity') {
         $visual.css('opacity', value);
