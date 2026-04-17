@@ -1,5 +1,5 @@
 // ==========================================================================
-// STRICT CSS INJECTION (Hides Pin Handles, Fixes Toolbar Padding)
+// STRICT CSS INJECTION (Hides Pin Handles, Fixes Toolbar Padding, Moves Menus)
 // ==========================================================================
 const uiFixesCSS = `
     /* ABSOLUTE HIDE: Removes rotation handles and dots when the pin is NOT actively selected */
@@ -46,6 +46,12 @@ const uiFixesCSS = `
     #canvas-center-wrapper { 
         padding-top: 1200px !important; 
         padding-bottom: 400px !important; 
+    }
+
+    /* MOVES THE STICKY NOTE DROPDOWN TO THE LEFT SO YOU CAN TYPE FREELY */
+    #sticky-panel .sticky-dropdown {
+        left: -210px !important;
+        top: 0 !important;
     }
 `;
 if ($('#custom-ui-fixes').length === 0) {
@@ -920,7 +926,6 @@ function goTo(id) {
     }
 }
 
-// Fixed calculation: Scroll to exactly 1150px to leave a clean 50px visual gap above the page on load
 function recenterViewport() {
     setTimeout(() => {
         let cvp = document.getElementById('canvas-viewport');
@@ -928,11 +933,13 @@ function recenterViewport() {
             let canvasW = parseInt($('#canvas').attr('data-width')) || 816;
             let scaledW = canvasW * currentZoom;
 
-            let targetScrollLeft = 50 + (scaledW / 2) - (cvp.clientWidth / 2);
-            cvp.scrollLeft = targetScrollLeft;
+            // HORIZONTAL: Perfect middle positioning matching the new 300px CSS left-padding
+            let targetScrollLeft = 300 + (scaledW / 2) - (cvp.clientWidth / 2);
             
-            // 1200 padding - 50 gap = 1150 scroll position
-            cvp.scrollTo({ top: 1150, behavior: 'auto' });
+            // VERTICAL: 600px top padding leaves 100px empty space when scrolled to 500
+            let targetScrollTop = 500;
+
+            cvp.scrollTo({ top: targetScrollTop, left: targetScrollLeft, behavior: 'auto' });
         }
     }, 50);
 }
@@ -1851,11 +1858,11 @@ function updatePinStyle(origIdx, property, value) {
         let s = parseInt(value);
         
         if (type === 'sticky') {
-            let scaleVal = s / 32; 
-            $pin.attr('data-scale', scaleVal);
-            $pin.find('.pin-rotator-group').css({'transform': `scale(${scaleVal})`, 'width': '100%', 'height': '100%'});
-            $pin.css({ width: '32px', height: '32px', marginTop: '-16px', marginLeft: '-16px' });
-            $visual.css({'width': '100%', 'height': '100%'});
+            // PIXEL WIDTH FIX: Kills scaling properties and sets direct CSS pixel bounds
+            $pin.attr('data-scale', 1);
+            $pin.css({ width: s + 'px', height: s + 'px', marginTop: -(s/2) + 'px', marginLeft: -(s/2) + 'px', transform: 'none' });
+            $pin.find('.pin-rotator-group').css({'transform': 'none', 'width': '100%', 'height': '100%'});
+            $visual.css({'width': '100%', 'height': '100%', 'transform': 'none'});
         } else if (type === 'pin') {
             if ($pin.attr('data-shape') === 'rectangle') {
                 let currentH = parseInt($pin.css('height')) || 24;
@@ -1996,8 +2003,9 @@ function getAnnotations() {
         let size = $(this).width();
         let scale = parseFloat($(this).attr('data-scale')) || 1;
         if (type === 'pin' && shape !== 'rectangle') size = scale * 32;
+        
         if (type === 'sticky') {
-            size = scale * 32;
+            size = $(this).width(); // FIX: Reads direct pixel width instead of scaling multiplier
             if (!size || size < 15) size = 32;
         }
 
@@ -2530,9 +2538,6 @@ $(document).ready(async function() {
         );
     }
 
-    // ==========================================================================
-    // RECOLOR BUTTON FIX: Precisely targets and injects after Split Page / Merge
-    // ==========================================================================
     if ($('#canvas-global-tools').length) {
         $('#page-color-btn').remove(); 
 
