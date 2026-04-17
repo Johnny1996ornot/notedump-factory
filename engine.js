@@ -11,18 +11,26 @@ const uiFixesCSS = `
         pointer-events: none !important; 
     }
 
-    /* RECTANGLE PIN FIX: Hide handles on rectangle UNLESS hovering */
+    /* NUKE THE WHITE CIRCLE (ROTATION DOT) ON RECTANGLES FOREVER */
     #canvas .pin[data-shape="rectangle"] .pin-rotation-ring,
     #canvas .pin[data-shape="rectangle"] .pin-rotate-dot {
+        display: none !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
+
+    /* ONLY SHOW RESIZE HANDLES ON HOVER FOR RECTANGLES */
+    #canvas .pin[data-shape="rectangle"] .resize-handle {
         opacity: 0 !important;
         visibility: hidden !important;
         transition: opacity 0.2s ease-in-out !important;
     }
-
-    #canvas .pin.is-selected[data-shape="rectangle"]:hover .pin-rotation-ring,
-    #canvas .pin.is-selected[data-shape="rectangle"]:hover .pin-rotate-dot {
+    #canvas .pin.is-selected[data-shape="rectangle"]:hover .resize-handle {
+        display: block !important;
         opacity: 1 !important;
         visibility: visible !important;
+        pointer-events: auto !important;
     }
 
     /* SHOW: Only brings them back when you click a NORMAL pin */
@@ -34,10 +42,10 @@ const uiFixesCSS = `
         pointer-events: auto !important; 
     }
 
-    /* Massive top padding to allow endless scrolling for toolbars */
+    /* Massive top padding to allow endless scrolling for toolbars above the page */
     #canvas-center-wrapper { 
-        padding-top: 800px !important; 
-        padding-bottom: 300px !important; 
+        padding-top: 1200px !important; 
+        padding-bottom: 400px !important; 
     }
 `;
 if ($('#custom-ui-fixes').length === 0) {
@@ -912,7 +920,7 @@ function goTo(id) {
     }
 }
 
-// FIXED: Sets default view 100px from the top edge, leaving 700px of scrolling room above for your floating toolbars
+// Fixed calculation: Scroll to exactly 1150px to leave a clean 50px visual gap above the page on load
 function recenterViewport() {
     setTimeout(() => {
         let cvp = document.getElementById('canvas-viewport');
@@ -923,8 +931,8 @@ function recenterViewport() {
             let targetScrollLeft = 50 + (scaledW / 2) - (cvp.clientWidth / 2);
             cvp.scrollLeft = targetScrollLeft;
             
-            // Scrolls down 700px into the 800px top-padding, leaving 100px of empty space visible above the page
-            cvp.scrollTo({ top: 700, behavior: 'auto' });
+            // 1200 padding - 50 gap = 1150 scroll position
+            cvp.scrollTo({ top: 1150, behavior: 'auto' });
         }
     }, 50);
 }
@@ -949,9 +957,9 @@ function setZoom(v) {
 
     $('#canvas-center-wrapper').css({
         'width': (scaledW + 100) + 'px',
-        'height': (scaledH + 1100) + 'px', 
-        'padding-top': '800px',
-        'padding-bottom': '300px',
+        'height': (scaledH + 1600) + 'px', 
+        'padding-top': '1200px',
+        'padding-bottom': '400px',
         'padding-left': '50px',
         'padding-right': '50px'
     });
@@ -1843,9 +1851,10 @@ function updatePinStyle(origIdx, property, value) {
         let s = parseInt(value);
         
         if (type === 'sticky') {
-            $pin.css({ width: s + 'px', height: s + 'px', marginTop: -(s/2) + 'px', marginLeft: -(s/2) + 'px' });
-            $pin.attr('data-scale', s / 32);
-            $pin.find('.pin-rotator-group').css({'transform': 'scale(1)', 'width': '100%', 'height': '100%'});
+            let scaleVal = s / 32; 
+            $pin.attr('data-scale', scaleVal);
+            $pin.find('.pin-rotator-group').css({'transform': `scale(${scaleVal})`, 'width': '100%', 'height': '100%'});
+            $pin.css({ width: '32px', height: '32px', marginTop: '-16px', marginLeft: '-16px' });
             $visual.css({'width': '100%', 'height': '100%'});
         } else if (type === 'pin') {
             if ($pin.attr('data-shape') === 'rectangle') {
@@ -1988,8 +1997,8 @@ function getAnnotations() {
         let scale = parseFloat($(this).attr('data-scale')) || 1;
         if (type === 'pin' && shape !== 'rectangle') size = scale * 32;
         if (type === 'sticky') {
-            size = $(this).width();
-            if (!size || size < 15) size = scale * 32;
+            size = scale * 32;
+            if (!size || size < 15) size = 32;
         }
 
         annos.push({ 
