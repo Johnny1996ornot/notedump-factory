@@ -97,6 +97,18 @@ const uiFixesCSS = `
         background: #1e293b !important; 
         border-radius: 8px !important;
     }
+
+    /* MOVE PIN HOVER TEXT TO THE RIGHT SIDE TO PREVENT BLOCKING THE YELLOW HANDLE */
+    #canvas .pin::after,
+    #canvas .pin .pin-visual::after {
+        top: 50% !important;
+        bottom: auto !important;
+        left: 100% !important;
+        transform: translateY(-50%) !important;
+        margin-left: 15px !important;
+        margin-bottom: 0 !important;
+        z-index: 999999 !important;
+    }
 `;
 if ($('#custom-ui-fixes').length === 0) {
     $('<style id="custom-ui-fixes">').text(uiFixesCSS).appendTo('head');
@@ -1860,7 +1872,10 @@ $(document).on('mousemove touchmove', function(e) {
         let centerY = rect.top + (rect.height / 2); 
 
         let angle = Math.atan2(clientY - centerY, clientX - centerX) * (180 / Math.PI);
-        let visualAngle = angle + 90;
+        
+        // PERFECT SYNC FIX: Changing this from +90 to -90 flips the rotation 180 degrees 
+        // to properly match the yellow dot's position instead of running away from it.
+        let visualAngle = angle - 90;
 
         activePinToRotate.attr('data-angle', visualAngle);
 
