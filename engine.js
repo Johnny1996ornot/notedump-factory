@@ -1,49 +1,13 @@
 // ==========================================================================
-// STRICT CSS INJECTION (Hides Pin Handles, Fixes Toolbar Padding, Moves Menus)
+// STRICT CSS INJECTION 
 // ==========================================================================
 const uiFixesCSS = `
     /* ABSOLUTE HIDE: Removes rotation handles and dots when the pin is NOT actively selected */
     #canvas .pin:not(.is-selected) .pin-rotation-ring,
-    #canvas .pin:not(.is-selected) .pin-rotate-dot,
-    #canvas .pin:not(.is-selected) .resize-handle { 
+    #canvas .pin:not(.is-selected) .pin-rotate-dot { 
         opacity: 0 !important; 
         visibility: hidden !important;
         pointer-events: none !important; 
-    }
-
-    /* NUKE THE ROTATION RING ON RECTANGLES FOREVER */
-    #canvas .pin[data-shape="rectangle"] .pin-rotation-ring,
-    #canvas .pin[data-shape="rectangle"] .pin-rotate-dot {
-        opacity: 0 !important;
-        visibility: hidden !important;
-        pointer-events: none !important;
-    }
-
-    /* ONLY SHOW RESIZE HANDLES ON HOVER FOR RECTANGLES */
-    #canvas .pin[data-shape="rectangle"] .resize-handle {
-        opacity: 0 !important;
-        pointer-events: none !important;
-        transition: opacity 0.2s ease-in-out !important;
-    }
-    #canvas .pin.is-selected[data-shape="rectangle"]:hover .resize-handle {
-        opacity: 1 !important;
-        visibility: visible !important;
-        pointer-events: auto !important;
-    }
-
-    /* SHOW: Only brings them back when you click a NORMAL pin */
-    #canvas .pin.is-selected:not([data-shape="rectangle"]) .pin-rotation-ring,
-    #canvas .pin.is-selected:not([data-shape="rectangle"]) .pin-rotate-dot,
-    #canvas .pin.is-selected:not([data-shape="rectangle"]) .resize-handle { 
-        opacity: 1 !important; 
-        visibility: visible !important;
-        pointer-events: auto !important; 
-    }
-
-    /* Massive top padding to allow endless scrolling for toolbars above the page */
-    #canvas-center-wrapper { 
-        padding-top: 1200px !important; 
-        padding-bottom: 400px !important; 
     }
 
     /* FIX STICKY DROPDOWN CUTOFF AND OVERLAP (Expands inside the card instead) */
@@ -67,20 +31,18 @@ const uiFixesCSS = `
         display: block !important;
     }
 
-    /* GLOW EFFECT FOR PINS ON HOVER (BOTH ON CANVAS AND FROM SIDE PANEL) */
+    /* GLOW EFFECT FOR PINS ON HOVER - Removed scale transform to protect base CSS rotation */
     #canvas .pin:hover .pin-visual,
     #canvas .pin.pin-hover-visible .pin-visual {
         box-shadow: 0 0 15px 4px var(--pin-color) !important;
         filter: drop-shadow(0 0 8px var(--pin-color)) brightness(1.2) !important;
-        transform: scale(1.15) !important;
         transition: all 0.2s ease-in-out !important;
         z-index: 99999 !important;
     }
 
-    /* Prevent rectangles from scaling weirdly, but keep the glow */
+    /* Prevent rectangles from glowing weirdly */
     #canvas .pin[data-shape="rectangle"]:hover .pin-visual,
     #canvas .pin[data-shape="rectangle"].pin-hover-visible .pin-visual {
-        transform: none !important;
         box-shadow: inset 0 0 10px 2px var(--pin-color), 0 0 15px 4px var(--pin-color) !important;
     }
     
@@ -1829,6 +1791,8 @@ function addPinToSelectedImage() {
 
 let isRotatingPin = false;
 let activePinToRotate = null;
+let lockedCenterX = 0;
+let lockedCenterY = 0;
 
 $(document).on('mousedown touchstart', '.pin', function(e) {
     if (!isEditing) return;
@@ -1854,6 +1818,11 @@ $(document).on('mousedown touchstart', '.pin-rotate-dot', function(e) {
     $('.pin').removeClass('is-selected');
     activePinToRotate.addClass('is-selected');
     activePinToRotate.addClass('is-rotating');
+
+    // LOCK CENTER PIVOT TO STOP THE EXPANDING BOUNDING BOX RUNAWAY BUG
+    let rect = activePinToRotate[0].getBoundingClientRect();
+    lockedCenterX = rect.left + (rect.width / 2);
+    lockedCenterY = rect.top + (rect.height / 2);
 });
 
 $(document).on('mousemove touchmove', function(e) {
@@ -1864,14 +1833,9 @@ $(document).on('mousemove touchmove', function(e) {
         let clientX = isTouch ? e.originalEvent.touches[0].clientX : e.clientX;
         let clientY = isTouch ? e.originalEvent.touches[0].clientY : e.clientY;
 
-        let rect = activePinToRotate[0].getBoundingClientRect();
-
-        let centerX = rect.left + (rect.width / 2);
-        let centerY = rect.top + (rect.height / 2); 
-
-        let angle = Math.atan2(clientY - centerY, clientX - centerX) * (180 / Math.PI);
+        // CALCULATE BASED ON LOCKED CENTER COORDINATES
+        let angle = Math.atan2(clientY - lockedCenterY, clientX - lockedCenterX) * (180 / Math.PI);
         
-        // REVERTED to +90: Perfect sync with the rotation handle 
         let visualAngle = angle + 90;
 
         activePinToRotate.attr('data-angle', visualAngle);
@@ -1976,10 +1940,7 @@ function toggleImagePinShape(origIdx) {
         $pin.attr('data-angle', 0);
         $pin.find('.pin-rotator-group').css('transform', 'rotate(0deg) scale(1)');
         
-        // Ensure the resize handle is injected properly into the rectangle pin
-        if ($pin.find('.resize-handle').length === 0) {
-            $pin.append('<div class="resize-handle" style="position:absolute; right:-5px; bottom:-5px; width:10px; height:10px; background:white; border:1px solid black; cursor:se-resize; z-index:999;"></div>');
-        }
+        // NO EXTRA RESIZE HANDLE INJECTED HERE ANYMORE.
     }
     else { 
         nextShape = 'marker'; iconClass = 'fa-map-marker-alt'; 
@@ -2503,18 +2464,6 @@ function toggleEdit() {
 
                     target.style.width = newW + 'px';
                     target.style.height = newH + 'px';
-
-                    // Ensures the inner visual container stretches with the interactive bounding box
-                    let visual = target.querySelector('.pin-visual');
-                    let rotatorGroup = target.querySelector('.pin-rotator-group');
-                    if (rotatorGroup) {
-                        rotatorGroup.style.width = '100%';
-                        rotatorGroup.style.height = '100%';
-                    }
-                    if (visual) {
-                        visual.style.width = '100%';
-                        visual.style.height = '100%';
-                    }
                 }
             }
         });
