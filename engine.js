@@ -48,10 +48,25 @@ const uiFixesCSS = `
         padding-bottom: 400px !important; 
     }
 
-    /* MOVES THE STICKY NOTE DROPDOWN TO THE LEFT SO YOU CAN TYPE FREELY */
-    #sticky-panel .sticky-dropdown {
-        left: -210px !important;
+    /* FIX STICKY DROPDOWN CUTOFF AND OVERLAP (Expands inside the card instead) */
+    .custom-sticky-card {
+        flex-wrap: wrap !important;
+    }
+    #sticky-panel .sticky-dropdown.hidden {
+        display: none !important;
+    }
+    #sticky-panel .sticky-dropdown:not(.hidden) {
+        position: relative !important;
+        left: 0 !important;
         top: 0 !important;
+        width: 100% !important;
+        margin-top: 10px !important;
+        background: #0f172a !important;
+        border: 1px solid #334155 !important;
+        border-radius: 8px !important;
+        padding: 10px !important;
+        box-sizing: border-box !important;
+        display: block !important;
     }
 
     /* GLOW EFFECT FOR PINS ON HOVER (BOTH ON CANVAS AND FROM SIDE PANEL) */
@@ -69,6 +84,18 @@ const uiFixesCSS = `
     #canvas .pin[data-shape="rectangle"].pin-hover-visible .pin-visual {
         transform: none !important;
         box-shadow: inset 0 0 10px 2px var(--pin-color), 0 0 15px 4px var(--pin-color) !important;
+    }
+    
+    /* CARD GLOW WHEN PIN IS HOVERED ON CANVAS */
+    .custom-image-pin-layout.is-hovered-from-canvas,
+    .custom-sticky-card.is-hovered-from-canvas {
+        box-shadow: 0 0 0 2px #38bdf8, 0 0 20px 5px rgba(56, 189, 248, 0.4) !important;
+        transform: scale(1.02) !important;
+        transition: all 0.2s ease-in-out !important;
+        position: relative !important;
+        z-index: 100 !important;
+        background: #1e293b !important; 
+        border-radius: 8px !important;
     }
 `;
 if ($('#custom-ui-fixes').length === 0) {
@@ -2273,6 +2300,33 @@ function refreshAnnotations() {
         });
     }
 }
+
+// ==========================================================================
+// PIN TO CARD HOVER LINKING & SCROLLING
+// ==========================================================================
+$(document).on('mouseenter', '#canvas .pin', function() {
+    let origIdx = $(`#p-${current} .pin`).index(this);
+    let $card = $(`#anno-card-${origIdx}`);
+    if ($card.length) {
+        $card.addClass('is-hovered-from-canvas');
+        
+        let $container = $card.closest('.pin-list-group-pane, #sticky-list-container, #pin-list-container');
+        if ($container.length && $container.is(':visible')) {
+            let cardTop = $card.position().top;
+            let containerScroll = $container.scrollTop();
+            let containerHeight = $container.height();
+            
+            if (cardTop < 0 || cardTop > containerHeight - $card.height()) {
+                $container.stop().animate({
+                    scrollTop: containerScroll + cardTop - (containerHeight / 2) + ($card.height() / 2)
+                }, 200);
+            }
+        }
+    }
+}).on('mouseleave', '#canvas .pin', function() {
+    let origIdx = $(`#p-${current} .pin`).index(this);
+    $(`#anno-card-${origIdx}`).removeClass('is-hovered-from-canvas');
+});
 
 // ==========================================================================
 // SECTION 8: DRAWING & SVG SYSTEM
