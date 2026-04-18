@@ -460,9 +460,7 @@ def get_template(total_pages):
                                 <div class="separator" style="height:16px; margin: 0 2px;"></div>
                                 <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="format('insertUnorderedList')" title="Bullet List"><i class="fas fa-list-ul"></i></button>
                                 <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="format('insertOrderedList')" title="Numbered List"><i class="fas fa-list-ol"></i></button>
-                            </div>
-
-                            <div style="display:flex; gap:6px; align-items:center; padding: 2px;">
+                            </div> <div style="display:flex; gap:6px; align-items:center; padding: 2px;">
                                 <div id="menu-drag-handle" title="Drag to move element" style="cursor: move; padding: 4px 6px; color: white; background:#4f46e5; border-radius:4px; margin-right:4px;"><i class="fas fa-arrows-alt"></i></div>
 
                                 <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="changeLayer(1)" title="Move to Front"><i class="fas fa-angle-double-up"></i></button>
