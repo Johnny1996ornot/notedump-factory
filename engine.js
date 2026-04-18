@@ -10,7 +10,7 @@ const uiFixesCSS = `
         pointer-events: none !important; 
     }
 
-    /* FIX STICKY DROPDOWN CUTOFF AND OVERLAP (Expands inside the card instead) */
+    /* FIX STICKY DROPDOWN CUTOFF AND OVERLAP (Preserving Base CSS Flexbox) */
     .custom-sticky-card {
         flex-wrap: wrap !important;
     }
@@ -28,7 +28,9 @@ const uiFixesCSS = `
         border-radius: 8px !important;
         padding: 10px !important;
         box-sizing: border-box !important;
-        display: block !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 10px !important;
     }
 
     /* GLOW EFFECT FOR PINS ON HOVER - Removed scale transform to protect base CSS rotation */
@@ -1939,8 +1941,6 @@ function toggleImagePinShape(origIdx) {
         $pin.css({width: rectWidth + 'px', height: '24px', marginTop: '0', marginLeft: '0'});
         $pin.attr('data-angle', 0);
         $pin.find('.pin-rotator-group').css('transform', 'rotate(0deg) scale(1)');
-        
-        // NO EXTRA RESIZE HANDLE INJECTED HERE ANYMORE.
     }
     else { 
         nextShape = 'marker'; iconClass = 'fa-map-marker-alt'; 
