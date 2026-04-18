@@ -60,9 +60,10 @@ const uiFixesCSS = `
         border-radius: 8px !important;
     }
 
-    /* MOVE PIN HOVER TEXT TO THE RIGHT SIDE TO PREVENT BLOCKING THE YELLOW HANDLE */
-    #canvas .pin::after,
-    #canvas .pin .pin-visual::after {
+    /* MOVE PIN HOVER TOOLTIP TEXT TO THE RIGHT SIDE TO PREVENT BLOCKING THE YELLOW HANDLE */
+    /* CRITICAL FIX: Targeted ::before (tooltip) instead of ::after (white dot / resize handle) */
+    #canvas .pin[data-note]:not(:has(.pin-rotate-dot:hover)):hover::before,
+    #canvas .pin[data-note].pin-hover-visible::before {
         top: 50% !important;
         bottom: auto !important;
         left: 100% !important;
