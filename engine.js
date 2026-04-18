@@ -61,7 +61,6 @@ const uiFixesCSS = `
     }
 
     /* MOVE PIN HOVER TOOLTIP TEXT TO THE RIGHT SIDE TO PREVENT BLOCKING THE YELLOW HANDLE */
-    /* CRITICAL FIX: Targeted ::before (tooltip) instead of ::after (white dot / resize handle) */
     #canvas .pin[data-note]:not(:has(.pin-rotate-dot:hover)):hover::before,
     #canvas .pin[data-note].pin-hover-visible::before {
         top: 50% !important;
@@ -206,20 +205,53 @@ function format(command, value = null) {
     let $cells = $('.selected-cell');
     let selStr = window.getSelection().toString();
 
+    // ----------------------------------------------------------------------
+    // NEW CLEAN ALIGNMENT MAP IMPLEMENTATION
+    // ----------------------------------------------------------------------
+    if (command === 'align') {
+        saveHistory();
+        let alignMap = {
+            topLeft:      { h: 'left',   v: 'top' },
+            topCenter:    { h: 'center', v: 'top' },
+            topRight:     { h: 'right',  v: 'top' },
+            middleLeft:   { h: 'left',   v: 'middle' },
+            middleCenter: { h: 'center', v: 'middle' },
+            middleRight:  { h: 'right',  v: 'middle' },
+            bottomLeft:   { h: 'left',   v: 'bottom' },
+            bottomCenter: { h: 'center', v: 'bottom' },
+            bottomRight:  { h: 'right',  v: 'bottom' }
+        };
+        
+        let map = alignMap[value];
+        if (map) {
+            if ($cells.length > 0) {
+                // Table cell alignment
+                $cells.css({ 'text-align': map.h, 'vertical-align': map.v });
+                $cells.find('*').css({ 'text-align': map.h });
+            } else {
+                // Standard block/box alignment
+                let $activeBox = $('.selected-box').not(':has(table)'); 
+                if ($activeBox.length > 0) {
+                    let jcMap = { 'left': 'flex-start', 'center': 'center', 'right': 'flex-end' };
+                    let aiMap = { 'top': 'flex-start', 'middle': 'center', 'bottom': 'flex-end' };
+                    $activeBox.find('.content-area').css({
+                        'display': 'flex',
+                        'flex-direction': 'column',
+                        'text-align': map.h,
+                        'justify-content': aiMap[map.v],
+                        'align-items': jcMap[map.h]
+                    });
+                    $activeBox.find('.content-area *').css('text-align', map.h);
+                }
+            }
+        }
+        return;
+    }
+    // ----------------------------------------------------------------------
+
     if ($cells.length > 0 && ($cells.length > 1 || selStr.length === 0)) {
         saveHistory();
-        if (['justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull'].includes(command)) {
-            let alignMap = { justifyLeft: 'left', justifyCenter: 'center', justifyRight: 'right', justifyFull: 'justify' };
-            $cells.css('text-align', alignMap[command]);
-            $cells.find('*').css('text-align', alignMap[command]); 
-        } else if (['verticalTop', 'verticalMiddle', 'verticalBottom'].includes(command)) {
-            let vMap = { verticalTop: 'top', verticalMiddle: 'middle', verticalBottom: 'bottom' };
-            $cells.css('vertical-align', vMap[command]);
-            $cells.find('.content-area, div').css({'display': 'inline-block', 'vertical-align': 'inherit'});
-        } else if (command === 'absoluteCenter') {
-            $cells.css({'text-align': 'center', 'vertical-align': 'middle'});
-            $cells.find('*').css({'text-align': 'center', 'margin': 'auto'});
-        } else if (command === 'bold') {
+        if (command === 'bold') {
             let isBold = $cells.first().css('font-weight') === '700' || $cells.first().css('font-weight') === 'bold';
             let targetWeight = isBold ? 'normal' : 'bold';
             $cells.css('font-weight', targetWeight);
@@ -246,21 +278,6 @@ function format(command, value = null) {
             window.getSelection().removeAllRanges();
         }
         saveHistory();
-        return;
-    }
-
-    if (command === 'absoluteCenter') {
-        saveHistory();
-        let $activeBox = $('.selected-box').not(':has(table)'); 
-        if ($activeBox.length > 0) {
-            $activeBox.find('.content-area').css({
-                'display': 'flex',
-                'flex-direction': 'column',
-                'justify-content': 'center',
-                'align-items': 'center',
-                'text-align': 'center'
-            });
-        }
         return;
     }
 
@@ -1274,34 +1291,45 @@ function updateContextMenu() {
         let $activeCell = $('.selected-cell').first();
         let hasImage = $sel.find('img').length > 0 && !hasTable; 
 
+        // Apply new layout display rules
         if ($activeCell.length > 0 || hasTable) {
             $('.menu-table-tools').css('display', 'flex');
             $('.menu-img-tools').hide(); 
-            $('.menu-text-tools').css('display', 'flex'); 
+            $('.menu-text-tools, .menu-text-tools-color').css('display', 'flex'); 
             $('.menu-bg-tools').css('display', 'flex'); 
+            $('.menu-align-tools').css('display', 'grid');
+            $('.menu-align-tools.separator').css('display', 'block');
         } else if (hasImage) {
             $('.menu-table-tools').hide();
-            $('.menu-text-tools').hide(); 
+            $('.menu-text-tools, .menu-text-tools-color').hide(); 
             $('.menu-bg-tools').hide(); 
+            $('.menu-align-tools').hide();
+            $('.menu-align-tools.separator').hide();
             $('.menu-img-tools').css('display', 'flex');
         } else if (hasAudio) {
             $('.menu-table-tools').hide();
             $('.menu-img-tools').hide();
-            $('.menu-text-tools').css('display', 'flex'); 
+            $('.menu-text-tools, .menu-text-tools-color').css('display', 'flex'); 
             $('.menu-bg-tools').css('display', 'flex'); 
+            $('.menu-align-tools').hide();
+            $('.menu-align-tools.separator').hide();
         } else {
+            // Standard Text Block
             $('.menu-table-tools').hide();
             $('.menu-img-tools').hide();
-            $('.menu-text-tools').css('display', 'flex'); 
+            $('.menu-text-tools, .menu-text-tools-color').css('display', 'flex'); 
             $('.menu-bg-tools').css('display', 'flex'); 
+            $('.menu-align-tools').css('display', 'grid');
+            $('.menu-align-tools.separator').css('display', 'block');
         }
 
+        // Contextual Color Labels
         if (hasAudio && $activeCell.length === 0) {
-            $('.menu-text-tools').find('.color-swatch').first().parent().prev('div').html('<span>Player<br>BG</span>');
-            $('.menu-bg-tools').find('.color-swatch').first().parent().prev('div').html('<span>Button<br>Color</span>');
+            $('.menu-text-tools-color').find('.color-swatch').first().parent().prev('span').html('Player<br>BG');
+            $('.menu-bg-tools').find('.color-swatch').first().parent().prev('span').html('Button<br>Color');
         } else {
-            $('.menu-text-tools').find('.color-swatch').first().parent().prev('div').html('<span>Text<br>Color</span>');
-            $('.menu-bg-tools').find('.color-swatch').first().parent().prev('div').html('<span>Background<br>Color</span>');
+            $('.menu-text-tools-color').find('.color-swatch').first().parent().prev('span').html('Text<br>Color');
+            $('.menu-bg-tools').find('.color-swatch').first().parent().prev('span').html('Background<br>Color');
         }
 
         let currentOp = 1;
@@ -2581,12 +2609,6 @@ $(document).ready(async function() {
     await restoreFromBrowser(); 
     lastSavedState = getPageHTML(); 
 
-    if ($('.menu-table-tools [onclick="format(\'justifyRight\')"]').length && !$('.menu-table-tools [onclick="format(\'absoluteCenter\')"]').length) {
-        $('.menu-table-tools [onclick="format(\'justifyRight\')"]').after(
-            `<button class="ctx-btn" onclick="format('absoluteCenter')" title="Absolute Center"><i class="fas fa-compress-arrows-alt"></i></button>`
-        );
-    }
-
     if ($('#canvas-global-tools').length) {
         $('#page-color-btn').remove(); 
 
@@ -2644,18 +2666,6 @@ $(document).ready(async function() {
         applyPageRecolor($(this).val());
     });
 
-    // ==========================================================================
-    // TABLE VERTICAL ALIGNMENT BUTTONS FIX
-    // ==========================================================================
-    if ($('.menu-table-tools').length && !$('.menu-table-tools [onclick="format(\'verticalTop\')"]').length) {
-        $('.menu-table-tools').append(`
-            <div style="width:1px; height:20px; background:#334155; margin:0 5px;"></div>
-            <button class="ctx-btn" onclick="format('verticalTop')" title="Align Top"><i class="fas fa-arrow-up"></i></button>
-            <button class="ctx-btn" onclick="format('verticalMiddle')" title="Align Middle"><i class="fas fa-arrows-alt-v"></i></button>
-            <button class="ctx-btn" onclick="format('verticalBottom')" title="Align Bottom"><i class="fas fa-arrow-down"></i></button>
-        `);
-    }
-
     $(document).on('mousedown', '.ctx-btn, select, .color-swatch, .action-btn, button[data-cmd]', function(e) {
         if(!$(this).is('select') && !$(this).is('input') && !$(this).is('#page-opacity-slider') && !$(this).is('#page-color-btn') && !$(this).is('.fa-fill-drip')) {
             e.preventDefault(); 
@@ -2695,14 +2705,14 @@ $(document).ready(async function() {
     COLORS.forEach(c => { colorHtml += `<div class="color-swatch" style="background:${c};" data-color="${c}" onmousedown="event.preventDefault();"></div>`; });
 
     $('#text-color-grid, #bg-color-grid').html(colorHtml);
-    $('.menu-text-tools > div').each(function() {
-        if ($(this).text().includes('Color')) $(this).next('div').html(colorHtml);
+    $('.menu-text-tools-color > div').each(function() {
+        if ($(this).attr('id') === 'text-color-grid') $(this).html(colorHtml);
     });
     $('.menu-bg-tools > div').each(function() {
-        if ($(this).text().includes('Color')) $(this).next('div').html(colorHtml);
+        if ($(this).attr('id') === 'bg-color-grid') $(this).html(colorHtml);
     });
 
-    $(document).on('click', '.menu-text-tools .color-swatch', function(e) { 
+    $(document).on('click', '.menu-text-tools-color .color-swatch', function(e) { 
         e.preventDefault();
         let hex = $(this).attr('data-color');
         let $cells = $('.selected-cell');
