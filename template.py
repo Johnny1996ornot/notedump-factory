@@ -67,8 +67,8 @@ def get_template(total_pages):
         cursor: move; 
     }
     .pin[data-type="pin"] .pin-visual::after {
-        content: ''; position: absolute; top: 50%; left: 50%; width: 35%; height: 35%;
-        background-color: white; border-radius: 50%; border: 2px solid #0f172a; transform: translate(-50%, -50%);
+        content: ''; position: absolute; top: 50% !important; left: 50% !important; width: 35%; height: 35%;
+        background-color: white; border-radius: 50%; border: 2px solid #0f172a; transform: translate(-50%, -50%) !important;
     }
 
     .pin[data-type="pin"][data-shape="arrow"] .pin-visual { 
@@ -109,8 +109,10 @@ def get_template(total_pages):
     body.edit-active .pin[data-type="pin"][data-shape="rectangle"]::after {
         content: ''; 
         position: absolute; 
-        bottom: -5px; 
-        right: -5px;
+        top: auto !important;
+        left: auto !important;
+        bottom: -5px !important; 
+        right: -5px !important;
         width: 14px; 
         height: 14px;
         background: #ffffff;
@@ -123,6 +125,7 @@ def get_template(total_pages):
         opacity: 0 !important;
         visibility: hidden;
         transition: opacity 0.2s ease-in-out;
+        transform: none !important;
     }
 
     body.edit-active .pin[data-type="pin"][data-shape="rectangle"]:hover::after,
@@ -460,7 +463,9 @@ def get_template(total_pages):
                                 <div class="separator" style="height:16px; margin: 0 2px;"></div>
                                 <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="format('insertUnorderedList')" title="Bullet List"><i class="fas fa-list-ul"></i></button>
                                 <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="format('insertOrderedList')" title="Numbered List"><i class="fas fa-list-ol"></i></button>
-                            </div> <div style="display:flex; gap:6px; align-items:center; padding: 2px;">
+                            </div>
+
+                            <div style="display:flex; gap:6px; align-items:center; padding: 2px;">
                                 <div id="menu-drag-handle" title="Drag to move element" style="cursor: move; padding: 4px 6px; color: white; background:#4f46e5; border-radius:4px; margin-right:4px;"><i class="fas fa-arrows-alt"></i></div>
 
                                 <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="changeLayer(1)" title="Move to Front"><i class="fas fa-angle-double-up"></i></button>
