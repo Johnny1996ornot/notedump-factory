@@ -345,7 +345,7 @@ def get_template(total_pages):
                     <div id="canvas">
                         {{SLIDE_CONTENT}}
 
-                        <div id="context-menu" style="display:none; position:absolute; flex-direction:row; gap:10px; padding:8px 10px; border-radius:8px; background:white; border: 1px solid #cbd5e1; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index:10000;">
+                        <div id="context-menu" style="display:none; position:absolute; flex-direction:row; gap:6px; padding:6px; border-radius:8px; background:white; border: 1px solid #cbd5e1; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index:10000;">
 
                             <div style="display:flex; flex-direction:column; gap:6px;">
                                 
@@ -437,9 +437,7 @@ def get_template(total_pages):
                             </div>
 
                             <div style="display:flex; align-items:stretch;">
-                                <div class="separator menu-align-tools" style="width:1px; background:#cbd5e1; margin: 0 8px;"></div>
-                                
-                                <div class="menu-align-tools" style="display:none; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); gap:2px; align-content: center; background:#f8fafc; padding:4px; border-radius:4px; border:1px solid #e2e8f0;">
+                                <div class="menu-align-tools" style="display:none; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); gap:2px; background:#f8fafc; padding:4px; border-radius:4px; border:1px solid #e2e8f0; height:100%;">
                                     <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'topLeft')" title="Top Left" style="align-items:flex-start; justify-content:flex-start;"><div class="align-box"></div></button>
                                     <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'topCenter')" title="Top Center" style="align-items:flex-start; justify-content:center;"><div class="align-box"></div></button>
                                     <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'topRight')" title="Top Right" style="align-items:flex-start; justify-content:flex-end;"><div class="align-box"></div></button>
@@ -453,9 +451,9 @@ def get_template(total_pages):
                                     <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'bottomRight')" title="Bottom Right" style="align-items:flex-end; justify-content:flex-end;"><div class="align-box"></div></button>
                                 </div>
                                 
-                                <div class="menu-img-tools" style="display:none; align-items:center; margin-left: 10px; gap: 8px;">
-                                    <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="addPinToSelectedImage()" style="background:#4f46e5; color:white; font-weight:bold; border:none; padding: 6px 14px; font-size:12px;"><i class="fas fa-map-marker-alt" style="margin-right: 6px;"></i> Pin</button>
-                                    <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="startCrop()" style="background:#ef4444; color:white; font-weight:bold; border:none; padding: 6px 14px; font-size:12px;"><i class="fas fa-crop-alt" style="margin-right: 6px;"></i> Crop</button>
+                                <div class="menu-img-tools" style="display:none; align-items:center; gap: 8px; height:100%;">
+                                    <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="addPinToSelectedImage()" style="background:#4f46e5; color:white; font-weight:bold; border:none; padding: 6px 14px; font-size:12px; height:100%; border-radius:4px;"><i class="fas fa-map-marker-alt" style="margin-right: 6px;"></i> Pin</button>
+                                    <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="startCrop()" style="background:#ef4444; color:white; font-weight:bold; border:none; padding: 6px 14px; font-size:12px; height:100%; border-radius:4px;"><i class="fas fa-crop-alt" style="margin-right: 6px;"></i> Crop</button>
                                 </div>
                             </div>
 
