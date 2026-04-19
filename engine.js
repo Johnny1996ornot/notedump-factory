@@ -1289,41 +1289,37 @@ function updateContextMenu() {
         if ($activeCell.length > 0 || hasTable) {
             $('.menu-table-tools').css('display', 'flex');
             $('.menu-img-tools').hide(); 
-            $('.menu-text-tools, .menu-text-tools-color').css('display', 'flex'); 
-            $('.menu-bg-tools').css('display', 'flex'); 
+            $('.menu-text-tools').css('display', 'flex'); 
+            $('.menu-color-tools').css('display', 'flex'); 
             $('.menu-align-tools').css('display', 'grid');
-            $('.menu-transparency-tools').css('display', 'flex');
         } else if (hasImage) {
             $('.menu-table-tools').hide();
-            $('.menu-text-tools, .menu-text-tools-color').hide(); 
-            $('.menu-bg-tools').hide(); 
+            $('.menu-text-tools').hide(); 
+            $('.menu-color-tools').hide(); 
             $('.menu-align-tools').hide();
             $('.menu-img-tools').css('display', 'flex');
-            $('.menu-transparency-tools').css('display', 'flex'); // Transparency slider active for images
         } else if (hasAudio) {
             $('.menu-table-tools').hide();
             $('.menu-img-tools').hide();
-            $('.menu-text-tools, .menu-text-tools-color').css('display', 'flex'); 
-            $('.menu-bg-tools').css('display', 'flex'); 
+            $('.menu-text-tools').css('display', 'flex'); 
+            $('.menu-color-tools').css('display', 'flex'); 
             $('.menu-align-tools').hide();
-            $('.menu-transparency-tools').css('display', 'flex');
         } else {
             // Standard Text Block
             $('.menu-table-tools').hide();
             $('.menu-img-tools').hide();
-            $('.menu-text-tools, .menu-text-tools-color').css('display', 'flex'); 
-            $('.menu-bg-tools').css('display', 'flex'); 
+            $('.menu-text-tools').css('display', 'flex'); 
+            $('.menu-color-tools').css('display', 'flex'); 
             $('.menu-align-tools').css('display', 'grid');
-            $('.menu-transparency-tools').css('display', 'flex');
         }
 
         // Contextual Color Labels
         if (hasAudio && $activeCell.length === 0) {
-            $('.menu-text-tools-color').find('.color-swatch').first().parent().prev('span').html('Player<br>BG');
-            $('.menu-bg-tools').find('.color-swatch').first().parent().prev('span').html('Button<br>Color');
+            $('.menu-color-tools').find('.color-swatch').first().parent().prev('span').html('Player<br>BG');
+            $('.menu-color-tools').find('.menu-bg-tools .color-swatch').first().parent().prev('span').html('Button<br>Color');
         } else {
-            $('.menu-text-tools-color').find('.color-swatch').first().parent().prev('span').html('Text<br>Color');
-            $('.menu-bg-tools').find('.color-swatch').first().parent().prev('span').html('Background<br>Color');
+            $('.menu-color-tools').find('.color-swatch').first().parent().prev('span').html('Text<br>Color');
+            $('.menu-color-tools').find('.menu-bg-tools .color-swatch').first().parent().prev('span').html('Background<br>Color');
         }
 
         let currentOp = 1;
@@ -1351,6 +1347,8 @@ function updateContextMenu() {
         $('#transparency-slider').val(currentOp !== undefined ? currentOp : 1);
 
         let topPos = 999999; let leftPos = 999999;
+        let bottomPos = -999999; let rightPos = -999999;
+        
         $sel.each(function() {
             let t = parseFloat($(this).css('top')) || 0; 
             let l = parseFloat($(this).css('left')) || 0;
@@ -1359,25 +1357,39 @@ function updateContextMenu() {
 
             let finalTop = t + ty;
             let finalLeft = l + tx;
+            let finalRight = finalLeft + ($(this).outerWidth() || 0);
+            let finalBottom = finalTop + ($(this).outerHeight() || 0);
 
             if(finalTop < topPos) topPos = finalTop; 
             if(finalLeft < leftPos) leftPos = finalLeft;
+            if(finalRight > rightPos) rightPos = finalRight;
+            if(finalBottom > bottomPos) bottomPos = finalBottom;
         });
 
         $('#context-menu').css({display: 'flex', top: '-9999px', left: '-9999px'});
-
         let cHeight = $('#context-menu').outerHeight() || 50;
         let cWidth = $('#context-menu').outerWidth() || 350;
 
-        let cvp = document.getElementById('canvas-viewport');
-        let vLeft = (cvp.scrollLeft) / currentZoom;
-        let vRight = vLeft + (cvp.clientWidth / currentZoom);
-
+        let selWidth = rightPos - leftPos;
         let finalMenuTop = topPos - cHeight - 15;
-        let finalMenuLeft = leftPos + ($sel.outerWidth() / 2) - (cWidth / 2);
+        let finalMenuLeft = leftPos + (selWidth / 2) - (cWidth / 2);
+
+        // Viewport boundaries using strictly getBoundingClientRect
+        let cvp = document.getElementById('canvas-viewport');
+        let canvasEl = document.getElementById('canvas');
+        let cvpRect = cvp.getBoundingClientRect();
+        let canvasRect = canvasEl.getBoundingClientRect();
+
+        let vLeft = (cvpRect.left - canvasRect.left) / currentZoom;
+        let vRight = (cvpRect.right - canvasRect.left) / currentZoom;
+        let vTop = (cvpRect.top - canvasRect.top) / currentZoom;
 
         if (finalMenuLeft < vLeft + 10) finalMenuLeft = vLeft + 10;
         if (finalMenuLeft + cWidth > vRight - 10) finalMenuLeft = vRight - cWidth - 10;
+        
+        if (finalMenuTop < vTop + 10) {
+            finalMenuTop = bottomPos + 15; 
+        }
 
         $('#context-menu').css({top: finalMenuTop + 'px', left: finalMenuLeft + 'px'});
     } else { 
