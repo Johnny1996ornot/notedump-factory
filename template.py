@@ -345,119 +345,175 @@ def get_template(total_pages):
                     <div id="canvas">
                         {{SLIDE_CONTENT}}
 
-                        <div id="context-menu" style="display:none; position:absolute; flex-direction:row; gap:6px; padding:6px; border-radius:8px; background:white; border: 1px solid #cbd5e1; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index:10000; width: max-content;">
+                        <div id="context-menu" style="display:none; position:absolute; border-radius:8px; background:white; border: 1px solid #cbd5e1; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index:10000; width: max-content;">
 
-                            <div style="display:flex; flex-direction:column; gap:6px; justify-content:space-between;">
-                                
-                                <div class="menu-text-tools" style="display:flex; gap:4px; align-items:center; background: #f8fafc; padding: 4px; border-radius: 4px; border: 1px solid #e2e8f0;">
-                                    <select class="ctx-select" style="width: 75px;" onchange="format('fontName', this.value)">
-                                        <option value="Arial">Arial</option><option value="Georgia">Georgia</option><option value="Times">Times</option>
-                                    </select>
-
-                                    <select class="ctx-select" id="font-size-select" style="width: 55px;" onchange="applyFontSize(this.value)" title="Font Size">
-                                        <option value="" disabled hidden>Size</option>
-                                        <option value="8">8</option><option value="10">10</option><option value="11">11</option>
-                                        <option value="12">12</option><option value="14">14</option><option value="16">16</option>
-                                        <option value="18">18</option><option value="20">20</option><option value="24">24</option>
-                                        <option value="28">28</option><option value="32">32</option><option value="36">36</option>
-                                        <option value="40">40</option><option value="48">48</option><option value="56">56</option>
-                                        <option value="64">64</option><option value="72">72</option><option value="96">96</option>
-                                        <option value="120">120</option><option value="144">144</option><option value="200">200</option>
-                                        <option value="250">250</option><option value="300">300</option><option value="400">400</option>
-                                        <option value="500">500</option>
-                                    </select>
-                                    <span style="font-size:10px; color:#64748b; font-weight:bold; margin-right:4px;">px</span>
-
-                                    <div class="separator" style="height:16px; margin: 0 2px;"></div>
-
-                                    <i class="fas fa-arrows-alt-v" style="color:#64748b; font-size:10px; margin-left:4px;"></i>
-                                    <select class="ctx-select" onchange="applyLineHeight(this.value)" title="Line Spacing" style="width: 58px; margin-left:2px; padding: 2px 4px;">
-                                        <option value="" disabled hidden selected>Spc</option>
-                                        <option value="1">1.0</option>
-                                        <option value="1.15">1.15</option>
-                                        <option value="1.5">1.5</option>
-                                        <option value="2">2.0</option>
-                                    </select>
-
-                                    <div class="separator" style="height:16px; margin: 0 2px;"></div>
-                                    <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="format('bold')" title="Bold"><i class="fas fa-bold"></i></button>
-                                    <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="format('italic')" title="Italic"><i class="fas fa-italic"></i></button>
-                                    <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="format('underline')" title="Underline"><i class="fas fa-underline"></i></button>
-                                    <div class="separator" style="height:16px; margin: 0 2px;"></div>
-                                    <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="format('insertUnorderedList')" title="Bullet List"><i class="fas fa-list-ul"></i></button>
-                                    <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="format('insertOrderedList')" title="Numbered List"><i class="fas fa-list-ol"></i></button>
-                                </div>
-
-                                <div class="menu-table-tools" style="display:none; gap:6px; align-items:center; background: #f1f5f9; padding: 4px; border-radius: 4px; border: 1px solid #e2e8f0;">
-                                    <span style="font-size:10px; font-weight:bold; color:#64748b; margin-right:4px;">TABLE:</span>
-                                    
-                                    <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="selectTableRow()" title="Select Row" style="color:#0ea5e9; font-weight:bold;"><i class="fas fa-arrows-alt-h" style="margin-right:3px;"></i>Row</button>
-                                    <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="selectTableCol()" title="Select Col" style="color:#0ea5e9; font-weight:bold;"><i class="fas fa-arrows-alt-v" style="margin-right:3px;"></i>Col</button>
-                                    
-                                    <div class="separator" style="height:16px;"></div>
-                                    
-                                    <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="addTableRow()" title="Add Row Below"><i class="fas fa-grip-lines" style="margin-right:3px;"></i>+R</button>
-                                    <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="addTableCol()" title="Add Column Right"><i class="fas fa-grip-lines-vertical" style="margin-right:3px;"></i>+C</button>
-                                    <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="delTableRow()" title="Delete Row" style="color:#ef4444;"><i class="fas fa-trash" style="margin-right:3px;"></i>-R</button>
-                                    <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="delTableCol()" title="Delete Column" style="color:#ef4444;"><i class="fas fa-trash" style="margin-right:3px;"></i>-C</button>
-                                    
-                                    <div class="separator" style="height:16px;"></div>
-                                    
-                                    <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="equalizeTable()" title="Make Rows/Cols Equal"><i class="fas fa-equals"></i></button>
-                                    <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="mergeTableCells()" title="Merge Cells (Shift+Click to select)"><i class="fas fa-compress-arrows-alt"></i></button>
-                                </div>
-
-                                <div class="menu-object-tools" style="display:flex; gap:12px; align-items:center; padding: 2px;">
-                                    
-                                    <div style="display:flex; flex-direction:column; gap:8px;">
+                            <div id="menu-text-wrapper" style="display:none; flex-direction:row; gap:8px; padding:6px;">
+                                <div style="display:flex; flex-direction:column; gap:6px;">
+                                    <div style="display:flex; gap:4px; align-items:center; background: #f8fafc; padding: 4px; border-radius: 4px; border: 1px solid #e2e8f0;">
+                                        <select class="ctx-select" style="width: 75px;" onchange="format('fontName', this.value)">
+                                            <option value="Arial">Arial</option><option value="Georgia">Georgia</option><option value="Times">Times</option>
+                                        </select>
+                                        <select class="ctx-select font-size-select" style="width: 55px;" data-cmd="fontSize" onchange="applyFontSize(this.value)" title="Font Size">
+                                            <option value="" disabled hidden>Size</option>
+                                            <option value="8">8</option><option value="10">10</option><option value="11">11</option>
+                                            <option value="12">12</option><option value="14">14</option><option value="16">16</option>
+                                            <option value="18">18</option><option value="20">20</option><option value="24">24</option>
+                                            <option value="28">28</option><option value="32">32</option><option value="36">36</option>
+                                            <option value="40">40</option><option value="48">48</option><option value="56">56</option>
+                                            <option value="64">64</option><option value="72">72</option><option value="96">96</option>
+                                            <option value="120">120</option><option value="144">144</option><option value="200">200</option>
+                                            <option value="250">250</option><option value="300">300</option><option value="400">400</option>
+                                            <option value="500">500</option>
+                                        </select>
+                                        <span style="font-size:10px; color:#64748b; font-weight:bold; margin-right:4px;">px</span>
+                                        <div class="separator" style="height:16px; margin: 0 2px;"></div>
+                                        <i class="fas fa-arrows-alt-v" style="color:#64748b; font-size:10px; margin-left:4px;"></i>
+                                        <select class="ctx-select" data-cmd="lineHeight" onchange="applyLineHeight(this.value)" title="Line Spacing" style="width: 58px; margin-left:2px; padding: 2px 4px;">
+                                            <option value="" disabled hidden selected>Spc</option>
+                                            <option value="1">1.0</option><option value="1.15">1.15</option><option value="1.5">1.5</option><option value="2">2.0</option>
+                                        </select>
+                                        <div class="separator" style="height:16px; margin: 0 2px;"></div>
+                                        <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="format('bold')" title="Bold"><i class="fas fa-bold"></i></button>
+                                        <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="format('italic')" title="Italic"><i class="fas fa-italic"></i></button>
+                                        <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="format('underline')" title="Underline"><i class="fas fa-underline"></i></button>
+                                        <div class="separator" style="height:16px; margin: 0 2px;"></div>
+                                        <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="format('insertUnorderedList')" title="Bullet List"><i class="fas fa-list-ul"></i></button>
+                                        <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="format('insertOrderedList')" title="Numbered List"><i class="fas fa-list-ol"></i></button>
+                                    </div>
+                                    <div style="display:flex; gap:12px; align-items:center; padding: 2px;">
                                         <div style="display:flex; gap:6px; align-items:center;">
-                                            <div id="menu-drag-handle" title="Drag to move element" style="cursor: move; padding: 4px 6px; color: white; background:#4f46e5; border-radius:4px; margin-right:4px;"><i class="fas fa-arrows-alt"></i></div>
+                                            <div class="menu-drag-handle" title="Drag to move element" style="cursor: move; padding: 4px 6px; color: white; background:#4f46e5; border-radius:4px;"><i class="fas fa-arrows-alt"></i></div>
                                             <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="changeLayer(1)" title="Move to Front"><i class="fas fa-angle-double-up"></i></button>
                                             <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="changeLayer(-1)" title="Move to Back"><i class="fas fa-angle-double-down"></i></button>
                                         </div>
-                                        
-                                        <div class="menu-transparency-tools" style="display:flex; gap:6px; align-items:center;">
-                                            <span style="font-size:9px; font-weight:bold; color:#64748b; letter-spacing:1px; line-height:1;">TRANSPARENCY</span>
-                                            <input type="range" id="transparency-slider" min="0" max="1" step="0.1" value="1" style="width:75px; height:4px; margin:0; cursor:pointer;" oninput="liveUpdateOpacity(this.value)" onchange="commitOpacity()">
+                                        <div style="display:flex; gap:6px; align-items:center; border-left: 1px dashed #cbd5e1; padding-left: 12px;">
+                                            <div class="menu-text-tools-color" style="display:flex; gap:6px; align-items:center;">
+                                                <span class="color-label-text" style="font-size:9px; font-weight:bold; color:#64748b; text-align:right; line-height:1.2; margin-left:4px;">Text<br>Color</span>
+                                                <div class="color-grid text-color-grid" title="Color"></div>
+                                            </div>
+                                            <div class="separator menu-bg-tools" style="height:24px; margin: 0 4px; background:#cbd5e1; width:1px;"></div>
+                                            <div class="menu-bg-tools" style="display:flex; gap:6px; align-items:center;">
+                                                <span class="color-label-bg" style="font-size:9px; font-weight:bold; color:#64748b; text-align:right; line-height:1.2;">Background<br>Color</span>
+                                                <div class="color-grid bg-color-grid" title="Color"></div>
+                                            </div>
                                         </div>
                                     </div>
-
-                                    <div class="menu-color-tools" style="display:flex; gap:6px; align-items:center; border-left: 1px dashed #cbd5e1; padding-left: 12px;">
-                                        <div class="menu-text-tools-color" style="display:flex; gap:6px; align-items:center;">
-                                            <span style="font-size:9px; font-weight:bold; color:#64748b; text-align:right; line-height:1.2; margin-left:4px;">Text<br>Color</span>
-                                            <div class="color-grid" id="text-color-grid" title="Color"></div>
-                                        </div>
-                                        <div class="separator menu-bg-tools" style="height:24px; margin: 0 4px; background:#cbd5e1; width:1px;"></div>
-                                        <div class="menu-bg-tools" style="display:flex; gap:6px; align-items:center;">
-                                            <span style="font-size:9px; font-weight:bold; color:#64748b; text-align:right; line-height:1.2;">Background<br>Color</span>
-                                            <div class="color-grid" id="bg-color-grid" title="Color"></div>
-                                        </div>
+                                </div>
+                                <div class="text-align-wrapper" style="display:flex; align-items:center; border-left: 1px dashed #cbd5e1; padding-left: 8px;">
+                                    <div style="display:grid; grid-template-columns: repeat(3, 24px); grid-template-rows: repeat(3, 24px); gap:2px; background:#f8fafc; padding:4px; border-radius:4px; border:1px solid #e2e8f0;">
+                                        <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'topLeft')"><div class="align-box"></div></button>
+                                        <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'topCenter')"><div class="align-box"></div></button>
+                                        <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'topRight')"><div class="align-box"></div></button>
+                                        <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'middleLeft')"><div class="align-box"></div></button>
+                                        <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'middleCenter')"><div class="align-box"></div></button>
+                                        <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'middleRight')"><div class="align-box"></div></button>
+                                        <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'bottomLeft')"><div class="align-box"></div></button>
+                                        <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'bottomCenter')"><div class="align-box"></div></button>
+                                        <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'bottomRight')"><div class="align-box"></div></button>
                                     </div>
-                                    
                                 </div>
                             </div>
 
-                            <div style="display:flex; flex-direction:column; border-left: 1px dashed #cbd5e1; padding-left: 8px; margin-left: 2px; justify-content:center; height:100%;">
-                                
-                                <div class="menu-align-tools" style="display:grid; grid-template-columns: repeat(3, 24px); grid-template-rows: repeat(3, 24px); gap:2px; background:#f8fafc; padding:4px; border-radius:4px; border:1px solid #e2e8f0; align-self:center;">
-                                    <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'topLeft')" title="Top Left" style="align-items:flex-start; justify-content:flex-start;"><div class="align-box"></div></button>
-                                    <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'topCenter')" title="Top Center" style="align-items:flex-start; justify-content:center;"><div class="align-box"></div></button>
-                                    <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'topRight')" title="Top Right" style="align-items:flex-start; justify-content:flex-end;"><div class="align-box"></div></button>
-                                    
-                                    <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'middleLeft')" title="Middle Left" style="align-items:center; justify-content:flex-start;"><div class="align-box"></div></button>
-                                    <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'middleCenter')" title="Middle Center" style="align-items:center; justify-content:center;"><div class="align-box"></div></button>
-                                    <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'middleRight')" title="Middle Right" style="align-items:center; justify-content:flex-end;"><div class="align-box"></div></button>
-                                    
-                                    <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'bottomLeft')" title="Bottom Left" style="align-items:flex-end; justify-content:flex-start;"><div class="align-box"></div></button>
-                                    <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'bottomCenter')" title="Bottom Center" style="align-items:flex-end; justify-content:center;"><div class="align-box"></div></button>
-                                    <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'bottomRight')" title="Bottom Right" style="align-items:flex-end; justify-content:flex-end;"><div class="align-box"></div></button>
+                            <div id="menu-table-wrapper" style="display:none; flex-direction:row; gap:8px; padding:6px;">
+                                <div style="display:flex; flex-direction:column; gap:6px;">
+                                    <div style="display:flex; gap:6px; align-items:center; background: #f1f5f9; padding: 4px; border-radius: 4px; border: 1px solid #e2e8f0;">
+                                        <span style="font-size:10px; font-weight:bold; color:#64748b; margin-right:4px;">TABLE:</span>
+                                        <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="selectTableRow()" title="Select Row" style="color:#0ea5e9; font-weight:bold;"><i class="fas fa-arrows-alt-h" style="margin-right:3px;"></i>Row</button>
+                                        <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="selectTableCol()" title="Select Col" style="color:#0ea5e9; font-weight:bold;"><i class="fas fa-arrows-alt-v" style="margin-right:3px;"></i>Col</button>
+                                        <div class="separator" style="height:16px;"></div>
+                                        <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="addTableRow()" title="Add Row Below"><i class="fas fa-grip-lines" style="margin-right:3px;"></i>+R</button>
+                                        <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="addTableCol()" title="Add Column Right"><i class="fas fa-grip-lines-vertical" style="margin-right:3px;"></i>+C</button>
+                                        <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="delTableRow()" title="Delete Row" style="color:#ef4444;"><i class="fas fa-trash" style="margin-right:3px;"></i>-R</button>
+                                        <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="delTableCol()" title="Delete Column" style="color:#ef4444;"><i class="fas fa-trash" style="margin-right:3px;"></i>-C</button>
+                                        <div class="separator" style="height:16px;"></div>
+                                        <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="equalizeTable()" title="Make Rows/Cols Equal"><i class="fas fa-equals"></i></button>
+                                        <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="mergeTableCells()" title="Merge Cells (Shift+Click to select)"><i class="fas fa-compress-arrows-alt"></i></button>
+                                    </div>
+                                    <div style="display:flex; gap:4px; align-items:center; background: #f8fafc; padding: 4px; border-radius: 4px; border: 1px solid #e2e8f0;">
+                                        <select class="ctx-select" style="width: 75px;" onchange="format('fontName', this.value)">
+                                            <option value="Arial">Arial</option><option value="Georgia">Georgia</option><option value="Times">Times</option>
+                                        </select>
+                                        <select class="ctx-select font-size-select" style="width: 55px;" data-cmd="fontSize" onchange="applyFontSize(this.value)" title="Font Size">
+                                            <option value="" disabled hidden>Size</option>
+                                            <option value="8">8</option><option value="10">10</option><option value="11">11</option>
+                                            <option value="12">12</option><option value="14">14</option><option value="16">16</option>
+                                            <option value="18">18</option><option value="20">20</option><option value="24">24</option>
+                                            <option value="28">28</option><option value="32">32</option><option value="36">36</option>
+                                            <option value="40">40</option><option value="48">48</option><option value="56">56</option>
+                                            <option value="64">64</option><option value="72">72</option><option value="96">96</option>
+                                            <option value="120">120</option><option value="144">144</option><option value="200">200</option>
+                                            <option value="250">250</option><option value="300">300</option><option value="400">400</option>
+                                            <option value="500">500</option>
+                                        </select>
+                                        <span style="font-size:10px; color:#64748b; font-weight:bold; margin-right:4px;">px</span>
+                                        <div class="separator" style="height:16px; margin: 0 2px;"></div>
+                                        <i class="fas fa-arrows-alt-v" style="color:#64748b; font-size:10px; margin-left:4px;"></i>
+                                        <select class="ctx-select" data-cmd="lineHeight" onchange="applyLineHeight(this.value)" title="Line Spacing" style="width: 58px; margin-left:2px; padding: 2px 4px;">
+                                            <option value="" disabled hidden selected>Spc</option>
+                                            <option value="1">1.0</option><option value="1.15">1.15</option><option value="1.5">1.5</option><option value="2">2.0</option>
+                                        </select>
+                                        <div class="separator" style="height:16px; margin: 0 2px;"></div>
+                                        <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="format('bold')" title="Bold"><i class="fas fa-bold"></i></button>
+                                        <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="format('italic')" title="Italic"><i class="fas fa-italic"></i></button>
+                                        <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="format('underline')" title="Underline"><i class="fas fa-underline"></i></button>
+                                        <div class="separator" style="height:16px; margin: 0 2px;"></div>
+                                        <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="format('insertUnorderedList')" title="Bullet List"><i class="fas fa-list-ul"></i></button>
+                                        <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="format('insertOrderedList')" title="Numbered List"><i class="fas fa-list-ol"></i></button>
+                                    </div>
+                                    <div style="display:flex; gap:12px; align-items:center; padding: 2px;">
+                                        <div style="display:flex; gap:6px; align-items:center;">
+                                            <div class="menu-drag-handle" title="Drag to move element" style="cursor: move; padding: 4px 6px; color: white; background:#4f46e5; border-radius:4px;"><i class="fas fa-arrows-alt"></i></div>
+                                            <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="changeLayer(1)" title="Move to Front"><i class="fas fa-angle-double-up"></i></button>
+                                            <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="changeLayer(-1)" title="Move to Back"><i class="fas fa-angle-double-down"></i></button>
+                                        </div>
+                                        <div style="display:flex; gap:6px; align-items:center; border-left: 1px dashed #cbd5e1; padding-left: 12px;">
+                                            <div class="menu-text-tools-color" style="display:flex; gap:6px; align-items:center;">
+                                                <span class="color-label-text" style="font-size:9px; font-weight:bold; color:#64748b; text-align:right; line-height:1.2; margin-left:4px;">Text<br>Color</span>
+                                                <div class="color-grid text-color-grid" title="Color"></div>
+                                            </div>
+                                            <div class="separator menu-bg-tools" style="height:24px; margin: 0 4px; background:#cbd5e1; width:1px;"></div>
+                                            <div class="menu-bg-tools" style="display:flex; gap:6px; align-items:center;">
+                                                <span class="color-label-bg" style="font-size:9px; font-weight:bold; color:#64748b; text-align:right; line-height:1.2;">Background<br>Color</span>
+                                                <div class="color-grid bg-color-grid" title="Color"></div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
+                                <div style="display:flex; flex-direction:column; justify-content:space-between; border-left: 1px dashed #cbd5e1; padding-left: 8px;">
+                                    <div style="display:grid; grid-template-columns: repeat(3, 24px); grid-template-rows: repeat(3, 24px); gap:2px; background:#f8fafc; padding:4px; border-radius:4px; border:1px solid #e2e8f0; align-self:center;">
+                                        <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'topLeft')"><div class="align-box"></div></button>
+                                        <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'topCenter')"><div class="align-box"></div></button>
+                                        <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'topRight')"><div class="align-box"></div></button>
+                                        <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'middleLeft')"><div class="align-box"></div></button>
+                                        <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'middleCenter')"><div class="align-box"></div></button>
+                                        <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'middleRight')"><div class="align-box"></div></button>
+                                        <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'bottomLeft')"><div class="align-box"></div></button>
+                                        <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'bottomCenter')"><div class="align-box"></div></button>
+                                        <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'bottomRight')"><div class="align-box"></div></button>
+                                    </div>
+                                    <div style="display:flex; flex-direction:column; gap:4px; align-items:center; margin-top: auto; padding-top: 8px;">
+                                        <span style="font-size:9px; font-weight:bold; color:#64748b; letter-spacing:1px; line-height:1;">TRANSPARENCY</span>
+                                        <input type="range" class="transparency-slider" min="0" max="1" step="0.1" value="1" style="width:75px; height:4px; margin:0; cursor:pointer;" oninput="liveUpdateOpacity(this.value)" onchange="commitOpacity()">
+                                    </div>
+                                </div>
+                            </div>
 
-                                <div class="menu-img-tools" style="display:none; flex-direction:column; gap:6px; justify-content:center; align-items: center; width: 100%;">
+                            <div id="menu-image-wrapper" style="display:none; flex-direction:row; gap:12px; padding:6px;">
+                                <div style="display:flex; flex-direction:column; gap:8px; justify-content:center;">
+                                    <div style="display:flex; gap:6px; align-items:center;">
+                                        <div class="menu-drag-handle" title="Drag to move element" style="cursor: move; padding: 4px 6px; color: white; background:#4f46e5; border-radius:4px;"><i class="fas fa-arrows-alt"></i></div>
+                                        <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="changeLayer(1)" title="Move to Front"><i class="fas fa-angle-double-up"></i></button>
+                                        <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="changeLayer(-1)" title="Move to Back"><i class="fas fa-angle-double-down"></i></button>
+                                    </div>
+                                    <div style="display:flex; flex-direction:column; gap:4px; align-items:center; margin-top: 4px;">
+                                        <span style="font-size:9px; font-weight:bold; color:#64748b; letter-spacing:1px; line-height:1;">TRANSPARENCY</span>
+                                        <input type="range" class="transparency-slider" min="0" max="1" step="0.1" value="1" style="width:75px; height:4px; margin:0; cursor:pointer;" oninput="liveUpdateOpacity(this.value)" onchange="commitOpacity()">
+                                    </div>
+                                </div>
+                                <div style="display:flex; flex-direction:column; gap:6px; justify-content:center; align-items: center; border-left: 1px dashed #cbd5e1; padding-left: 12px; min-width: 80px;">
                                     <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="addPinToSelectedImage()" style="width: 100%; background:#4f46e5; color:white; font-weight:bold; border:none; padding: 6px 14px; font-size:12px; border-radius:4px; justify-content: center;"><i class="fas fa-map-marker-alt" style="margin-right: 6px;"></i> Pin</button>
                                     <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="startCrop()" style="width: 100%; background:#ef4444; color:white; font-weight:bold; border:none; padding: 6px 14px; font-size:12px; border-radius:4px; justify-content: center;"><i class="fas fa-crop-alt" style="margin-right: 6px;"></i> Crop</button>
                                 </div>
-
                             </div>
 
                         </div>
