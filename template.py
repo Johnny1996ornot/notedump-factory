@@ -385,9 +385,9 @@ def get_template(total_pages):
                                         <div style="display:flex; gap:8px; align-items:center;">
                                             <div class="menu-drag-handle" title="Drag to move element" style="cursor: move; padding: 4px 6px; color: white; background:#4f46e5; border-radius:4px;"><i class="fas fa-arrows-alt"></i></div>
                                             
-                                            <div style="display:flex; flex-direction:column; gap:2px; align-items:center; margin: 0 4px;">
-                                                <span style="font-size:8px; font-weight:bold; color:#64748b; letter-spacing:0.5px; line-height:1;">TRANSPARENCY</span>
-                                                <input type="range" class="transparency-slider" min="0" max="1" step="0.1" value="1" style="width:65px; height:4px; margin:0; cursor:pointer;" oninput="liveUpdateOpacity(this.value)" onchange="commitOpacity()">
+                                            <div style="display:flex; flex-direction:column; gap:8px; align-items:center; margin: 0 8px;">
+                                                <span style="font-size:9px; font-weight:bold; color:#64748b; letter-spacing:1px; line-height:1; margin-bottom:2px;">TRANSPARENCY</span>
+                                                <input type="range" class="transparency-slider" min="0" max="1" step="0.1" value="1" style="width:75px; height:4px; margin:0; cursor:pointer;" oninput="liveUpdateOpacity(this.value)" onchange="commitOpacity()">
                                             </div>
 
                                             <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="changeLayer(1)" title="Move to Front"><i class="fas fa-angle-double-up"></i></button>
@@ -498,8 +498,8 @@ def get_template(total_pages):
                                         <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'bottomCenter')"><div class="align-box"></div></button>
                                         <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'bottomRight')"><div class="align-box"></div></button>
                                     </div>
-                                    <div style="display:flex; flex-direction:column; gap:6px; align-items:center; margin-top: 14px; margin-bottom: 2px;">
-                                        <span style="font-size:9px; font-weight:bold; color:#64748b; letter-spacing:1px; line-height:1;">TRANSPARENCY</span>
+                                    <div style="display:flex; flex-direction:column; gap:8px; align-items:center; margin-top: 16px; margin-bottom: 4px;">
+                                        <span style="font-size:9px; font-weight:bold; color:#64748b; letter-spacing:1px; line-height:1; margin-bottom:2px;">TRANSPARENCY</span>
                                         <input type="range" class="transparency-slider" min="0" max="1" step="0.1" value="1" style="width:75px; height:4px; margin:0; cursor:pointer;" oninput="liveUpdateOpacity(this.value)" onchange="commitOpacity()">
                                     </div>
                                 </div>
@@ -512,8 +512,8 @@ def get_template(total_pages):
                                         <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="changeLayer(1)" title="Move to Front"><i class="fas fa-angle-double-up"></i></button>
                                         <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="changeLayer(-1)" title="Move to Back"><i class="fas fa-angle-double-down"></i></button>
                                     </div>
-                                    <div style="display:flex; flex-direction:column; gap:6px; align-items:center; margin-bottom: 2px;">
-                                        <span style="font-size:9px; font-weight:bold; color:#64748b; letter-spacing:1px; line-height:1;">TRANSPARENCY</span>
+                                    <div style="display:flex; flex-direction:column; gap:8px; align-items:center; margin-bottom: 4px;">
+                                        <span style="font-size:9px; font-weight:bold; color:#64748b; letter-spacing:1px; line-height:1; margin-bottom:2px;">TRANSPARENCY</span>
                                         <input type="range" class="transparency-slider" min="0" max="1" step="0.1" value="1" style="width:75px; height:4px; margin:0; cursor:pointer;" oninput="liveUpdateOpacity(this.value)" onchange="commitOpacity()">
                                     </div>
                                 </div>
@@ -563,6 +563,31 @@ def get_template(total_pages):
         window.totalPages = __TOTAL_PAGES__;
         window.LECTURE_ID = "{{STORAGE_ID}}";
         __INJECTED_JS__
+
+        // OVERRIDE: Fix viewport centering so the massive padding doesn't show at the top on load
+        window.recenterViewport = function() {
+            setTimeout(() => {
+                let cvp = document.getElementById('canvas-viewport');
+                if (cvp) {
+                    let canvasW = parseInt($('#canvas').attr('data-width')) || 816;
+                    let currentZoomVal = typeof currentZoom !== 'undefined' ? currentZoom : 1;
+                    let scaledW = canvasW * currentZoomVal;
+                    
+                    let targetScrollLeft = 300 + (scaledW / 2) - (cvp.clientWidth / 2);
+                    
+                    // The padding-top is exactly 1200px. By scrolling down 1150px, 
+                    // we perfectly center the top edge of the page with a nice 50px gap.
+                    let targetScrollTop = 1150; 
+
+                    cvp.scrollTo({ top: targetScrollTop, left: targetScrollLeft, behavior: 'auto' });
+                }
+            }, 50);
+        };
+
+        // Trigger recentering immediately after the window fully loads
+        window.addEventListener('load', function() {
+            setTimeout(window.recenterViewport, 150);
+        });
     </script>
 </body>
 </html>
