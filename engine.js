@@ -205,9 +205,6 @@ function format(command, value = null) {
     let $cells = $('.selected-cell');
     let selStr = window.getSelection().toString();
 
-    // ----------------------------------------------------------------------
-    // NEW CLEAN ALIGNMENT MAP IMPLEMENTATION
-    // ----------------------------------------------------------------------
     if (command === 'align') {
         saveHistory();
         let alignMap = {
@@ -225,11 +222,9 @@ function format(command, value = null) {
         let map = alignMap[value];
         if (map) {
             if ($cells.length > 0) {
-                // Table cell alignment
                 $cells.css({ 'text-align': map.h, 'vertical-align': map.v });
                 $cells.find('*').css({ 'text-align': map.h });
             } else {
-                // Standard block/box alignment
                 let $activeBox = $('.selected-box').not(':has(table)'); 
                 if ($activeBox.length > 0) {
                     let jcMap = { 'left': 'flex-start', 'center': 'center', 'right': 'flex-end' };
@@ -247,7 +242,6 @@ function format(command, value = null) {
         }
         return;
     }
-    // ----------------------------------------------------------------------
 
     if ($cells.length > 0 && ($cells.length > 1 || selStr.length === 0)) {
         saveHistory();
@@ -1297,30 +1291,32 @@ function updateContextMenu() {
             $('.menu-img-tools').hide(); 
             $('.menu-text-tools, .menu-text-tools-color').css('display', 'flex'); 
             $('.menu-bg-tools').css('display', 'flex'); 
+            $('.menu-right-standard').css('display', 'flex');
             $('.menu-align-tools').css('display', 'grid');
-            $('.menu-align-tools.separator').css('display', 'block');
+            $('.menu-transparency-tools').css('display', 'flex');
         } else if (hasImage) {
             $('.menu-table-tools').hide();
             $('.menu-text-tools, .menu-text-tools-color').hide(); 
             $('.menu-bg-tools').hide(); 
-            $('.menu-align-tools').hide();
-            $('.menu-align-tools.separator').hide();
+            $('.menu-right-standard').hide();
             $('.menu-img-tools').css('display', 'flex');
         } else if (hasAudio) {
             $('.menu-table-tools').hide();
             $('.menu-img-tools').hide();
             $('.menu-text-tools, .menu-text-tools-color').css('display', 'flex'); 
             $('.menu-bg-tools').css('display', 'flex'); 
+            $('.menu-right-standard').css('display', 'flex');
             $('.menu-align-tools').hide();
-            $('.menu-align-tools.separator').hide();
+            $('.menu-transparency-tools').css('display', 'flex');
         } else {
             // Standard Text Block
             $('.menu-table-tools').hide();
             $('.menu-img-tools').hide();
             $('.menu-text-tools, .menu-text-tools-color').css('display', 'flex'); 
             $('.menu-bg-tools').css('display', 'flex'); 
+            $('.menu-right-standard').css('display', 'flex');
             $('.menu-align-tools').css('display', 'grid');
-            $('.menu-align-tools.separator').css('display', 'block');
+            $('.menu-transparency-tools').css('display', 'flex');
         }
 
         // Contextual Color Labels
