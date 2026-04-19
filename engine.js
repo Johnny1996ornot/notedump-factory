@@ -1278,52 +1278,31 @@ function updateContextMenu() {
     let $sel = $('.selected-box');
     if($sel.length > 0 && isEditing) {
         $('#context-menu').css('display', 'flex');
-        $('#context-menu').removeClass('is-vertical-menu');
 
         let hasTable = $sel.find('table').length > 0;
         let hasAudio = $sel.find('.custom-audio-player').length > 0;
         let $activeCell = $('.selected-cell').first();
         let hasImage = $sel.find('img').length > 0 && !hasTable; 
 
-        // Apply new layout display rules
-        if ($activeCell.length > 0 || hasTable) {
-            $('.menu-table-tools').css('display', 'flex');
-            $('.menu-img-tools').hide(); 
-            $('.menu-text-tools').css('display', 'flex'); 
-            $('.menu-color-tools').css('display', 'flex'); 
-            $('.menu-align-tools').css('display', 'grid');
-        } else if (hasImage) {
-            $('.menu-table-tools').hide();
-            $('.menu-text-tools').hide(); 
-            $('.menu-color-tools').hide(); 
-            $('.menu-align-tools').hide();
-            $('.menu-img-tools').css('display', 'flex');
-        } else if (hasAudio) {
-            $('.menu-table-tools').hide();
-            $('.menu-img-tools').hide();
-            $('.menu-text-tools').css('display', 'flex'); 
-            $('.menu-color-tools').css('display', 'flex'); 
-            $('.menu-align-tools').hide();
-        } else {
-            // Standard Text Block
-            $('.menu-table-tools').hide();
-            $('.menu-img-tools').hide();
-            $('.menu-text-tools').css('display', 'flex'); 
-            $('.menu-color-tools').css('display', 'flex'); 
-            $('.menu-align-tools').css('display', 'grid');
-        }
+        $('#menu-text-wrapper, #menu-table-wrapper, #menu-image-wrapper').hide();
 
-        // Contextual Color Labels
-        if (hasAudio && $activeCell.length === 0) {
-            $('.menu-color-tools').find('.color-swatch').first().parent().prev('span').html('Player<br>BG');
-            $('.menu-color-tools').find('.menu-bg-tools .color-swatch').first().parent().prev('span').html('Button<br>Color');
+        if ($activeCell.length > 0 || hasTable) {
+            $('#menu-table-wrapper').css('display', 'flex');
+        } else if (hasImage) {
+            $('#menu-image-wrapper').css('display', 'flex');
+        } else if (hasAudio) {
+            $('#menu-text-wrapper').css('display', 'flex');
+            $('#menu-text-wrapper .text-align-wrapper').hide();
+            $('.color-label-text').html('Player<br>BG');
+            $('.color-label-bg').html('Button<br>Color');
         } else {
-            $('.menu-color-tools').find('.color-swatch').first().parent().prev('span').html('Text<br>Color');
-            $('.menu-color-tools').find('.menu-bg-tools .color-swatch').first().parent().prev('span').html('Background<br>Color');
+            $('#menu-text-wrapper').css('display', 'flex');
+            $('#menu-text-wrapper .text-align-wrapper').show();
+            $('.color-label-text').html('Text<br>Color');
+            $('.color-label-bg').html('Background<br>Color');
         }
 
         let currentOp = 1;
-
         if ($activeCell.length > 0) {
             let bg = $activeCell.css('background-color');
             let parts = bg.match(/[\d.]+/g);
@@ -1344,7 +1323,7 @@ function updateContextMenu() {
                 else if(bg === 'transparent' || bg === 'rgba(0, 0, 0, 0)') { currentOp = 0; }
             }
         }
-        $('#transparency-slider').val(currentOp !== undefined ? currentOp : 1);
+        $('.transparency-slider').val(currentOp !== undefined ? currentOp : 1);
 
         let topPos = 999999; let leftPos = 999999;
         let bottomPos = -999999; let rightPos = -999999;
@@ -1374,7 +1353,6 @@ function updateContextMenu() {
         let finalMenuTop = topPos - cHeight - 15;
         let finalMenuLeft = leftPos + (selWidth / 2) - (cWidth / 2);
 
-        // Viewport boundaries using strictly getBoundingClientRect
         let cvp = document.getElementById('canvas-viewport');
         let canvasEl = document.getElementById('canvas');
         let cvpRect = cvp.getBoundingClientRect();
@@ -2673,7 +2651,7 @@ $(document).ready(async function() {
     });
 
     $(document).on('mousedown', '.ctx-btn, select, .color-swatch, .action-btn, button[data-cmd]', function(e) {
-        if(!$(this).is('select') && !$(this).is('input') && !$(this).is('#page-opacity-slider') && !$(this).is('#page-color-btn') && !$(this).is('.fa-fill-drip')) {
+        if(!$(this).is('select') && !$(this).is('input') && !$(this).is('.transparency-slider') && !$(this).is('#page-color-btn') && !$(this).is('.fa-fill-drip')) {
             e.preventDefault(); 
         }
     });
@@ -2704,19 +2682,13 @@ $(document).ready(async function() {
     $(document).on('click', '[title="Move Up"], .fa-angle-double-up', function(e) { e.preventDefault(); changeLayer(1); });
     $(document).on('click', '[title="Move Down"], .fa-angle-double-down', function(e) { e.preventDefault(); changeLayer(-1); });
 
-    $(document).on('input', '#transparency-slider', function() { liveUpdateOpacity($(this).val()); });
-    $(document).on('change', '#transparency-slider', function() { commitOpacity(); });
+    $(document).on('input', '.transparency-slider', function() { liveUpdateOpacity($(this).val()); });
+    $(document).on('change', '.transparency-slider', function() { commitOpacity(); });
 
     let colorHtml = "";
     COLORS.forEach(c => { colorHtml += `<div class="color-swatch" style="background:${c};" data-color="${c}" onmousedown="event.preventDefault();"></div>`; });
 
-    $('#text-color-grid, #bg-color-grid').html(colorHtml);
-    $('.menu-text-tools-color > div').each(function() {
-        if ($(this).attr('id') === 'text-color-grid') $(this).html(colorHtml);
-    });
-    $('.menu-bg-tools > div').each(function() {
-        if ($(this).attr('id') === 'bg-color-grid') $(this).html(colorHtml);
-    });
+    $('.text-color-grid, .bg-color-grid').html(colorHtml);
 
     $(document).on('click', '.menu-text-tools-color .color-swatch', function(e) { 
         e.preventDefault();
@@ -2731,7 +2703,7 @@ $(document).ready(async function() {
             let r = parseInt(hex.slice(1, 3), 16);
             let g = parseInt(hex.slice(3, 5), 16);
             let b = parseInt(hex.slice(5, 7), 16);
-            let currentOp = $('#transparency-slider').val() || 1;
+            let currentOp = $('.transparency-slider').val() || 1;
             $audio.css('background-color', `rgba(${r},${g},${b},${currentOp})`);
             $box.attr('data-player-bg', `${r},${g},${b}`);
             saveHistory();
@@ -2773,8 +2745,8 @@ $(document).ready(async function() {
         let g = parseInt(hex.slice(3, 5), 16);
         let b = parseInt(hex.slice(5, 7), 16);
 
-        let currentOp = $('#transparency-slider').val() || 1;
-        if (currentOp == 0) { currentOp = 1; $('#transparency-slider').val(1); }
+        let currentOp = $('.transparency-slider').val() || 1;
+        if (currentOp == 0) { currentOp = 1; $('.transparency-slider').val(1); }
 
         saveHistory();
         let $cells = $('.selected-cell');
@@ -2794,7 +2766,7 @@ $(document).ready(async function() {
         }
     });
 
-    interact('.fa-arrows-alt, .drag-handle-btn, .menu-text-tools button:first-child').draggable({
+    interact('.menu-drag-handle').draggable({
         listeners: {
             start(event) { saveHistory(); },
             move(event) {
@@ -3328,99 +3300,14 @@ $(document).ready(async function() {
     });
 
     document.addEventListener('wheel', function(e) {
-        if (e.ctrlKey || e.metaKey) {
-            e.preventDefault(); 
-            let cvp = document.getElementById('canvas-viewport');
-            if(!cvp) return;
-
-            let zoomMultiplier = Math.exp(e.deltaY * -0.005);
-            let newZoom = currentZoom * zoomMultiplier; 
-            if(newZoom < 0.2) newZoom = 0.2;
-            if(newZoom > 5) newZoom = 5;
-
-            let rect = cvp.getBoundingClientRect();
-            let pointerX = e.clientX - rect.left;
-            let pointerY = e.clientY - rect.top;
-
-            let targetCanvasX = (pointerX + cvp.scrollLeft) / currentZoom;
-            let targetCanvasY = (pointerY + cvp.scrollTop) / currentZoom;
-
-            setZoom(newZoom);
-
-            cvp.scrollLeft = (targetCanvasX * newZoom) - pointerX;
-            cvp.scrollTop = (targetCanvasY * newZoom) - pointerY;
+        if (e.ctrlKey) {
+            e.preventDefault();
+            let zoomDir = e.deltaY > 0 ? -0.1 : 0.1;
+            let newZoom = parseFloat(currentZoom) + zoomDir;
+            if (newZoom < 0.2) newZoom = 0.2;
+            if (newZoom > 5.0) newZoom = 5.0;
+            setZoom(newZoom.toFixed(2));
         }
     }, { passive: false });
 
-    document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
-    document.addEventListener('gesturechange', function (e) {
-        e.preventDefault();
-        let cvp = document.getElementById('canvas-viewport');
-        if(!cvp) return;
-
-        let newZoom = currentZoom * e.scale;
-        if(newZoom < 0.2) newZoom = 0.2;
-        if(newZoom > 5) newZoom = 5;
-
-        let rect = cvp.getBoundingClientRect();
-        let pointerX = e.clientX - rect.left;
-        let pointerY = e.clientY - rect.top;
-
-        let targetCanvasX = (pointerX + cvp.scrollLeft) / currentZoom;
-        let targetCanvasY = (pointerY + cvp.scrollTop) / currentZoom;
-
-        setZoom(newZoom);
-
-        cvp.scrollLeft = (targetCanvasX * newZoom) - pointerX;
-        cvp.scrollTop = (targetCanvasY * newZoom) - pointerY;
-    });
-    document.addEventListener('gestureend', function (e) { e.preventDefault(); });
-
-    let cvp2 = document.getElementById('canvas-viewport');
-    if (cvp2) {
-        let isPinching = false; let initialDistance = null; let initialZoom = 1;
-        let pinchScreenX = 0; let pinchScreenY = 0; let targetCanvasX = 0; let targetCanvasY = 0;
-
-        cvp2.addEventListener('touchstart', function(e) {
-            if (e.touches.length === 2) {
-                isPinching = true;
-                initialDistance = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-                initialZoom = currentZoom;
-
-                let rect = cvp2.getBoundingClientRect();
-                pinchScreenX = ((e.touches[0].clientX + e.touches[1].clientX) / 2) - rect.left;
-                pinchScreenY = ((e.touches[0].clientY + e.touches[1].clientY) / 2) - rect.top;
-
-                targetCanvasX = (pinchScreenX + cvp2.scrollLeft) / initialZoom;
-                targetCanvasY = (pinchScreenY + cvp2.scrollTop) / initialZoom;
-            }
-        }, {passive: false, capture: true});
-
-        cvp2.addEventListener('touchmove', function(e) {
-            if (e.touches.length === 2 && isPinching) {
-                e.preventDefault(); 
-                e.stopPropagation(); 
-
-                let currentDistance = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-                let newZoom = initialZoom * (currentDistance / initialDistance);
-                if(newZoom < 0.2) newZoom = 0.2;
-                if(newZoom > 5) newZoom = 5;
-                setZoom(newZoom);
-
-                let rect = cvp2.getBoundingClientRect();
-                let currentPinchX = ((e.touches[0].clientX + e.touches[1].clientX) / 2) - rect.left;
-                let currentPinchY = ((e.touches[0].clientY + e.touches[1].clientY) / 2) - rect.top;
-
-                cvp2.scrollLeft = (targetCanvasX * newZoom) - currentPinchX;
-                cvp2.scrollTop = (targetCanvasY * newZoom) - currentPinchY;
-            }
-        }, {passive: false, capture: true});
-
-        cvp2.addEventListener('touchend', function(e) { 
-            if (e.touches.length < 2) isPinching = false; 
-        }, {passive: false, capture: true});
-    }
-
-    goTo("0");
-    recenterViewport();
-});
+}); // End document.ready
