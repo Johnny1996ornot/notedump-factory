@@ -1291,21 +1291,20 @@ function updateContextMenu() {
             $('.menu-img-tools').hide(); 
             $('.menu-text-tools, .menu-text-tools-color').css('display', 'flex'); 
             $('.menu-bg-tools').css('display', 'flex'); 
-            $('.menu-right-standard').css('display', 'flex');
             $('.menu-align-tools').css('display', 'grid');
             $('.menu-transparency-tools').css('display', 'flex');
         } else if (hasImage) {
             $('.menu-table-tools').hide();
             $('.menu-text-tools, .menu-text-tools-color').hide(); 
             $('.menu-bg-tools').hide(); 
-            $('.menu-right-standard').hide();
+            $('.menu-align-tools').hide();
             $('.menu-img-tools').css('display', 'flex');
+            $('.menu-transparency-tools').css('display', 'flex'); // Transparency slider active for images
         } else if (hasAudio) {
             $('.menu-table-tools').hide();
             $('.menu-img-tools').hide();
             $('.menu-text-tools, .menu-text-tools-color').css('display', 'flex'); 
             $('.menu-bg-tools').css('display', 'flex'); 
-            $('.menu-right-standard').css('display', 'flex');
             $('.menu-align-tools').hide();
             $('.menu-transparency-tools').css('display', 'flex');
         } else {
@@ -1314,7 +1313,6 @@ function updateContextMenu() {
             $('.menu-img-tools').hide();
             $('.menu-text-tools, .menu-text-tools-color').css('display', 'flex'); 
             $('.menu-bg-tools').css('display', 'flex'); 
-            $('.menu-right-standard').css('display', 'flex');
             $('.menu-align-tools').css('display', 'grid');
             $('.menu-transparency-tools').css('display', 'flex');
         }
