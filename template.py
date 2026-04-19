@@ -429,34 +429,31 @@ def get_template(total_pages):
                                 </div>
                             </div>
 
-                            <div style="display:flex; flex-direction:column; border-left: 1px dashed #cbd5e1; padding-left: 8px; margin-left: 2px;">
+                            <div style="display:flex; flex-direction:column; border-left: 1px dashed #cbd5e1; padding-left: 8px; margin-left: 2px; justify-content:space-between; height:100%;">
                                 
-                                <div class="menu-right-standard" style="display:flex; flex-direction:column; gap:8px; justify-content:space-between; height:100%;">
-                                    <div class="menu-align-tools" style="display:grid; grid-template-columns: repeat(3, 24px); grid-template-rows: repeat(3, 24px); gap:2px; background:#f8fafc; padding:4px; border-radius:4px; border:1px solid #e2e8f0; align-self:center;">
-                                        <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'topLeft')" title="Top Left" style="align-items:flex-start; justify-content:flex-start;"><div class="align-box"></div></button>
-                                        <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'topCenter')" title="Top Center" style="align-items:flex-start; justify-content:center;"><div class="align-box"></div></button>
-                                        <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'topRight')" title="Top Right" style="align-items:flex-start; justify-content:flex-end;"><div class="align-box"></div></button>
-                                        
-                                        <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'middleLeft')" title="Middle Left" style="align-items:center; justify-content:flex-start;"><div class="align-box"></div></button>
-                                        <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'middleCenter')" title="Middle Center" style="align-items:center; justify-content:center;"><div class="align-box"></div></button>
-                                        <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'middleRight')" title="Middle Right" style="align-items:center; justify-content:flex-end;"><div class="align-box"></div></button>
-                                        
-                                        <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'bottomLeft')" title="Bottom Left" style="align-items:flex-end; justify-content:flex-start;"><div class="align-box"></div></button>
-                                        <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'bottomCenter')" title="Bottom Center" style="align-items:flex-end; justify-content:center;"><div class="align-box"></div></button>
-                                        <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'bottomRight')" title="Bottom Right" style="align-items:flex-end; justify-content:flex-end;"><div class="align-box"></div></button>
-                                    </div>
-
-                                    <div class="menu-transparency-tools" style="display:flex; flex-direction:column; gap:4px; align-items:center;">
-                                        <span style="font-size:9px; font-weight:bold; color:#64748b; letter-spacing:1px; line-height:1;">TRANSPARENCY</span>
-                                        <input type="range" id="transparency-slider" min="0" max="1" step="0.1" value="1" style="width:75px; height:4px; margin:0; cursor:pointer;" oninput="liveUpdateOpacity(this.value)" onchange="commitOpacity()">
-                                    </div>
+                                <div class="menu-align-tools" style="display:grid; grid-template-columns: repeat(3, 24px); grid-template-rows: repeat(3, 24px); gap:2px; background:#f8fafc; padding:4px; border-radius:4px; border:1px solid #e2e8f0; align-self:center;">
+                                    <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'topLeft')" title="Top Left" style="align-items:flex-start; justify-content:flex-start;"><div class="align-box"></div></button>
+                                    <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'topCenter')" title="Top Center" style="align-items:flex-start; justify-content:center;"><div class="align-box"></div></button>
+                                    <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'topRight')" title="Top Right" style="align-items:flex-start; justify-content:flex-end;"><div class="align-box"></div></button>
+                                    
+                                    <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'middleLeft')" title="Middle Left" style="align-items:center; justify-content:flex-start;"><div class="align-box"></div></button>
+                                    <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'middleCenter')" title="Middle Center" style="align-items:center; justify-content:center;"><div class="align-box"></div></button>
+                                    <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'middleRight')" title="Middle Right" style="align-items:center; justify-content:flex-end;"><div class="align-box"></div></button>
+                                    
+                                    <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'bottomLeft')" title="Bottom Left" style="align-items:flex-end; justify-content:flex-start;"><div class="align-box"></div></button>
+                                    <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'bottomCenter')" title="Bottom Center" style="align-items:flex-end; justify-content:center;"><div class="align-box"></div></button>
+                                    <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'bottomRight')" title="Bottom Right" style="align-items:flex-end; justify-content:flex-end;"><div class="align-box"></div></button>
                                 </div>
 
-                                <div class="menu-img-tools" style="display:none; flex-direction:column; gap:8px; justify-content:center; height:100%;">
-                                    <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="addPinToSelectedImage()" style="background:#4f46e5; color:white; font-weight:bold; border:none; padding: 6px 14px; font-size:12px; border-radius:4px;"><i class="fas fa-map-marker-alt" style="margin-right: 6px;"></i> Pin</button>
-                                    <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="startCrop()" style="background:#ef4444; color:white; font-weight:bold; border:none; padding: 6px 14px; font-size:12px; border-radius:4px;"><i class="fas fa-crop-alt" style="margin-right: 6px;"></i> Crop</button>
+                                <div class="menu-img-tools" style="display:none; flex-direction:column; gap:6px; justify-content:center; align-items: center; width: 100%;">
+                                    <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="addPinToSelectedImage()" style="width: 100%; background:#4f46e5; color:white; font-weight:bold; border:none; padding: 6px 14px; font-size:12px; border-radius:4px; justify-content: center;"><i class="fas fa-map-marker-alt" style="margin-right: 6px;"></i> Pin</button>
+                                    <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="startCrop()" style="width: 100%; background:#ef4444; color:white; font-weight:bold; border:none; padding: 6px 14px; font-size:12px; border-radius:4px; justify-content: center;"><i class="fas fa-crop-alt" style="margin-right: 6px;"></i> Crop</button>
                                 </div>
 
+                                <div class="menu-transparency-tools" style="display:flex; flex-direction:column; gap:4px; align-items:center; margin-top: auto; padding-top: 8px;">
+                                    <span style="font-size:9px; font-weight:bold; color:#64748b; letter-spacing:1px; line-height:1;">TRANSPARENCY</span>
+                                    <input type="range" id="transparency-slider" min="0" max="1" step="0.1" value="1" style="width:75px; height:4px; margin:0; cursor:pointer;" oninput="liveUpdateOpacity(this.value)" onchange="commitOpacity()">
+                                </div>
                             </div>
 
                         </div>
