@@ -407,29 +407,37 @@ def get_template(total_pages):
                                     <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="mergeTableCells()" title="Merge Cells (Shift+Click to select)"><i class="fas fa-compress-arrows-alt"></i></button>
                                 </div>
 
-                                <div class="menu-object-tools" style="display:flex; gap:6px; align-items:center; padding: 2px;">
-                                    <div id="menu-drag-handle" title="Drag to move element" style="cursor: move; padding: 4px 6px; color: white; background:#4f46e5; border-radius:4px; margin-right:4px;"><i class="fas fa-arrows-alt"></i></div>
-
-                                    <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="changeLayer(1)" title="Move to Front"><i class="fas fa-angle-double-up"></i></button>
-                                    <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="changeLayer(-1)" title="Move to Back"><i class="fas fa-angle-double-down"></i></button>
+                                <div class="menu-object-tools" style="display:flex; gap:12px; align-items:center; padding: 2px;">
                                     
-                                    <div class="separator" style="height:16px;"></div>
-
-                                    <div class="menu-text-tools-color" style="display:flex; gap:6px; align-items:center;">
-                                        <span style="font-size:9px; font-weight:bold; color:#64748b; text-align:right; line-height:1.2; margin-left:4px;">Text<br>Color</span>
-                                        <div class="color-grid" id="text-color-grid" title="Color"></div>
+                                    <div style="display:flex; flex-direction:column; gap:8px;">
+                                        <div style="display:flex; gap:6px; align-items:center;">
+                                            <div id="menu-drag-handle" title="Drag to move element" style="cursor: move; padding: 4px 6px; color: white; background:#4f46e5; border-radius:4px; margin-right:4px;"><i class="fas fa-arrows-alt"></i></div>
+                                            <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="changeLayer(1)" title="Move to Front"><i class="fas fa-angle-double-up"></i></button>
+                                            <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="changeLayer(-1)" title="Move to Back"><i class="fas fa-angle-double-down"></i></button>
+                                        </div>
+                                        
+                                        <div class="menu-transparency-tools" style="display:flex; gap:6px; align-items:center;">
+                                            <span style="font-size:9px; font-weight:bold; color:#64748b; letter-spacing:1px; line-height:1;">TRANSPARENCY</span>
+                                            <input type="range" id="transparency-slider" min="0" max="1" step="0.1" value="1" style="width:75px; height:4px; margin:0; cursor:pointer;" oninput="liveUpdateOpacity(this.value)" onchange="commitOpacity()">
+                                        </div>
                                     </div>
 
-                                    <div class="separator menu-bg-tools" style="height:24px; margin: 0 8px; background:#cbd5e1; width:1px;"></div>
-
-                                    <div class="menu-bg-tools" style="display:flex; gap:6px; align-items:center;">
-                                        <span style="font-size:9px; font-weight:bold; color:#64748b; text-align:right; line-height:1.2;">Background<br>Color</span>
-                                        <div class="color-grid" id="bg-color-grid" title="Color"></div>
+                                    <div class="menu-color-tools" style="display:flex; gap:6px; align-items:center; border-left: 1px dashed #cbd5e1; padding-left: 12px;">
+                                        <div class="menu-text-tools-color" style="display:flex; gap:6px; align-items:center;">
+                                            <span style="font-size:9px; font-weight:bold; color:#64748b; text-align:right; line-height:1.2; margin-left:4px;">Text<br>Color</span>
+                                            <div class="color-grid" id="text-color-grid" title="Color"></div>
+                                        </div>
+                                        <div class="separator menu-bg-tools" style="height:24px; margin: 0 4px; background:#cbd5e1; width:1px;"></div>
+                                        <div class="menu-bg-tools" style="display:flex; gap:6px; align-items:center;">
+                                            <span style="font-size:9px; font-weight:bold; color:#64748b; text-align:right; line-height:1.2;">Background<br>Color</span>
+                                            <div class="color-grid" id="bg-color-grid" title="Color"></div>
+                                        </div>
                                     </div>
+                                    
                                 </div>
                             </div>
 
-                            <div style="display:flex; flex-direction:column; border-left: 1px dashed #cbd5e1; padding-left: 8px; margin-left: 2px; justify-content:space-between; height:100%;">
+                            <div style="display:flex; flex-direction:column; border-left: 1px dashed #cbd5e1; padding-left: 8px; margin-left: 2px; justify-content:center; height:100%;">
                                 
                                 <div class="menu-align-tools" style="display:grid; grid-template-columns: repeat(3, 24px); grid-template-rows: repeat(3, 24px); gap:2px; background:#f8fafc; padding:4px; border-radius:4px; border:1px solid #e2e8f0; align-self:center;">
                                     <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'topLeft')" title="Top Left" style="align-items:flex-start; justify-content:flex-start;"><div class="align-box"></div></button>
@@ -450,10 +458,6 @@ def get_template(total_pages):
                                     <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="startCrop()" style="width: 100%; background:#ef4444; color:white; font-weight:bold; border:none; padding: 6px 14px; font-size:12px; border-radius:4px; justify-content: center;"><i class="fas fa-crop-alt" style="margin-right: 6px;"></i> Crop</button>
                                 </div>
 
-                                <div class="menu-transparency-tools" style="display:flex; flex-direction:column; gap:4px; align-items:center; margin-top: auto; padding-top: 8px;">
-                                    <span style="font-size:9px; font-weight:bold; color:#64748b; letter-spacing:1px; line-height:1;">TRANSPARENCY</span>
-                                    <input type="range" id="transparency-slider" min="0" max="1" step="0.1" value="1" style="width:75px; height:4px; margin:0; cursor:pointer;" oninput="liveUpdateOpacity(this.value)" onchange="commitOpacity()">
-                                </div>
                             </div>
 
                         </div>
