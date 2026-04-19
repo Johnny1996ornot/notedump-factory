@@ -347,8 +347,8 @@ def get_template(total_pages):
 
                         <div id="context-menu" style="display:none; position:absolute; border-radius:8px; background:white; border: 1px solid #cbd5e1; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index:10000; width: max-content;">
 
-                            <div id="menu-text-wrapper" style="display:none; flex-direction:row; gap:8px; padding:6px;">
-                                <div style="display:flex; flex-direction:column; gap:6px;">
+                            <div id="menu-text-wrapper" style="display:none; flex-direction:row; gap:8px; padding:6px; align-items: stretch;">
+                                <div style="display:flex; flex-direction:column; gap:6px; justify-content: space-between;">
                                     <div style="display:flex; gap:4px; align-items:center; background: #f8fafc; padding: 4px; border-radius: 4px; border: 1px solid #e2e8f0;">
                                         <select class="ctx-select" style="width: 75px;" onchange="format('fontName', this.value)">
                                             <option value="Arial">Arial</option><option value="Georgia">Georgia</option><option value="Times">Times</option>
@@ -380,9 +380,16 @@ def get_template(total_pages):
                                         <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="format('insertUnorderedList')" title="Bullet List"><i class="fas fa-list-ul"></i></button>
                                         <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="format('insertOrderedList')" title="Numbered List"><i class="fas fa-list-ol"></i></button>
                                     </div>
+                                    
                                     <div style="display:flex; gap:12px; align-items:center; padding: 2px;">
-                                        <div style="display:flex; gap:6px; align-items:center;">
+                                        <div style="display:flex; gap:8px; align-items:center;">
                                             <div class="menu-drag-handle" title="Drag to move element" style="cursor: move; padding: 4px 6px; color: white; background:#4f46e5; border-radius:4px;"><i class="fas fa-arrows-alt"></i></div>
+                                            
+                                            <div style="display:flex; flex-direction:column; gap:2px; align-items:center; margin: 0 4px;">
+                                                <span style="font-size:8px; font-weight:bold; color:#64748b; letter-spacing:0.5px; line-height:1;">TRANSPARENCY</span>
+                                                <input type="range" class="transparency-slider" min="0" max="1" step="0.1" value="1" style="width:65px; height:4px; margin:0; cursor:pointer;" oninput="liveUpdateOpacity(this.value)" onchange="commitOpacity()">
+                                            </div>
+
                                             <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="changeLayer(1)" title="Move to Front"><i class="fas fa-angle-double-up"></i></button>
                                             <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="changeLayer(-1)" title="Move to Back"><i class="fas fa-angle-double-down"></i></button>
                                         </div>
@@ -479,7 +486,7 @@ def get_template(total_pages):
                                         </div>
                                     </div>
                                 </div>
-                                <div style="display:flex; flex-direction:column; justify-content:space-between; border-left: 1px dashed #cbd5e1; padding-left: 8px;">
+                                <div style="display:flex; flex-direction:column; justify-content:space-between; border-left: 1px dashed #cbd5e1; padding-left: 8px; padding-bottom: 4px;">
                                     <div style="display:grid; grid-template-columns: repeat(3, 24px); grid-template-rows: repeat(3, 24px); gap:2px; background:#f8fafc; padding:4px; border-radius:4px; border:1px solid #e2e8f0; align-self:center;">
                                         <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'topLeft')"><div class="align-box"></div></button>
                                         <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'topCenter')"><div class="align-box"></div></button>
@@ -491,21 +498,21 @@ def get_template(total_pages):
                                         <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'bottomCenter')"><div class="align-box"></div></button>
                                         <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'bottomRight')"><div class="align-box"></div></button>
                                     </div>
-                                    <div style="display:flex; flex-direction:column; gap:4px; align-items:center; margin-top: auto; padding-top: 8px;">
+                                    <div style="display:flex; flex-direction:column; gap:6px; align-items:center; margin-top: 14px; margin-bottom: 2px;">
                                         <span style="font-size:9px; font-weight:bold; color:#64748b; letter-spacing:1px; line-height:1;">TRANSPARENCY</span>
                                         <input type="range" class="transparency-slider" min="0" max="1" step="0.1" value="1" style="width:75px; height:4px; margin:0; cursor:pointer;" oninput="liveUpdateOpacity(this.value)" onchange="commitOpacity()">
                                     </div>
                                 </div>
                             </div>
 
-                            <div id="menu-image-wrapper" style="display:none; flex-direction:row; gap:12px; padding:6px;">
-                                <div style="display:flex; flex-direction:column; gap:8px; justify-content:center;">
+                            <div id="menu-image-wrapper" style="display:none; flex-direction:row; gap:12px; padding:6px; padding-bottom: 10px;">
+                                <div style="display:flex; flex-direction:column; gap:12px; justify-content:center;">
                                     <div style="display:flex; gap:6px; align-items:center;">
                                         <div class="menu-drag-handle" title="Drag to move element" style="cursor: move; padding: 4px 6px; color: white; background:#4f46e5; border-radius:4px;"><i class="fas fa-arrows-alt"></i></div>
                                         <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="changeLayer(1)" title="Move to Front"><i class="fas fa-angle-double-up"></i></button>
                                         <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="changeLayer(-1)" title="Move to Back"><i class="fas fa-angle-double-down"></i></button>
                                     </div>
-                                    <div style="display:flex; flex-direction:column; gap:4px; align-items:center; margin-top: 4px;">
+                                    <div style="display:flex; flex-direction:column; gap:6px; align-items:center; margin-bottom: 2px;">
                                         <span style="font-size:9px; font-weight:bold; color:#64748b; letter-spacing:1px; line-height:1;">TRANSPARENCY</span>
                                         <input type="range" class="transparency-slider" min="0" max="1" step="0.1" value="1" style="width:75px; height:4px; margin:0; cursor:pointer;" oninput="liveUpdateOpacity(this.value)" onchange="commitOpacity()">
                                     </div>
