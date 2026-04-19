@@ -140,7 +140,7 @@ def get_template(total_pages):
     }
 
     /* --- ALIGNMENT GRID BUTTONS --- */
-    .align-btn { width: 26px; height: 26px; display: flex; padding: 3px; border: 1px solid transparent; border-radius: 4px; background: transparent; cursor: pointer; transition: 0.1s; box-sizing: border-box; }
+    .align-btn { width: 100%; height: 100%; display: flex; padding: 3px; border: 1px solid transparent; border-radius: 4px; background: transparent; cursor: pointer; transition: 0.1s; box-sizing: border-box; }
     .align-btn:hover { background: #e2e8f0; border-color: #cbd5e1; }
     .align-box { width: 8px; height: 8px; background: #64748b; border-radius: 1px; }
 
@@ -345,9 +345,9 @@ def get_template(total_pages):
                     <div id="canvas">
                         {{SLIDE_CONTENT}}
 
-                        <div id="context-menu" style="display:none; position:absolute; flex-direction:row; gap:6px; padding:6px; border-radius:8px; background:white; border: 1px solid #cbd5e1; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index:10000;">
+                        <div id="context-menu" style="display:none; position:absolute; flex-direction:row; gap:6px; padding:6px; border-radius:8px; background:white; border: 1px solid #cbd5e1; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index:10000; width: max-content;">
 
-                            <div style="display:flex; flex-direction:column; gap:6px;">
+                            <div style="display:flex; flex-direction:column; gap:6px; justify-content:space-between;">
                                 
                                 <div class="menu-text-tools" style="display:flex; gap:4px; align-items:center; background: #f8fafc; padding: 4px; border-radius: 4px; border: 1px solid #e2e8f0;">
                                     <select class="ctx-select" style="width: 75px;" onchange="format('fontName', this.value)">
@@ -426,35 +426,37 @@ def get_template(total_pages):
                                         <span style="font-size:9px; font-weight:bold; color:#64748b; text-align:right; line-height:1.2;">Background<br>Color</span>
                                         <div class="color-grid" id="bg-color-grid" title="Color"></div>
                                     </div>
-
-                                    <div class="separator menu-bg-tools" style="height:24px; margin: 0 8px; background:#cbd5e1; width:1px;"></div>
-
-                                    <div style="display:flex; flex-direction:column; gap:5px; align-items:center; margin: 0 8px;" title="Object Background Transparency">
-                                        <span style="font-size:9px; font-weight:bold; color:#64748b; margin-bottom:4px; letter-spacing:1px;">TRANSPARENCY</span>
-                                        <input type="range" id="transparency-slider" min="0" max="1" step="0.1" value="1" style="width:65px; height:4px; margin:0; cursor:pointer;" oninput="liveUpdateOpacity(this.value)" onchange="commitOpacity()">
-                                    </div>
                                 </div>
                             </div>
 
-                            <div style="display:flex; align-items:stretch;">
-                                <div class="menu-align-tools" style="display:none; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); gap:2px; background:#f8fafc; padding:4px; border-radius:4px; border:1px solid #e2e8f0; height:100%;">
-                                    <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'topLeft')" title="Top Left" style="align-items:flex-start; justify-content:flex-start;"><div class="align-box"></div></button>
-                                    <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'topCenter')" title="Top Center" style="align-items:flex-start; justify-content:center;"><div class="align-box"></div></button>
-                                    <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'topRight')" title="Top Right" style="align-items:flex-start; justify-content:flex-end;"><div class="align-box"></div></button>
-                                    
-                                    <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'middleLeft')" title="Middle Left" style="align-items:center; justify-content:flex-start;"><div class="align-box"></div></button>
-                                    <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'middleCenter')" title="Middle Center" style="align-items:center; justify-content:center;"><div class="align-box"></div></button>
-                                    <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'middleRight')" title="Middle Right" style="align-items:center; justify-content:flex-end;"><div class="align-box"></div></button>
-                                    
-                                    <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'bottomLeft')" title="Bottom Left" style="align-items:flex-end; justify-content:flex-start;"><div class="align-box"></div></button>
-                                    <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'bottomCenter')" title="Bottom Center" style="align-items:flex-end; justify-content:center;"><div class="align-box"></div></button>
-                                    <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'bottomRight')" title="Bottom Right" style="align-items:flex-end; justify-content:flex-end;"><div class="align-box"></div></button>
-                                </div>
+                            <div style="display:flex; flex-direction:column; border-left: 1px dashed #cbd5e1; padding-left: 8px; margin-left: 2px;">
                                 
-                                <div class="menu-img-tools" style="display:none; align-items:center; gap: 8px; height:100%;">
-                                    <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="addPinToSelectedImage()" style="background:#4f46e5; color:white; font-weight:bold; border:none; padding: 6px 14px; font-size:12px; height:100%; border-radius:4px;"><i class="fas fa-map-marker-alt" style="margin-right: 6px;"></i> Pin</button>
-                                    <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="startCrop()" style="background:#ef4444; color:white; font-weight:bold; border:none; padding: 6px 14px; font-size:12px; height:100%; border-radius:4px;"><i class="fas fa-crop-alt" style="margin-right: 6px;"></i> Crop</button>
+                                <div class="menu-right-standard" style="display:flex; flex-direction:column; gap:8px; justify-content:space-between; height:100%;">
+                                    <div class="menu-align-tools" style="display:grid; grid-template-columns: repeat(3, 24px); grid-template-rows: repeat(3, 24px); gap:2px; background:#f8fafc; padding:4px; border-radius:4px; border:1px solid #e2e8f0; align-self:center;">
+                                        <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'topLeft')" title="Top Left" style="align-items:flex-start; justify-content:flex-start;"><div class="align-box"></div></button>
+                                        <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'topCenter')" title="Top Center" style="align-items:flex-start; justify-content:center;"><div class="align-box"></div></button>
+                                        <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'topRight')" title="Top Right" style="align-items:flex-start; justify-content:flex-end;"><div class="align-box"></div></button>
+                                        
+                                        <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'middleLeft')" title="Middle Left" style="align-items:center; justify-content:flex-start;"><div class="align-box"></div></button>
+                                        <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'middleCenter')" title="Middle Center" style="align-items:center; justify-content:center;"><div class="align-box"></div></button>
+                                        <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'middleRight')" title="Middle Right" style="align-items:center; justify-content:flex-end;"><div class="align-box"></div></button>
+                                        
+                                        <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'bottomLeft')" title="Bottom Left" style="align-items:flex-end; justify-content:flex-start;"><div class="align-box"></div></button>
+                                        <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'bottomCenter')" title="Bottom Center" style="align-items:flex-end; justify-content:center;"><div class="align-box"></div></button>
+                                        <button class="align-btn" onmousedown="event.preventDefault();" onclick="format('align', 'bottomRight')" title="Bottom Right" style="align-items:flex-end; justify-content:flex-end;"><div class="align-box"></div></button>
+                                    </div>
+
+                                    <div class="menu-transparency-tools" style="display:flex; flex-direction:column; gap:4px; align-items:center;">
+                                        <span style="font-size:9px; font-weight:bold; color:#64748b; letter-spacing:1px; line-height:1;">TRANSPARENCY</span>
+                                        <input type="range" id="transparency-slider" min="0" max="1" step="0.1" value="1" style="width:75px; height:4px; margin:0; cursor:pointer;" oninput="liveUpdateOpacity(this.value)" onchange="commitOpacity()">
+                                    </div>
                                 </div>
+
+                                <div class="menu-img-tools" style="display:none; flex-direction:column; gap:8px; justify-content:center; height:100%;">
+                                    <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="addPinToSelectedImage()" style="background:#4f46e5; color:white; font-weight:bold; border:none; padding: 6px 14px; font-size:12px; border-radius:4px;"><i class="fas fa-map-marker-alt" style="margin-right: 6px;"></i> Pin</button>
+                                    <button class="ctx-btn" onmousedown="event.preventDefault();" onclick="startCrop()" style="background:#ef4444; color:white; font-weight:bold; border:none; padding: 6px 14px; font-size:12px; border-radius:4px;"><i class="fas fa-crop-alt" style="margin-right: 6px;"></i> Crop</button>
+                                </div>
+
                             </div>
 
                         </div>
